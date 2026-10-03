@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		544EDE2F2E7EC284000E9126 /* The Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "The Runner.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		544EDE2F2E7EC284000E9126 /* Runner: Analyzer & Tracking.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Runner: Analyzer & Tracking.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -40,7 +40,7 @@
 		544EDE302E7EC284000E9126 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				544EDE2F2E7EC284000E9126 /* The Runner.app */,
+				544EDE2F2E7EC284000E9126 /* Runner: Analyzer & Tracking.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,7 +67,7 @@
 			packageProductDependencies = (
 			);
 			productName = "Runner: Analyzer & Tracking";
-			productReference = 544EDE2F2E7EC284000E9126 /* The Runner.app */;
+			productReference = 544EDE2F2E7EC284000E9126 /* Runner: Analyzer & Tracking.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -274,7 +274,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Runner: Analyzer & Tracking";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -309,7 +309,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Runner: Analyzer & Tracking";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

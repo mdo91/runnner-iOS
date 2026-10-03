@@ -1,0 +1,11 @@
+Created using the built-in image generation tool.
+Design reference: https://developer.apple.com/design/human-interface-guidelines/app-icons/
+Installed as an opaque 1024x1024 PNG in Assets.xcassets/AppIcon.appiconset.
+The system applies the corner mask; no corner mask is baked into the image.
+
+Generation prompt:
+Use case: logo-brand
+Asset type: final iOS app icon for The Runner, a running tracker and workout analysis app; square 1024 by 1024, full-bleed opaque artwork ready for an asset catalog.
+Primary request: a distinctive, restrained app icon that feels deliberately drawn by an experienced identity designer, not like an AI illustration. A single bold geometric running-person mark in warm white on the app's simple blue background. Design the runner as a compact, forward-moving silhouette using a circular head and a few carefully balanced substantial shapes, with generous negative space between limbs. Crisp disciplined contours and optical alignment; communicate running instantly at 40 pixels. Strong contrast and a calm, solid blue background edge to edge. The mark should occupy roughly the central 60 percent of the square and feel athletic, useful, timeless.
+Style/medium: flat graphic identity artwork with precise vector-like edges, an original pictogram rather than a copy of a standard system symbol or sports brand.
+Constraints: exactly one icon, straight-on full square canvas, no pre-rounded corners, no outside padding/frame, no presentation board, no text or lettering, no mockup, no gradients, no shadows, no gloss, no 3D, no texture, no tiny details, no sparkle, no chart, no map pin, no heart, no decorative extra objects. The full background must be opaque.
