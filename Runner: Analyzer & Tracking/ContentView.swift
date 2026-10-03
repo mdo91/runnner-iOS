@@ -62,7 +62,7 @@ struct ContentView: View {
       .task { live.onWorkoutSaved = { Task { await health.sync() } } }
       .onChange(of: automaticKey, initial: true) { _, _ in
         Task {
-          if let row = rows.first {
+          if !health.isSyncing, let row = rows.first {
             await analysis.analyze(
               row, history: rows.compactMap(\.run), measurements: measurements, account: account,
               context: context, automatic: true)
@@ -74,6 +74,6 @@ struct ContentView: View {
       }
   }
   private var automaticKey: String {
-    "\(rows.first?.id.uuidString ?? "")-\(rows.first?.importedAt.timeIntervalSince1970 ?? 0)-\(account.signedIn)-\(account.consent)"
+    "\(rows.first?.id.uuidString ?? "")-\(rows.first?.importedAt.timeIntervalSince1970 ?? 0)-\(account.signedIn)-\(account.consent)-\(health.isSyncing)"
   }
 }
