@@ -8,6 +8,7 @@ import SwiftUI
   @StateObject private var account: AccountManager
   @StateObject private var analysis = AnalysisManager()
   @StateObject private var live = PhoneWorkoutManager()
+  @StateObject private var historySync = HistorySyncManager()
   private let container: ModelContainer
   init() {
     if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
@@ -19,7 +20,7 @@ import SwiftUI
       #if DEBUG
         if PreviewFixtures.enabled {
           container = try ModelContainer(
-            for: RecordedRun.self, HealthCheckpoint.self, HealthMeasurement.self,
+            for: RecordedRun.self, HealthCheckpoint.self, HealthMeasurement.self, CloudSyncCheckpoint.self, DeletedHealthRecord.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
           try PreviewFixtures.install(in: container.mainContext)
         } else {
@@ -41,14 +42,14 @@ import SwiftUI
     values.isExcludedFromBackup = true
     try url.setResourceValues(values)
     return try ModelContainer(
-      for: RecordedRun.self, HealthCheckpoint.self, HealthMeasurement.self,
+      for: RecordedRun.self, HealthCheckpoint.self, HealthMeasurement.self, CloudSyncCheckpoint.self, DeletedHealthRecord.self,
       configurations: ModelConfiguration(
         url: directory.appendingPathComponent("runs.store"), cloudKitDatabase: .none))
   }
   var body: some Scene {
     WindowGroup {
       ContentView().environmentObject(health).environmentObject(account).environmentObject(analysis)
-        .environmentObject(live)
+        .environmentObject(live).environmentObject(historySync)
         .preferredColorScheme(.dark)
         .task {
           #if DEBUG

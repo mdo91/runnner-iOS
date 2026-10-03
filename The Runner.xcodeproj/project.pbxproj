@@ -450,7 +450,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Runner;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your health data to display workout metrics from your Apple Watch.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runner reads your runs, routes, heart rate, and endurance measurements to show your performance. History and GPS uploads require separate consent in Settings.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs access to your health data to save workout information.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
@@ -486,7 +486,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Runner;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
-				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your health data to display workout metrics from your Apple Watch.";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runner reads your runs, routes, heart rate, and endurance measurements to show your performance. History and GPS uploads require separate consent in Settings.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs access to your health data to save workout information.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";

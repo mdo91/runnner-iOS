@@ -97,6 +97,7 @@ import SwiftData
         }
         for object in deleted {
           let id = object.uuid
+          context.insert(DeletedHealthRecord(id:id,kind:"run"))
           if let row = try context.fetch(
             FetchDescriptor<RecordedRun>(predicate: #Predicate { $0.id == id })
           ).first {
@@ -217,6 +218,7 @@ import SwiftData
       FetchDescriptor<RecordedRun>(predicate: #Predicate { $0.id == id })
     ).first {
       try row.update(run)
+      if !run.route.isEmpty { row.routeDeleted = false }
     } else {
       context.insert(try RecordedRun(run))
     }
@@ -285,6 +287,7 @@ import SwiftData
             type: HKObjectType.workoutType(), predicate: predicate, limit: 1
           ).first as? HKWorkout {
             try await persist(workout, context: context)
+            if row.run?.route.isEmpty == true { row.routeDeleted = true }
           }
         }
       }
@@ -301,20 +304,36 @@ import SwiftData
       (.heartRateRecoveryOneMinute, HKUnit.count().unitDivided(by: .minute())),
     ]
     for (kind, unit) in kinds {
-      let values =
-        try await samples(type: HKQuantityType.quantityType(forIdentifier: kind)!, predicate: nil)
-        as? [HKQuantitySample] ?? []
-      let key = kind.rawValue
-      let previous = try context.fetch(
-        FetchDescriptor<HealthMeasurement>(predicate: #Predicate { $0.kind == key }))
-      let ids = Set(values.map(\.uuid))
-      for row in previous where !ids.contains(row.id) { context.delete(row) }
-      let existing = Set(previous.map(\.id))
-      for value in values where !existing.contains(value.uuid) {
-        context.insert(
-          HealthMeasurement(
-            id: value.uuid, kind: key, value: value.quantity.doubleValue(for: unit),
-            date: value.endDate))
+      let type = HKQuantityType.quantityType(forIdentifier: kind)!
+      let key = "measurement-" + kind.rawValue
+      let checkpoint = try context.fetch(FetchDescriptor<HealthCheckpoint>()).first { $0.key == key } ?? HealthCheckpoint(key:key)
+      if checkpoint.modelContext == nil { context.insert(checkpoint) }
+      var anchor = checkpoint.anchor.flatMap { try? NSKeyedUnarchiver.unarchivedObject(ofClass:HKQueryAnchor.self,from:$0) }
+      while !Task.isCancelled {
+        let (values,deleted,next): ([HKQuantitySample],[HKDeletedObject],HKQueryAnchor) = try await withCheckedThrowingContinuation { continuation in
+          let query = HKAnchoredObjectQuery(type:type,predicate:nil,anchor:anchor,limit:100) { _, samples, deleted, next, error in
+            if let error { continuation.resume(throwing:error) }
+            else if let next { continuation.resume(returning:(samples as? [HKQuantitySample] ?? [],deleted ?? [],next)) }
+            else { continuation.resume(throwing:ImportError.missingAnchor) }
+          }
+          healthStore.execute(query)
+        }
+        for value in values {
+          let id = value.uuid
+          if let row = try context.fetch(FetchDescriptor<HealthMeasurement>(predicate:#Predicate { $0.id == id })).first {
+            row.value = value.quantity.doubleValue(for:unit); row.date = value.endDate
+          } else {
+            context.insert(HealthMeasurement(id:id,kind:kind.rawValue,value:value.quantity.doubleValue(for:unit),date:value.endDate))
+          }
+        }
+        for value in deleted {
+          let id = value.uuid
+          context.insert(DeletedHealthRecord(id:id,kind:"measurement"))
+          if let row = try context.fetch(FetchDescriptor<HealthMeasurement>(predicate:#Predicate { $0.id == id })).first { context.delete(row) }
+        }
+        checkpoint.anchor = try NSKeyedArchiver.archivedData(withRootObject:next,requiringSecureCoding:true)
+        try context.save(); anchor = next
+        if values.count + deleted.count < 100 { break }
       }
     }
     try context.save()

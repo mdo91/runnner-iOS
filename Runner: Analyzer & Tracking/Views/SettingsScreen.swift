@@ -9,6 +9,7 @@ struct SettingsScreen: View {
   @EnvironmentObject private var health: HealthKitManager
   @EnvironmentObject private var account: AccountManager
   @EnvironmentObject private var live: PhoneWorkoutManager
+  @EnvironmentObject private var historySync: HistorySyncManager
   @AppStorage("units") private var units = "metric"
   @AppStorage("haptics") private var haptics = false
   @State private var lower = ""
@@ -17,6 +18,8 @@ struct SettingsScreen: View {
   @State private var targetError: String?
   @State private var deleteAccount = false
   @State private var clearLocal = false
+  @State private var clearCloud = false
+  @State private var connectDashboard = false
   var body: some View {
     NavigationStack {
       Form {
@@ -88,9 +91,28 @@ struct SettingsScreen: View {
             "AI feedback is adult fitness coaching, not medical diagnosis. Consent version: October 3, 2026."
           )
         }
+        Section {
+          Toggle("Sync running history",isOn:Binding(get:{ historySync.enabled },set:{ value in
+            Task { await historySync.configure(enabled:value,gps:value && historySync.gpsEnabled) }
+          })).disabled(!account.signedIn || historySync.changingConsent)
+          Text("With your consent, Runner stores your running history, measured stats, splits, chart summaries, dated VO₂ max and recovery measurements, and saved AI reports in your private backend account. Synced history stays until you delete it; it does not expire after 24 hours.").font(.footnote)
+          Toggle("Also sync precise GPS routes",isOn:Binding(get:{ historySync.gpsEnabled },set:{ value in
+            Task { await historySync.configure(enabled:historySync.enabled,gps:value) }
+          })).disabled(!account.signedIn || !historySync.enabled || historySync.changingConsent)
+          Text("GPS sharing is a separate choice. Routes reveal where you run. They are stored in your account for dashboard maps and are never sent to Gemini. Turning this off deletes uploaded coordinates across your account. If offline, removal finishes when this phone reconnects.").font(.footnote)
+          if historySync.isSyncing || historySync.changingConsent { ProgressView() }
+          if let message = historySync.message { Text(message).font(.caption).foregroundStyle(.secondary) }
+          Button("Sync now") { Task { await historySync.sync(context:context,account:account) } }
+            .disabled(!account.signedIn || !historySync.enabled || health.isSyncing || historySync.isSyncing || historySync.changingConsent)
+          Button("Connect dashboard") { connectDashboard = true }.disabled(!account.signedIn)
+          if let url = historySync.dashboardURL { Link("Open dashboard",destination:url) }
+        } header: { Text("Cloud history") } footer: {
+          Text("Only runs available through Apple Health on this phone can be uploaded. Sign in with the same Runner Apple account on each phone. Consent version: October 3, 2026.")
+        }
         Section("Your data") {
-          Button("Clear data from this device", role: .destructive) { clearLocal = true }.disabled(health.isSyncing)
+          Button("Clear data from this device", role: .destructive) { clearLocal = true }.disabled(health.isSyncing || historySync.isSyncing)
           if account.signedIn {
+            Button("Delete uploaded history",role:.destructive) { clearCloud = true }.disabled(historySync.changingConsent)
             Button("Delete cloud account", role: .destructive) { deleteAccount = true }
           }
         }
@@ -113,9 +135,12 @@ struct SettingsScreen: View {
       Button("Clear local data", role: .destructive) {
         do {
           account.setConsent(false)
+          historySync.pauseOnDevice()
           try context.delete(model: RecordedRun.self)
           try context.delete(model: HealthMeasurement.self)
           try context.delete(model: HealthCheckpoint.self)
+          try context.delete(model: CloudSyncCheckpoint.self)
+          try context.delete(model: DeletedHealthRecord.self)
           try context.save()
           health.didRequestAccess = false
           UserDefaults.standard.set(false, forKey: "healthRequested")
@@ -126,11 +151,17 @@ struct SettingsScreen: View {
         "This does not delete workouts from Apple Health. You can reconnect Health to import them again."
       )
     }
+    .sheet(isPresented:$connectDashboard) { DashboardConnectScreen() }
+    .confirmationDialog("Delete uploaded history and routes?",isPresented:$clearCloud,titleVisibility:.visible) {
+      Button("Delete uploaded history",role:.destructive) { Task { await historySync.clear(context:context) } }
+    } message: {
+      Text("This removes dashboard history and routes from the database and disables history sync. Local workouts and Apple Health records remain. AI analysis cache and account access are removed separately by deleting your cloud account.")
+    }
     .sheet(isPresented: $deleteAccount) {
       VStack(spacing: 24) {
         Text("Delete your cloud account").font(.title2.bold())
         Text(
-          "Your cloud analyses and account access will be removed. Your local workouts and Apple Health records stay on your device. Confirm with Apple to continue."
+          "Your synced history, GPS routes, cloud analyses, dashboard sessions, and account access will be removed. Your local workouts and Apple Health records stay on your device. Confirm with Apple to continue."
         ).multilineTextAlignment(.center)
         SignInWithAppleButton(
           .continue, onRequest: { account.prepare($0, deleting: true) },

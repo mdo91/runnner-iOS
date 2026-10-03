@@ -10,6 +10,7 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
 }
 @MainActor final class AccountManager: ObservableObject {
   @Published var signedIn = false
+  @Published var userID: String?
   @Published var message: String?
   @Published var isWorking = false
   @Published var consent = UserDefaults.standard.string(forKey: "aiConsentVersion") == "2026-10-03"
@@ -21,7 +22,7 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
   init() {
     if Self.configured {
       listener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
-        Task { @MainActor in self?.signedIn = user != nil }
+        Task { @MainActor in self?.signedIn = user != nil; self?.userID = user?.uid }
       }
     }
   }
@@ -65,8 +66,9 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
         try? Auth.auth().signOut()
         setConsent(false)
         signedIn = false
+        userID = nil
         message =
-          "Your cloud account and analysis data have been deleted. Health data remains on this device."
+          "Your cloud account, synced history, routes, and analysis data have been deleted. Health data remains on this device."
       } else {
         _ = try await Auth.auth().signIn(with: credential)
         message = nil
@@ -86,6 +88,7 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
   func signOut() {
     try? Auth.auth().signOut()
     signedIn = false
+    userID = nil
     setConsent(false)
   }
   enum AccountError: Error { case signIn }

@@ -13,10 +13,13 @@ struct APIClient {
     else { return nil }
     return url
   }
-  static func request(path: String, method: String, body: Data? = nil) async throws -> Data {
+  static func request(path: String, method: String, body: Data? = nil, expectedUID: String? = nil) async throws -> Data {
     guard let baseURL, let user = Auth.auth().currentUser else { throw APIError.notReady }
+    let uid = user.uid
+    guard expectedUID == nil || expectedUID == uid else { throw APIError.authentication }
     let identity = try await user.getIDToken()
     let attestation = try await AppCheck.appCheck().token(forcingRefresh: false)
+    guard Auth.auth().currentUser?.uid == uid else { throw APIError.authentication }
     var request = URLRequest(url: baseURL.appendingPathComponent(path))
     request.httpMethod = method
     request.httpBody = body
@@ -25,6 +28,7 @@ struct APIClient {
     request.setValue(attestation.token, forHTTPHeaderField: "X-Firebase-AppCheck")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     let (data, response) = try await URLSession.shared.data(for: request)
+    guard Auth.auth().currentUser?.uid == uid else { throw APIError.authentication }
     guard let http = response as? HTTPURLResponse else { throw APIError.unavailable }
     guard (200...299).contains(http.statusCode) else {
       if http.statusCode == 429 { throw APIError.quota }
@@ -61,7 +65,7 @@ struct APIClient {
     }
     return report
   }
-  static func encode(_ input: AnalysisRequest) throws -> Data {
+  static func encode<T: Encodable>(_ input: T) throws -> Data {
     let encoder = JSONEncoder()
     encoder.dateEncodingStrategy = .iso8601
     encoder.outputFormatting = .sortedKeys

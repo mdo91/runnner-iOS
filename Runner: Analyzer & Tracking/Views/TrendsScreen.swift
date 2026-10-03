@@ -19,7 +19,7 @@ struct TrendsScreen: View {
             if runs.isEmpty {
               Text("Complete a run to begin your trends.").foregroundStyle(RunnerStyle.muted)
             } else {
-              Chart(Array(runs.prefix(20).reversed())) { run in
+              Chart(Array(runs.filter { $0.distanceMeters != nil }.prefix(20).reversed())) { run in
                 BarMark(
                   x: .value("Date", run.start, unit: .day),
                   y: .value("Distance", (run.distanceMeters ?? 0) / units.metersPerUnit)

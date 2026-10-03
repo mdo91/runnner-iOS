@@ -7,6 +7,7 @@ import SwiftData
   var start: Date
   var importedAt: Date
   @Attribute(.externalStorage) var payload: Data
+  var routeDeleted: Bool = false
   var reportData: Data?
   var reportInputHash: String?
   var lastAnalysisAttempt: Date?
@@ -48,4 +49,16 @@ import SwiftData
     self.date = date
   }
   var measurement: DatedMeasurement { .init(value: value, measuredAt: date) }
+}
+
+@Model final class CloudSyncCheckpoint {
+  @Attribute(.unique) var key: String
+  var hash: String
+  init(key: String, hash: String) { self.key = key; self.hash = hash }
+}
+@Model final class DeletedHealthRecord {
+  @Attribute(.unique) var key: String
+  var id: UUID
+  var kind: String
+  init(id: UUID, kind: String) { self.id = id; self.kind = kind; key = "\(kind):\(id.uuidString)" }
 }

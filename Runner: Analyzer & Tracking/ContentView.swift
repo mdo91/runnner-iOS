@@ -9,6 +9,8 @@ struct ContentView: View {
   @EnvironmentObject private var account: AccountManager
   @EnvironmentObject private var analysis: AnalysisManager
   @EnvironmentObject private var live: PhoneWorkoutManager
+  @EnvironmentObject private var historySync: HistorySyncManager
+  @Query private var deletions: [DeletedHealthRecord]
   @Query(sort: \RecordedRun.start, order: .reverse) private var rows: [RecordedRun]
   @Query private var measurements: [HealthMeasurement]
   @AppStorage("units") private var unitRaw = "metric"
@@ -69,9 +71,19 @@ struct ContentView: View {
           }
         }
       }
+      .onChange(of: historyKey, initial: true) { _, _ in
+        historySync.selectAccount(account.userID)
+        if !health.isSyncing { Task { await historySync.sync(context:context,account:account) } }
+      }
+      .onChange(of: scenePhase) { _, phase in
+        if phase == .active { Task { await historySync.sync(context:context,account:account) } }
+      }
       .onChange(of: live.snapshot?.timestamp) { _, _ in
         Task { await live.analyzeIfDue(account: account, history: rows.compactMap(\.run)) }
       }
+  }
+  private var historyKey: String {
+    "\(account.userID ?? "")-\(health.isSyncing)-\(historySync.changeCounter)-\(historySync.changingConsent)-\(rows.map { "\($0.id)-\($0.importedAt.timeIntervalSince1970)-\($0.reportData?.hashValue ?? 0)-\($0.routeDeleted)" }.joined())-\(measurements.count)-\(deletions.count)"
   }
   private var automaticKey: String {
     "\(rows.first?.id.uuidString ?? "")-\(rows.first?.importedAt.timeIntervalSince1970 ?? 0)-\(account.signedIn)-\(account.consent)-\(health.isSyncing)"
