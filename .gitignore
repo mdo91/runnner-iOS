@@ -1,0 +1,16 @@
+# Separate backend repository
+/backend/
+
+# macOS
+.DS_Store
+
+# Xcode build output and per-user settings
+/build/
+/DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager build output
+.build/
