@@ -55,7 +55,7 @@ struct RouteCard: View {
     Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Your route", subtitle: "\(mode) along the run · GPS stays on this device")
+          title: "Your route", subtitle: "\(mode) along the run · GPS sharing is optional in Settings")
         Picker("Route color", selection: $mode) {
           Text("Pace").tag("Pace")
           Text("Heart rate").tag("Heart rate")
