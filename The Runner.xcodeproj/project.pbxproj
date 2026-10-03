@@ -6,23 +6,87 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		35F7DCDDA0C242929A91EBAD /* Runner Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = A3805EE7278F4A72A90215C7 /* Runner Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		46CA9522398A4930A90F7D7B /* RunCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3D27F34A16794FA9AC800F9C /* RunCore */; };
+		5687118126BD4EAD9B246A2A /* RunCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7797F12AF479456690F97195 /* RunCore */; };
+		8718F92A15B9492685550E1A /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 6DBDAA75D8BA43BC873DD1A3 /* FirebaseAppCheck */; };
+		902DD15F0229424997D53EB2 /* RunCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9BE42BB296524C1781AD1542 /* RunCore */; };
+		F4433718B8764EC5B688678C /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 710BBA4CDDD144FE80B1CADA /* FirebaseAuth */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0BB1CBAE8807475E82D9633D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 544EDE272E7EC284000E9126 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0E23B3743CDC4A6FA19BBB8F;
+			remoteInfo = "Runner Watch";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A21DE69831D743A5934F800D /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				35F7DCDDA0C242929A91EBAD /* Runner Watch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		544EDE2F2E7EC284000E9126 /* Runner: Analyzer & Tracking.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Runner: Analyzer & Tracking.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A3805EE7278F4A72A90215C7 /* Runner Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Runner Watch.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A57A4437E4734919A3504901 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		1AF09A003EEE4FB8B20AEE29 /* RunnerTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = RunnerTests;
+			sourceTree = "<group>";
+		};
 		544EDE312E7EC284000E9126 /* Runner: Analyzer & Tracking */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "Runner: Analyzer & Tracking";
 			sourceTree = "<group>";
 		};
+		CA15F1ABCBA64AE49D4A2A41 /* Runner Watch */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "Runner Watch";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		46BF3EF771D44991B37D050C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				902DD15F0229424997D53EB2 /* RunCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		544EDE2C2E7EC284000E9126 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				46CA9522398A4930A90F7D7B /* RunCore in Frameworks */,
+				F4433718B8764EC5B688678C /* FirebaseAuth in Frameworks */,
+				8718F92A15B9492685550E1A /* FirebaseAppCheck in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A47C0B84CEEB48889D8AE91E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5687118126BD4EAD9B246A2A /* RunCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -34,6 +98,8 @@
 			children = (
 				544EDE312E7EC284000E9126 /* Runner: Analyzer & Tracking */,
 				544EDE302E7EC284000E9126 /* Products */,
+				CA15F1ABCBA64AE49D4A2A41 /* Runner Watch */,
+				1AF09A003EEE4FB8B20AEE29 /* RunnerTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -41,6 +107,8 @@
 			isa = PBXGroup;
 			children = (
 				544EDE2F2E7EC284000E9126 /* Runner: Analyzer & Tracking.app */,
+				A3805EE7278F4A72A90215C7 /* Runner Watch.app */,
+				A57A4437E4734919A3504901 /* RunnerTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +116,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0E23B3743CDC4A6FA19BBB8F /* Runner Watch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 27D4E6C9EA2D4451AA5335A6 /* Build configuration list for PBXNativeTarget "Runner Watch" */;
+			buildPhases = (
+				8923F11A1C8E4E3B9C1A78E7 /* Sources */,
+				A47C0B84CEEB48889D8AE91E /* Frameworks */,
+				A18A5933F6344D7AA4FFFBE0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				CA15F1ABCBA64AE49D4A2A41 /* Runner Watch */,
+			);
+			name = "Runner Watch";
+			packageProductDependencies = (
+				7797F12AF479456690F97195 /* RunCore */,
+			);
+			productName = "Runner Watch";
+			productReference = A3805EE7278F4A72A90215C7 /* Runner Watch.app */;
+			productType = "com.apple.product-type.application";
+		};
 		544EDE2E2E7EC284000E9126 /* The Runner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 544EDE3A2E7EC286000E9126 /* Build configuration list for PBXNativeTarget "The Runner" */;
@@ -55,20 +146,48 @@
 				544EDE2B2E7EC284000E9126 /* Sources */,
 				544EDE2C2E7EC284000E9126 /* Frameworks */,
 				544EDE2D2E7EC284000E9126 /* Resources */,
+				A21DE69831D743A5934F800D /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				89E476BEB384465DBE1AFF5A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				544EDE312E7EC284000E9126 /* Runner: Analyzer & Tracking */,
 			);
 			name = "The Runner";
 			packageProductDependencies = (
+				3D27F34A16794FA9AC800F9C /* RunCore */,
+				710BBA4CDDD144FE80B1CADA /* FirebaseAuth */,
+				6DBDAA75D8BA43BC873DD1A3 /* FirebaseAppCheck */,
 			);
 			productName = "Runner: Analyzer & Tracking";
 			productReference = 544EDE2F2E7EC284000E9126 /* Runner: Analyzer & Tracking.app */;
 			productType = "com.apple.product-type.application";
+		};
+		ADD2D41B2AF146EDA28F7B7B /* RunnerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 953048992EFC449595A9FDF9 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
+			buildPhases = (
+				3EB41486FA8E43789C0BEFD2 /* Sources */,
+				46BF3EF771D44991B37D050C /* Frameworks */,
+				BFB91A3331014B50A24068DA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1AF09A003EEE4FB8B20AEE29 /* RunnerTests */,
+			);
+			name = RunnerTests;
+			packageProductDependencies = (
+				9BE42BB296524C1781AD1542 /* RunCore */,
+			);
+			productName = RunnerTests;
+			productReference = A57A4437E4734919A3504901 /* RunnerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -94,12 +213,18 @@
 			);
 			mainGroup = 544EDE262E7EC284000E9126;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				658974FCCBD04CAC85F95DCC /* XCLocalSwiftPackageReference "Packages/RunCore" */,
+				AB417D5BFACF4FC7810AC03C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 544EDE302E7EC284000E9126 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				544EDE2E2E7EC284000E9126 /* The Runner */,
+				0E23B3743CDC4A6FA19BBB8F /* Runner Watch */,
+				ADD2D41B2AF146EDA28F7B7B /* RunnerTests */,
 			);
 		};
 /* End PBXProject section */
@@ -112,10 +237,38 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A18A5933F6344D7AA4FFFBE0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFB91A3331014B50A24068DA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3EB41486FA8E43789C0BEFD2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		544EDE2B2E7EC284000E9126 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8923F11A1C8E4E3B9C1A78E7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -124,7 +277,45 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		89E476BEB384465DBE1AFF5A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0E23B3743CDC4A6FA19BBB8F /* Runner Watch */;
+			targetProxy = 0BB1CBAE8807475E82D9633D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		14EEB24D39CF451A900C183A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Runner Watch/RunnerWatch.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = QL8R452BWG;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runner reads your workout measurements to show live running performance.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Runner saves your runs and routes to Apple Health.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Runner records your outdoor running route on this Watch.";
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKBackgroundModes = "workout-processing";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.run.mdo.analyze.track;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Release;
+		};
 		544EDE382E7EC286000E9126 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -253,10 +444,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Runner: Analyzer & Tracking/Runner: Analyzer & Tracking.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = QL8R452BWG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Runner;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your health data to display workout metrics from your Apple Watch.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs access to your health data to save workout information.";
@@ -264,7 +456,6 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = location;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
@@ -276,6 +467,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track;
 				PRODUCT_NAME = "Runner: Analyzer & Tracking";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -288,10 +480,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Runner: Analyzer & Tracking/Runner: Analyzer & Tracking.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = QL8R452BWG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Runner;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "This app needs access to your health data to display workout metrics from your Apple Watch.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs access to your health data to save workout information.";
@@ -299,7 +492,6 @@
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = location;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
@@ -311,14 +503,96 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track;
 				PRODUCT_NAME = "Runner: Analyzer & Tracking";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
+		5E21D41F58104152A9B800D2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = QL8R452BWG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track.tests;
+				PRODUCT_MODULE_NAME = RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6D4625D03E224C06BB7D18CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = QL8R452BWG;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track.tests;
+				PRODUCT_MODULE_NAME = RunnerTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		FC3102E85D654ED796067E65 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "Runner Watch/RunnerWatch.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = QL8R452BWG;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runner reads your workout measurements to show live running performance.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Runner saves your runs and routes to Apple Health.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Runner records your outdoor running route on this Watch.";
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKBackgroundModes = "workout-processing";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.run.mdo.analyze.track;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.run.mdo.analyze.track.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_STRICT_CONCURRENCY = targeted;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.5;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		27D4E6C9EA2D4451AA5335A6 /* Build configuration list for PBXNativeTarget "Runner Watch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FC3102E85D654ED796067E65 /* Debug */,
+				14EEB24D39CF451A900C183A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		544EDE2A2E7EC284000E9126 /* Build configuration list for PBXProject "The Runner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -337,7 +611,62 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		953048992EFC449595A9FDF9 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5E21D41F58104152A9B800D2 /* Debug */,
+				6D4625D03E224C06BB7D18CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		658974FCCBD04CAC85F95DCC /* XCLocalSwiftPackageReference "Packages/RunCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/RunCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AB417D5BFACF4FC7810AC03C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3D27F34A16794FA9AC800F9C /* RunCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 658974FCCBD04CAC85F95DCC /* XCLocalSwiftPackageReference "Packages/RunCore" */;
+			productName = RunCore;
+		};
+		6DBDAA75D8BA43BC873DD1A3 /* FirebaseAppCheck */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AB417D5BFACF4FC7810AC03C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAppCheck;
+		};
+		710BBA4CDDD144FE80B1CADA /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AB417D5BFACF4FC7810AC03C /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		7797F12AF479456690F97195 /* RunCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 658974FCCBD04CAC85F95DCC /* XCLocalSwiftPackageReference "Packages/RunCore" */;
+			productName = RunCore;
+		};
+		9BE42BB296524C1781AD1542 /* RunCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 658974FCCBD04CAC85F95DCC /* XCLocalSwiftPackageReference "Packages/RunCore" */;
+			productName = RunCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 544EDE272E7EC284000E9126 /* Project object */;
 }

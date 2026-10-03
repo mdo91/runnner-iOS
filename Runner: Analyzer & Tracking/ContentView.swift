@@ -1,84 +1,79 @@
-//
-//  ContentView.swift
-//  Runner: Analyzer & Tracking
-//
-//  Created by Mahmoud Aoata on 20/09/2025.
-//
-
+import RunCore
+import SwiftData
 import SwiftUI
-import HealthKit
 
-// MARK: - Main Content View
 struct ContentView: View {
-    @StateObject private var healthKitManager = HealthKitManager()
-    @StateObject private var locationManager = LocationManager()
-    @State private var selectedTab = 0
-    @State private var showingWorkoutDetail = false
-    @State private var selectedWorkout: HKWorkout?
-    
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            // Dashboard Tab
-            DashboardView(
-                healthKitManager: healthKitManager,
-                selectedTab: $selectedTab,
-                selectedWorkout: $selectedWorkout,
-                showingWorkoutDetail: $showingWorkoutDetail
-            )
-            .tabItem {
-                Image(systemName: "house.fill")
-                Text("Dashboard")
-            }
-            .tag(0)
-            
-            // Workouts Tab
-            WorkoutsView(
-                healthKitManager: healthKitManager,
-                selectedWorkout: $selectedWorkout,
-                showingWorkoutDetail: $showingWorkoutDetail
-            )
-            .tabItem {
-                Image(systemName: "list.bullet")
-                Text("Workouts")
-            }
-            .tag(1)
-            
-            // Stats Tab
-            StatsView(healthKitManager: healthKitManager)
-                .tabItem {
-                    Image(systemName: "chart.bar.fill")
-                    Text("Stats")
-                }
-                .tag(2)
-            
-            // Tracking Tab
-            TrackingView(locationManager: locationManager)
-                .tabItem {
-                    Image(systemName: "location.fill")
-                    Text("Track")
-                }
-                .tag(3)
+  @Environment(\.modelContext) private var context
+  @Environment(\.scenePhase) private var scenePhase
+  @EnvironmentObject private var health: HealthKitManager
+  @EnvironmentObject private var account: AccountManager
+  @EnvironmentObject private var analysis: AnalysisManager
+  @EnvironmentObject private var live: PhoneWorkoutManager
+  @Query(sort: \RecordedRun.start, order: .reverse) private var rows: [RecordedRun]
+  @Query private var measurements: [HealthMeasurement]
+  @AppStorage("units") private var unitRaw = "metric"
+  @State private var settings = false
+  private var units: UnitSystem { UnitSystem(rawValue: unitRaw) ?? .metric }
+  var body: some View {
+    TabView {
+      NavigationStack {
+        Group {
+          if let row = rows.first, let run = row.run {
+            RunDetailScreen(
+              row: row, run: run, history: rows.compactMap(\.run), measurements: measurements,
+              units: units, latest: true)
+          } else {
+            ScrollView {
+              VStack {
+                EmptyState(
+                  symbol: "figure.run",
+                  title: health.isSyncing
+                    ? "Finding your latest run" : "Your next chapter starts here",
+                  detail: health.didRequestAccess
+                    ? "No running workouts are available. Record a run on Apple Watch, or check Runner’s read access in Health. Health may need time to sync."
+                    : "Connect Apple Health to see your latest run, explore your routes, and follow your progress."
+                )
+                Button("Connect Apple Health") { Task { await health.requestAccess() } }
+                  .buttonStyle(.borderedProminent).controlSize(.large)
+                if health.isSyncing { ProgressView() }
+              }
+            }.refreshable { await health.sync() }
+          }
+        }.navigationTitle("Latest Run").toolbar {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button {
+              settings = true
+            } label: {
+              Image(systemName: "slider.horizontal.3")
+            }.accessibilityLabel("Settings")
+          }
         }
-        .onAppear {
-            healthKitManager.requestAuthorization()
-            locationManager.requestPermission()
+      }.tabItem { Label("Latest Run", systemImage: "figure.run") }
+      NavigationStack { HistoryScreen(rows: rows, measurements: measurements, units: units) }
+        .tabItem { Label("History", systemImage: "clock") }
+      NavigationStack { TrendsScreen(rows: rows, measurements: measurements, units: units) }.tabItem
+      { Label("Trends", systemImage: "chart.xyaxis.line") }
+      NavigationStack { LiveScreen(history: rows.compactMap(\.run), units: units) }.tabItem {
+        Label("Live", systemImage: "waveform.path.ecg")
+      }
+    }.tint(RunnerStyle.blue).background(RunnerStyle.background)
+      .sheet(isPresented: $settings) { SettingsScreen().presentationDragIndicator(.visible) }
+      .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await health.sync() } } }
+      .task { live.onWorkoutSaved = { Task { await health.sync() } } }
+      .onChange(of: automaticKey, initial: true) { _, _ in
+        Task {
+          if let row = rows.first {
+            await analysis.analyze(
+              row, history: rows.compactMap(\.run), measurements: measurements, account: account,
+              context: context, automatic: true)
+          }
         }
-        .sheet(isPresented: $showingWorkoutDetail) {
-            if let workout = selectedWorkout {
-                WorkoutDetailView(workout: workout)
-            }
-        }
-    }
-}
-
-
-#Preview {
-    ContentView()
-}
-
-#Preview("With Mock Data") {
-    let contentView = ContentView()
-    // Note: In a real preview, you'd want to inject mock managers
-    // For now, the preview will show the default state
-    return contentView
+      }
+      .onChange(of: live.snapshot?.timestamp) { _, _ in
+        Task { await live.analyzeIfDue(account: account, history: rows.compactMap(\.run)) }
+      }
+  }
+  private var automaticKey: String {
+    "\(rows.first?.id.uuidString ?? "")-\(rows.first?.importedAt.timeIntervalSince1970 ?? 0)-\(account.signedIn)-\(account.consent)"
+  }
 }
