@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8D6C22D6B3A44E7B8B40C901 /* RecordedRun.swift in test Sources */ = {isa = PBXBuildFile; fileRef = 3B9302AC9D1B4C2DA0C90212 /* RecordedRun.swift */; };
 		35F7DCDDA0C242929A91EBAD /* Runner Watch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = A3805EE7278F4A72A90215C7 /* Runner Watch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		46CA9522398A4930A90F7D7B /* RunCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3D27F34A16794FA9AC800F9C /* RunCore */; };
 		5687118126BD4EAD9B246A2A /* RunCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7797F12AF479456690F97195 /* RunCore */; };
@@ -40,6 +41,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3B9302AC9D1B4C2DA0C90212 /* RecordedRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Models/RecordedRun.swift"; sourceTree = SOURCE_ROOT; };
 		544EDE2F2E7EC284000E9126 /* Runner: Analyzer & Tracking.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Runner: Analyzer & Tracking.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3805EE7278F4A72A90215C7 /* Runner Watch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Runner Watch.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A57A4437E4734919A3504901 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -258,6 +260,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8D6C22D6B3A44E7B8B40C901 /* RecordedRun.swift in test Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

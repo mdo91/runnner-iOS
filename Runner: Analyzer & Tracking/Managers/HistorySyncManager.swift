@@ -36,11 +36,13 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
   @Published private(set) var changeCounter = 0
   private var uid: String?
   private var retryNeeded = false
+  private var consentGeneration = 0
   var dashboardURL: URL? { APIClient.baseURL?.appendingPathComponent("dashboard") }
   private func key(_ name: String, _ uid: String) -> String { "cloudHistory.\(uid).\(name)" }
   func selectAccount(_ userID: String?) {
     guard uid != userID else { return }
     uid = userID
+    consentGeneration += 1
     enabled = userID.map { UserDefaults.standard.bool(forKey: key("enabled",$0)) } ?? false
     gpsEnabled = enabled && (userID.map { UserDefaults.standard.bool(forKey: key("gps",$0)) } ?? false)
     message = nil
@@ -56,6 +58,7 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
   }
   func configure(enabled: Bool, gps: Bool) async {
     guard let uid, Auth.auth().currentUser?.uid == uid, !changingConsent else { return }
+    consentGeneration += 1
     changingConsent = true
     defer { changingConsent = false }
     let previousEnabled = self.enabled, previousGPS = gpsEnabled
@@ -92,6 +95,8 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
       if PreviewFixtures.enabled { return }
     #endif
     selectAccount(account.userID)
+    guard !changingConsent else { return }
+    let generation = consentGeneration
     guard let uid, account.signedIn, Auth.auth().currentUser?.uid == uid else { return }
     guard !isSyncing else { retryNeeded = true; return }
     isSyncing = true
@@ -105,12 +110,14 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
         // Only retry withdrawals automatically; opt-ins must complete from the consent control.
         guard !input.enabled || !input.gpsEnabled else { return }
         let data = try await APIClient.request(path:"v1/history/preferences",method:"PUT",body:pending,expectedUID:uid)
+        guard consentGeneration == generation, self.uid == uid, !changingConsent else { return }
         UserDefaults.standard.removeObject(forKey:key("pendingPrivacy",uid))
         persist(try JSONDecoder().decode(HistoryPreferences.self,from:data),uid:uid)
       }
       guard enabled, !changingConsent else { return }
       let data = try await APIClient.request(path:"v1/history/preferences",method:"GET",expectedUID:uid)
       let server = try JSONDecoder().decode(HistoryPreferences.self,from:data)
+      guard consentGeneration == generation, self.uid == uid, enabled, !changingConsent else { return }
       // A separate opt-in on this phone is still required before uploading its GPS data.
       let gps = gpsEnabled && server.gpsEnabled
       persist(HistoryPreferences(enabled:server.enabled,gpsEnabled:gps,privacyRevision:server.privacyRevision,consentVersion:server.consentVersion,updatedAt:server.updatedAt),uid:uid)
@@ -191,6 +198,7 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
   }
   func pauseOnDevice() {
     guard let uid else { return }
+    consentGeneration += 1
     enabled = false; gpsEnabled = false
     UserDefaults.standard.set(false,forKey:key("enabled",uid))
     UserDefaults.standard.set(false,forKey:key("gps",uid))
