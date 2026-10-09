@@ -53,6 +53,8 @@ struct ContentView: View {
       }.tabItem { Label("Latest Run", systemImage: "figure.run") }
       NavigationStack { HistoryScreen(rows: rows, measurements: measurements, units: units) }
         .tabItem { Label("History", systemImage: "clock") }
+      NavigationStack { ActivityScreen(rows: rows) }
+        .tabItem { Label("Activity", systemImage: "chart.bar.xaxis") }
       NavigationStack { TrendsScreen(rows: rows, measurements: measurements, units: units) }.tabItem
       { Label("Trends", systemImage: "chart.xyaxis.line") }
       NavigationStack { LiveScreen(history: rows.compactMap(\.run), units: units) }.tabItem {

@@ -1,6 +1,6 @@
 # Runner
 
-A native iOS 18.5+ and watchOS 11.5+ running app. Latest Run shows the newest imported workout's actual distance, duration, pace, heart rate, splits, route, and performance assessment. History includes local route density; Trends uses comparable runs and dated Health measurements; Live mirrors workouts recorded by Runner on Apple Watch.
+A native iOS 18.5+ and watchOS 11.5+ running app. Latest Run shows the newest imported workout's actual distance, duration, pace, heart rate, splits, route, and performance assessment. History includes local route density; Activity charts run counts and kilometers with monthly and weekly performance; Trends uses comparable runs and dated Health measurements; Live mirrors workouts recorded by Runner on Apple Watch.
 
 Open **The Runner.xcodeproj** and select the shared **The Runner** scheme. The bundle ID and App Store SKU remain `com.run.mdo.analyze.track`; the Watch companion is `com.run.mdo.analyze.track.watchkitapp`. The existing icon is preserved.
 
@@ -17,6 +17,14 @@ swift test --package-path Packages/RunCore
 If command-line tools are selected globally, prefix commands with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`. Use a build/DerivedData path without a colon if a tool rejects the local checkout's display name.
 
 `RunCore` contains deterministic calculations, wire contracts, route filtering, density, and comparable-history rules. Its tests also run in the RunnerTests target. Debug builds launched with `--runner-fixtures` use a temporary in-memory store of clearly named synthetic Watch workouts, never the user's Health store. This switch is excluded from Release builds.
+
+## Activity
+
+The Activity tab defaults to **Current month** with the number of completed runs and daily bars. Switch between **Runs** and **Kilometers**, or select **3 Months**, **6 Months**, or **Year** for monthly bars. The multi-month ranges include the current month plus the previous two or five months; Year starts at the beginning of the current calendar year. Totals stop at the present time, empty days/months remain visible, and touching the chart shows a bucket's totals. This tab always uses kilometers, including when other screens use imperial units.
+
+Below the graph, Current month, Last month, Current week, and Last week show run count, measured kilometers, moving time, and distance-weighted average pace. Improvements compare the same elapsed calendar-day/time portion of the previous month/week. If the previous month is shorter, both comparison windows are capped at that month's length. Comparison dates are displayed explicitly; decreases and unchanged values are shown as well as increases. These volume and pace changes are descriptive, not the comparable-effort fitness assessment on Trends.
+
+Periods use the device calendar and time zone, with runs assigned by workout start date. Missing distance is never fabricated: known kilometers are labeled as partial when necessary, and distance/pace comparisons are withheld when their inputs are incomplete. Imported history may itself be incomplete if Health access or synchronization is limited.
 
 ## Health import and Watch recording
 
