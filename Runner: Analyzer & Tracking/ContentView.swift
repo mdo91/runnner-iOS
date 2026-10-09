@@ -51,6 +51,8 @@ struct ContentView: View {
             } label: {
               Image(systemName: "slider.horizontal.3")
             }.accessibilityLabel("Settings").accessibilityIdentifier("navigation.settings")
+              .accessibilityValue(
+                AppRuntime.isFixture ? (analytics.loading ? "Loading fixtures" : "Fixtures ready") : "")
           }
         }
       }.tabItem { Label("Latest", systemImage: "figure.run") }

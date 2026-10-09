@@ -20,9 +20,15 @@ scripts/test-ui.sh 'platform=iOS Simulator,name=iPhone 16,OS=26.0' -only-testing
 
 Set `RUNNER_DERIVED_DATA` to reuse a dependency checkout and `RUNNER_RESULTS_DIR` to choose an artifact directory. Defaults are `/tmp/runner-activity-derived` and `/tmp/runner-ui-results`. Every invocation creates a new `.xcresult`; failures are not automatically retried. Open the bundle in Xcode to inspect screenshots, failures, and test timings.
 
+After a successful `xcodebuild`, the runner verifies recorded test counts and failures through the compatible result-object reader and saves a sibling `-summary.json`. Empty/all-skipped results fail validation. This also avoids Xcode 27's newer summary reader returning `unknown` with zero tests for some iOS 26.5 bundles; the recorded action metrics still contain the executed counts and failures.
+
+UI tests also save a direct screenshot and accessibility tree at teardown in the sibling `-screenshots` directory. The runner forwards this location with `TEST_RUNNER_RUNNER_EVIDENCE_DIR`; direct Xcode runs use `/tmp/runner-ui-results/direct-screenshots`. These copies survive disposable-simulator cleanup when a toolchain cannot decode older-runtime attachments. Failed accessibility audits record the detailed issue description. The original `.xcresult` and console log remain the authoritative test outcome; screenshot copies do not change failures or enable retries.
+
 ## Isolation
 
 Debug builds accept `--ui-scenario SCENARIO`. Each test supplies a unique `RUNNER_TEST_ID` for an isolated preferences suite; workout data uses an in-memory SwiftData container. Relaunching with the same ID retains local settings within that test. Fixtures use a fixed October 9, 2026 clock, Gregorian calendar, Istanbul timezone, and Monday-start weeks.
+
+Fixture launches wait for the Settings control's `Fixtures ready` accessibility value before interacting. This value is exposed only in fixture mode and follows analytics loading, so tests do not mistake a pending snapshot for measured zero totals. Zone assertions reveal the corresponding row before reading it, including after scrolling to trailing-load totals.
 
 Scenarios: `populated`, `empty`, `partial`, `paused`, `indoor`, `repeated-route`, `dashboard-expired`, `dashboard-review-failure`, and `dashboard-approval-failure`. Populated fixtures contain nine runs spanning the current month and earlier months, with routes, splits, heart rate, power, form data, and dated endurance measurements. Dashboard fixtures use a local service; a failure scenario fails its first request and supports a retry.
 
@@ -59,5 +65,16 @@ To review a specific screenshot in a bundle, use Xcode or `xcrun xcresulttool ex
 `mixed-source` adds a second Health workout source for filter assertions. `testRecordedChartsAndDistanceAxes` switches every recorded chart, time/distance axes, and sample selection; `testHistorySourceAndDistanceFilters` covers source, measured-distance thresholds, resetting, and custom-date application. All screen-edge scrolling accounts for an onscreen keyboard and stays outside route maps on iPad. Goal tests submit numeric input and wait for keyboard dismissal before saving, avoiding stale modal coordinates in the iOS 26 iPad runtime. Screenshots capture the full screen, including landscape, and are retained on both success and failure.
 
 ## Serial matrix runner
+
+The matrix includes the four Xcode Cloud regression scenarios on iPhone SE and iPhone 16 Pro Max / the recent runtime (26.5 by default). To reproduce only either cloud layout:
+
+```sh
+RUNNER_SKIP_FULL_SUITE=1 RUNNER_MATRIX_FILTER=Runner-Cloud-SE-UI scripts/test-matrix.sh
+RUNNER_SKIP_FULL_SUITE=1 RUNNER_MATRIX_FILTER=Runner-Cloud-Max-UI scripts/test-matrix.sh
+```
+
+Fixture launches set `TZ=America/Los_Angeles` independently of the Istanbul analytics calendar. Calendar month/day labels explicitly use the analytics calendar's timezone; this exercises the previous-month/day regression seen on cloud hosts. Tests reveal lazy/offscreen Form controls before checking them, keep targets above the bottom tab bar, scroll explicitly toward earlier fields, wait for sheet/keyboard dismissal, and wait for asynchronous labels with a bounded expectation. Accessibility checks wait for SpringBoard notification banners to disappear, so a simulator's Apple Intelligence notification cannot obscure the app. Contrast and clipping remain audited without a new exclusion.
+
+Settings uses adaptive readable footer colors, heading rows within opaque cards, persistent wrapping target labels, inline unit choices, and a compact title. Run rows include their empty spacing in their tap area, so their center opens details on wide screens.
 
 `scripts/test-matrix.sh` runs the full iPhone 16 / iOS 26.0 suite and then appearance, accessibility, navigation, goals, and personal-best/route smoke on disposable SE / 26.0, iPad Air / 26.0, and iPhone 17 Pro / 26.5 destinations. Each simulator is deleted before the next starts, including on failure. Set `RUNNER_RECENT_RUNTIME=iOS-26-4` (or another installed iOS 26 runtime) to change the recent runtime. Set `RUNNER_SKIP_FULL_SUITE=1` to run only the matrix after an already completed functional run. Use `RUNNER_MATRIX_FILTER=Runner-SE-UI`, `Runner-iPad-UI`, or `Runner-Recent-UI` to check a single matrix destination after a specific repair. Results use the same unique bundle directory as `test-ui.sh`.
