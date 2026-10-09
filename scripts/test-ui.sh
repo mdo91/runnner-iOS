@@ -2,7 +2,12 @@
 set -euo pipefail
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-DESTINATION="${1:-platform=iOS Simulator,name=iPhone 16,OS=26.0}"
+DESTINATION="${1:-}"
+if [[ -z "$DESTINATION" ]]; then
+  TEST_SIMULATOR="$(xcrun simctl create Runner-UI-26 com.apple.CoreSimulator.SimDeviceType.iPhone-16 com.apple.CoreSimulator.SimRuntime.iOS-26-0)"
+  DESTINATION="platform=iOS Simulator,id=$TEST_SIMULATOR"
+  trap 'xcrun simctl shutdown "$TEST_SIMULATOR" >/dev/null 2>&1 || true; xcrun simctl delete "$TEST_SIMULATOR"' EXIT
+fi
 if [[ "$DESTINATION" != *"platform=iOS Simulator"* ]]; then
   echo "This runner accepts simulator destinations only." >&2
   exit 2

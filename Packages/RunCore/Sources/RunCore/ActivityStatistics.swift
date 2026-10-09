@@ -32,6 +32,9 @@ public enum ActivityRange: String, CaseIterable, Sendable {
 public struct ActivitySummary: Sendable, Equatable {
   public var runCount = 0
   public var missingDistanceCount = 0
+  public var missingElevationCount = 0
+  public var missingTimeCount = 0
+  private var knownElevationMeters = 0.0
   public var paceRunCount = 0
   public var movingSeconds = 0.0
   private var knownDistanceMeters = 0.0
@@ -46,8 +49,16 @@ public struct ActivitySummary: Sendable, Equatable {
     paceDistanceMeters > 0 ? paceMovingSeconds / paceDistanceMeters * 1000 : nil
   }
 
-  mutating func add(_ run: RunData) {
+  public var elevationGainMeters: Double? {
+    runCount > 0 && missingElevationCount == runCount ? nil : knownElevationMeters
+  }
+  public var movingTimeSeconds: Double? {
+    runCount > 0 && missingTimeCount == runCount ? nil : movingSeconds
+  }
+  mutating func add(_ run: RunData, elevation: Double?) {
     runCount += 1
+    if let elevation { knownElevationMeters += elevation } else { missingElevationCount += 1 }
+    if !run.duration.isFinite || run.duration <= 0 || run.end <= run.start { missingTimeCount += 1 }
     // Use the same duration rule as RunCalculator.metrics without processing GPS/samples.
     let moving =
       run.duration.isFinite
@@ -99,8 +110,14 @@ public struct ActivityStatistics: Sendable {
   public let now: Date
   public let calendar: Calendar
   private let runs: [RunData]
+  private let metrics: [UUID: MeasuredMetrics]
 
-  public init(runs: [RunData], now: Date = Date(), calendar: Calendar = .current) {
+  public init(
+    runs: [RunData], now: Date = Date(), calendar: Calendar = .current,
+    metrics: [UUID: MeasuredMetrics]? = nil
+  ) {
+    self.metrics =
+      metrics ?? Dictionary(uniqueKeysWithValues: runs.map { ($0.id, RunCalculator.metrics($0)) })
     self.now = now
     self.calendar = calendar
     self.runs = runs.filter { $0.start <= now && $0.end <= now && $0.end >= $0.start }
@@ -110,22 +127,35 @@ public struct ActivityStatistics: Sendable {
     var result = ActivitySummary()
     // Half-open boundaries assign a workout to exactly one period by its start time.
     for run in runs where run.start >= interval.start && run.start < interval.end {
-      result.add(run)
+      result.add(run, elevation: metrics[run.id]?.elevationGainMeters)
     }
     return result
   }
 
   public func buckets(for range: ActivityRange) -> [ActivityBucket] {
-    let interval = range.interval(now: now, calendar: calendar)
+    buckets(in: range.interval(now: now, calendar: calendar), component: range.bucketComponent)
+  }
+  public func runIDs(in interval: DateInterval) -> [UUID] {
+    runs.filter { $0.start >= interval.start && $0.start < interval.end }.map(\.id)
+  }
+  public func buckets(in interval: DateInterval, component: Calendar.Component) -> [ActivityBucket]
+  {
+    let until = min(now, interval.end)
+    guard interval.start <= until else { return [] }
     var date = interval.start
     var result: [ActivityBucket] = []
     repeat {
-      let end = calendar.date(byAdding: range.bucketComponent, value: 1, to: date)!
-      let bucket = DateInterval(start: date, end: end)
+      guard let boundary = calendar.dateInterval(of: component, for: date)?.end, boundary > date
+      else { break }
+      let bucket = DateInterval(start: date, end: min(boundary, until))
       result.append(ActivityBucket(interval: bucket, summary: summary(in: bucket)))
-      date = end
-    } while date <= now
+      date = boundary
+    } while date < until
     return result
+  }
+  public func customBucketComponent(in interval: DateInterval) -> Calendar.Component {
+    let days = calendar.dateComponents([.day], from: interval.start, to: interval.end).day ?? 0
+    return days <= 31 ? .day : days <= 180 ? .weekOfYear : .month
   }
 
   public func period(_ component: Calendar.Component, previous: Bool = false) -> DateInterval {

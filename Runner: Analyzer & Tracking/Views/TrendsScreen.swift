@@ -6,7 +6,11 @@ struct TrendsScreen: View {
   var rows: [RecordedRun]
   var measurements: [HealthMeasurement]
   var units: UnitSystem
-  private var runs: [RunData] { rows.compactMap(\.run) }
+  @EnvironmentObject private var analytics: AnalyticsStore
+  @State private var kind = "HKQuantityTypeIdentifierVO2Max"
+  @State private var selectedDate: Date?
+  @State private var drilldown: RunDrilldown?
+  private var runs: [RunData] { analytics.snapshot.runs }
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 22) {
@@ -33,9 +37,7 @@ struct TrendsScreen: View {
             SectionTitle(
               title: "Cardiovascular endurance",
               subtitle: "Comparable runs, recorded VO₂ max, and recovery")
-            if let latest = runs.first {
-              let baseline = HistoricalBaseline.make(
-                for: latest, history: runs, vo2: [], recovery: [])
+            if let baseline = analytics.snapshot.baseline {
               if let change = baseline.paceChangePercent {
                 Text(
                   "\(abs(change).formatted(.number.precision(.fractionLength(1))))% \(change<0 ? "faster":"slower") pace"
@@ -55,17 +57,33 @@ struct TrendsScreen: View {
             }
           }
         }
+        Picker("Measurement trend", selection: $kind) {
+          Text("VO₂ max").tag("HKQuantityTypeIdentifierVO2Max")
+          Text("Recovery").tag("HKQuantityTypeIdentifierHeartRateRecoveryOneMinute")
+        }.pickerStyle(.segmented).onChange(of: kind) { _, _ in selectedDate = nil }
         measurementCard(
-          kind: "HKQuantityTypeIdentifierVO2Max", title: "Recorded VO₂ max", unit: "mL/kg/min",
-          symbol: "lungs")
-        measurementCard(
-          kind: "HKQuantityTypeIdentifierHeartRateRecoveryOneMinute", title: "Heart-rate recovery",
-          unit: "bpm after one minute", symbol: "heart")
+          kind: kind, title: kind.contains("VO2") ? "Recorded VO₂ max" : "Heart-rate recovery",
+          unit: kind.contains("VO2") ? "mL/kg/min" : "bpm after one minute",
+          symbol: kind.contains("VO2") ? "lungs" : "heart")
+        Button("Runs in distance trend") {
+          drilldown = RunDrilldown(
+            title: "Recent runs",
+            runIDs: Array(runs.filter { $0.distanceMeters != nil }.prefix(20).map(\.id)))
+        }.accessibilityIdentifier("trends.runs")
+        if !analytics.snapshot.baselineRunIDs.isEmpty {
+          Button("Runs in endurance baseline") {
+            drilldown = RunDrilldown(
+              title: "Comparable runs", runIDs: analytics.snapshot.baselineRunIDs)
+          }.accessibilityIdentifier("trends.baselineRuns")
+        }
         Text(
           "These are fitness trends, not a medical assessment. Runner does not estimate missing VO₂ max or recovery values."
         ).font(.footnote).foregroundStyle(RunnerStyle.muted)
       }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).navigationTitle("Trends")
+      .sheet(item: $drilldown) {
+        RunExplorer(selection: $0, rows: rows, measurements: measurements, units: units)
+      }
   }
   private func measurementCard(kind: String, title: String, unit: String, symbol: String)
     -> some View
@@ -86,7 +104,25 @@ struct TrendsScreen: View {
                 .foregroundStyle(RunnerStyle.blue)
               PointMark(x: .value("Date", value.date), y: .value(title, value.value))
                 .foregroundStyle(RunnerStyle.blue)
-            }.frame(height: 140)
+            }.chartXSelection(value: $selectedDate).frame(height: 140)
+          }
+          if let selectedDate,
+            let measurement = values.min(by: {
+              abs($0.date.timeIntervalSince(selectedDate))
+                < abs($1.date.timeIntervalSince(selectedDate))
+            })
+          {
+            Text(
+              "\(measurement.date.formatted(date: .abbreviated, time: .omitted)): \(measurement.value.formatted(.number.precision(.fractionLength(1)))) \(unit)"
+            ).accessibilityIdentifier("trends.selection")
+          }
+          DisclosureGroup("Recorded measurements") {
+            ForEach(values) { value in
+              Button(
+                "\(value.date.formatted(date: .abbreviated, time: .omitted)) · \(value.value.formatted(.number.precision(.fractionLength(1))))"
+              ) { selectedDate = value.date }.accessibilityIdentifier(
+                "trends.measurement.\(value.id.uuidString)")
+            }
           }
         } else {
           Text("No recorded measurement available.").font(.subheadline).foregroundStyle(

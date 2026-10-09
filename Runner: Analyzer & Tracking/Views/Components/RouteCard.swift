@@ -11,6 +11,7 @@ struct RouteCard: View {
   var run: RunData
   var units: UnitSystem
   @Binding var selection: Date?
+  var selectedInterval: DateInterval? = nil
   @State private var mode = "Pace"
   private var segments: [[RoutePoint]] { RunCalculator.routeSegments(run) }
   private var chunks: [ColoredRoute] {
@@ -55,7 +56,8 @@ struct RouteCard: View {
     Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Your route", subtitle: "\(mode) along the run · GPS sharing is optional in Settings")
+          title: "Your route",
+          subtitle: "\(mode) along the run · GPS sharing is optional in Settings")
         Picker("Route color", selection: $mode) {
           Text("Pace").tag("Pace")
           Text("Heart rate").tag("Heart rate")
@@ -68,8 +70,13 @@ struct RouteCard: View {
                   CLLocationCoordinate2D(latitude: $0.latitude, longitude: $0.longitude)
                 }
               ).stroke(
-                color(chunk.value, range: range),
-                style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                selectedInterval.map { interval in
+                  chunk.points.contains {
+                    $0.timestamp >= interval.start && $0.timestamp <= interval.end
+                  }
+                } == true ? RunnerStyle.blue : color(chunk.value, range: range),
+                style: StrokeStyle(
+                  lineWidth: selectedInterval == nil ? 5 : 7, lineCap: .round, lineJoin: .round))
             }
             if let point = segments.first?.first {
               Annotation(
@@ -97,7 +104,8 @@ struct RouteCard: View {
               let point = segments.flatMap({ $0 }).min(by: {
                 abs($0.timestamp.timeIntervalSince(selection))
                   < abs($1.timestamp.timeIntervalSince(selection))
-              })
+              }), abs(point.timestamp.timeIntervalSince(selection)) <= 20,
+              !run.pauses.contains(where: { selection >= $0.start && selection < $0.end })
             {
               Annotation(
                 "Selected",
@@ -152,7 +160,7 @@ struct DensityMap: View {
   @State private var days = 30
   private var cells: [DensityCell] {
     RouteDensity.cells(
-      runs: runs.filter { $0.start > Date().addingTimeInterval(-Double(days) * 86400) })
+      runs: runs.filter { $0.start > AppRuntime.now.addingTimeInterval(-Double(days) * 86400) })
   }
   var body: some View {
     let cells = cells

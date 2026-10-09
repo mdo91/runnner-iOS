@@ -59,16 +59,22 @@ public enum RunCalculator {
       paces.count >= 3 && mean > 0
       ? sqrt(paces.reduce(0) { $0 + pow($1 - mean, 2) } / Double(paces.count)) / mean : nil
     var gain = 0.0
-    var validAltitude = 0
+    var validAltitudePairs = 0
     for segment in routeSegments(run) {
       var previous: Double?
-      for point in segment where point.verticalAccuracy >= 0 && point.verticalAccuracy <= 10 {
+      for point in segment {
+        guard point.altitude.isFinite, point.verticalAccuracy.isFinite, point.verticalAccuracy >= 0,
+          point.verticalAccuracy <= 10
+        else {
+          previous = nil
+          continue
+        }
+        if previous != nil { validAltitudePairs += 1 }
         if let last = previous, abs(point.altitude - last) >= 3 {
           gain += max(0, point.altitude - last)
           previous = point.altitude
         }
         if previous == nil { previous = point.altitude }
-        validAltitude += 1
       }
     }
     let distance = run.distanceMeters.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil }
@@ -78,7 +84,7 @@ public enum RunCalculator {
       averageHeartRate: hr.average,
       maxHeartRate: hr.max,
       activeEnergyKcal: run.activeEnergyKcal.flatMap { $0.isFinite && $0 >= 0 ? $0 : nil },
-      elevationGainMeters: validAltitude > 1 ? gain : nil,
+      elevationGainMeters: validAltitudePairs > 0 ? gain : nil,
       pacingCoefficientOfVariation: cv, heartRateCoverage: hr.coverage)
   }
   public static func splits(_ run: RunData, length: Double = 1000) -> [Split] {

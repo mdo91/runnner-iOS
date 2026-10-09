@@ -17,22 +17,15 @@ public struct HistoricalBaseline: Codable, Sendable {
   public var previousVo2Max: DatedMeasurement?
   public var recoveryBpm: DatedMeasurement?
   public static func make(
-    for run: RunData, history: [RunData], vo2: [DatedMeasurement], recovery: [DatedMeasurement]
+    for run: RunData, history: [RunData], vo2: [DatedMeasurement], recovery: [DatedMeasurement],
+    metricsByRun: [UUID: MeasuredMetrics]? = nil
   ) -> HistoricalBaseline {
-    let metrics = RunCalculator.metrics(run)
-    let matches = history.filter { other in
-      guard other.id != run.id, other.end < run.start, other.indoor == run.indoor,
-        run.start.timeIntervalSince(other.start) < 90 * 86400,
-        let distance = run.distanceMeters, let otherDistance = other.distanceMeters,
-        let currentHR = metrics.averageHeartRate
-      else { return false }
-      let m = RunCalculator.metrics(other)
-      guard let hr = m.averageHeartRate, m.heartRateCoverage >= 0.5,
-        metrics.heartRateCoverage >= 0.5
-      else { return false }
-      return abs(otherDistance - distance) <= distance * 0.2 && abs(hr - currentHR) <= 10
-    }
-    let values = matches.map(RunCalculator.metrics)
+    let measured =
+      metricsByRun
+      ?? Dictionary(uniqueKeysWithValues: history.map { ($0.id, RunCalculator.metrics($0)) })
+    let metrics = measured[run.id] ?? RunCalculator.metrics(run)
+    let matches = comparableRuns(for: run, history: history, measured: measured)
+    let values = matches.map { measured[$0.id] ?? RunCalculator.metrics($0) }
     let paces = values.compactMap(\.averagePaceSecondsPerKm)
     let heartRates = values.compactMap(\.averageHeartRate)
     let pace = paces.isEmpty ? nil : paces.reduce(0, +) / Double(paces.count)
@@ -50,6 +43,23 @@ public struct HistoricalBaseline: Codable, Sendable {
       recoveryBpm: recovery.filter { $0.measuredAt <= run.end.addingTimeInterval(300) }.max {
         $0.measuredAt < $1.measuredAt
       })
+  }
+  public static func comparableRuns(
+    for run: RunData, history: [RunData], measured: [UUID: MeasuredMetrics]
+  ) -> [RunData] {
+    let metrics = measured[run.id] ?? RunCalculator.metrics(run)
+    return history.filter { other in
+      guard other.id != run.id, other.end < run.start, other.indoor == run.indoor,
+        run.start.timeIntervalSince(other.start) < 90 * 86400,
+        let distance = run.distanceMeters, let otherDistance = other.distanceMeters,
+        let currentHR = metrics.averageHeartRate
+      else { return false }
+      let m = measured[other.id] ?? RunCalculator.metrics(other)
+      guard let hr = m.averageHeartRate, m.heartRateCoverage >= 0.5,
+        metrics.heartRateCoverage >= 0.5
+      else { return false }
+      return abs(otherDistance - distance) <= distance * 0.2 && abs(hr - currentHR) <= 10
+    }
   }
   // Explicit nulls keep the wire contract independent of Swift's optional omission behavior.
   public func encode(to encoder: Encoder) throws {
