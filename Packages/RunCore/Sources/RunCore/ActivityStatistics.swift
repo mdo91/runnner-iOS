@@ -29,6 +29,24 @@ public enum ActivityRange: String, CaseIterable, Sendable {
   }
 }
 
+/// Date pickers show an inclusive final day; analytics queries use half-open intervals.
+public enum ActivityDateRange {
+  public static func inclusiveEnd(of interval: DateInterval) -> Date {
+    max(interval.start, interval.end.addingTimeInterval(-1))
+  }
+
+  public static func interval(
+    from start: Date, through end: Date, now: Date, calendar: Calendar
+  ) -> DateInterval? {
+    let first = calendar.startOfDay(for: start)
+    let last = calendar.startOfDay(for: end)
+    guard last >= first, first <= now,
+      let boundary = calendar.date(byAdding: .day, value: 1, to: last)
+    else { return nil }
+    return DateInterval(start: first, end: min(now, boundary))
+  }
+}
+
 public struct ActivitySummary: Sendable, Equatable {
   public var runCount = 0
   public var missingDistanceCount = 0

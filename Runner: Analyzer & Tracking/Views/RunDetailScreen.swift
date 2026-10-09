@@ -15,6 +15,7 @@ struct RunDetailScreen: View {
   var measurements: [HealthMeasurement]
   var units: UnitSystem
   var latest = false
+  @Query private var allRows: [RecordedRun]
   @EnvironmentObject private var analytics: AnalyticsStore
   @State private var selection: Date?
   @State private var selectedSplit: DateInterval?
@@ -78,6 +79,7 @@ struct RunDetailScreen: View {
           }
         }
         RunCharts(run: run, units: units, selection: $selection)
+        RouteComparisons(run: run, rows: allRows, measurements: measurements, units: units)
         splitSection
         assessment(metrics)
         HStack(alignment: .top, spacing: 8) {
@@ -87,6 +89,13 @@ struct RunDetailScreen: View {
         if let status = health.status { Text(status).font(.footnote).foregroundStyle(.orange) }
       }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).refreshable { await health.sync() }
+      .onChange(of: selection) { _, date in
+        if let interval = selectedSplit,
+          date.map({ $0 < interval.start || $0 > interval.end }) ?? true
+        {
+          selectedSplit = nil
+        }
+      }
       .navigationTitle(latest ? "Latest Run" : "Run Details").navigationBarTitleDisplayMode(
         latest ? .large : .inline)
   }
@@ -197,6 +206,7 @@ struct RunDetailScreen: View {
                 maxWidth: .infinity)
             }
           }.buttonStyle(.bordered).disabled(analysis.working.contains(row.id))
+            .accessibilityIdentifier("run.analyze")
         }
         if let message = analysis.messages[row.id] {
           Text(message).font(.footnote).foregroundStyle(RunnerStyle.muted)

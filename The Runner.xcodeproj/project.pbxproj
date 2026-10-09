@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        B26100000000000000000001 /* AnalyticsStore.swift in test Sources */ = {isa = PBXBuildFile; fileRef = B26100000000000000000002 /* AnalyticsStore.swift */; };
 		A941C562451F4B80A7BDEA11 /* DashboardBrowser.swift in test Sources */ = {isa = PBXBuildFile; fileRef = A941C562451F4B80A7BDEA12 /* DashboardBrowser.swift */; };
 		A941C562451F4B80A7BDEA13 /* DashboardConnectionModel.swift in test Sources */ = {isa = PBXBuildFile; fileRef = A941C562451F4B80A7BDEA14 /* DashboardConnectionModel.swift */; };
 		8D6C22D6B3A44E7B8B40C901 /* RecordedRun.swift in test Sources */ = {isa = PBXBuildFile; fileRef = 3B9302AC9D1B4C2DA0C90212 /* RecordedRun.swift */; };
@@ -44,6 +45,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        B26100000000000000000002 /* AnalyticsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Managers/AnalyticsStore.swift"; sourceTree = SOURCE_ROOT; };
 		A941C562451F4B80A7BDEA12 /* DashboardBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Models/DashboardBrowser.swift"; sourceTree = SOURCE_ROOT; };
 		A941C562451F4B80A7BDEA14 /* DashboardConnectionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Managers/DashboardConnectionModel.swift"; sourceTree = SOURCE_ROOT; };
 		3B9302AC9D1B4C2DA0C90212 /* RecordedRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Models/RecordedRun.swift"; sourceTree = SOURCE_ROOT; };
@@ -108,6 +110,7 @@
 			children = (
 				A941C562451F4B80A7BDEA12 /* DashboardBrowser.swift */,
 				A941C562451F4B80A7BDEA14 /* DashboardConnectionModel.swift */,
+                B26100000000000000000002 /* AnalyticsStore.swift */,
 			);
 			name = "Shared Test Sources";
 			sourceTree = "<group>";
@@ -296,6 +299,7 @@
 			files = (
 				A941C562451F4B80A7BDEA11 /* DashboardBrowser.swift in test Sources */,
 				A941C562451F4B80A7BDEA13 /* DashboardConnectionModel.swift in test Sources */,
+                B26100000000000000000001 /* AnalyticsStore.swift in test Sources */,
 				8D6C22D6B3A44E7B8B40C901 /* RecordedRun.swift in test Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -40,6 +40,7 @@ private struct ActivityContent: View {
             title: "Every run adds up",
             subtitle: "Your running volume and progress over time.")
           activityChart(statistics)
+          GoalsSection(statistics: statistics, units: units)
           TrainingCalendar(statistics: statistics, metric: metric, units: units) { drilldown = $0 }
           SectionTitle(
             title: "Performance",
@@ -76,14 +77,14 @@ private struct ActivityContent: View {
           )
           .font(.footnote).foregroundStyle(RunnerStyle.muted)
         }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
-      }
+      }.scrollEdgeEffectHidden(true, for: .bottom)
     }
     .background(RunnerStyle.background).navigationTitle("Activity")
     .sheet(isPresented: $dates) {
       CustomDates(
         start: customInterval?.start
           ?? AppRuntime.calendar.dateInterval(of: .month, for: AppRuntime.now)!.start,
-        end: customInterval?.end ?? AppRuntime.now
+        end: customInterval.map { ActivityDateRange.inclusiveEnd(of: $0) } ?? AppRuntime.now
       ) {
         customInterval = $0
         selectedDate = nil
@@ -117,14 +118,22 @@ private struct ActivityContent: View {
             ForEach(ActivityRange.allCases, id: \.self) { Text($0.title).tag($0) }
           }.pickerStyle(.menu)
           Picker("Chart metric", selection: $metric) {
-            ForEach(ActivityMetric.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            ForEach(ActivityMetric.allCases, id: \.self) {
+              Text($0 == .movingTime ? "Time" : $0 == .elevation ? "Elevation" : $0.rawValue).tag(
+                $0
+              ).accessibilityLabel($0.rawValue)
+            }
           }.pickerStyle(.menu)
         } else {
           Picker("Time period", selection: $range) {
             ForEach(ActivityRange.allCases, id: \.self) { Text($0.title).tag($0) }
           }.pickerStyle(.segmented)
           Picker("Chart metric", selection: $metric) {
-            ForEach(ActivityMetric.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            ForEach(ActivityMetric.allCases, id: \.self) {
+              Text($0 == .movingTime ? "Time" : $0 == .elevation ? "Elevation" : $0.rawValue).tag(
+                $0
+              ).accessibilityLabel($0.rawValue)
+            }
           }.pickerStyle(.segmented)
         }
         HStack {

@@ -6,6 +6,7 @@ import SwiftUI
 @main struct RunnerAnalyzerTrackingApp: App {
   @StateObject private var health = HealthKitManager()
   @StateObject private var account: AccountManager
+  @StateObject private var training = TrainingSettings()
   @StateObject private var analysis = AnalysisManager()
   @StateObject private var live = PhoneWorkoutManager()
   @StateObject private var historySync = HistorySyncManager()
@@ -59,7 +60,7 @@ import SwiftUI
   var body: some Scene {
     WindowGroup {
       ContentView().environmentObject(health).environmentObject(account).environmentObject(analysis)
-        .environmentObject(live).environmentObject(historySync)
+        .environmentObject(live).environmentObject(historySync).environmentObject(training)
         .defaultAppStorage(AppRuntime.defaults)
         .environment(\.calendar, AppRuntime.calendar)
         .environment(\.timeZone, AppRuntime.calendar.timeZone)

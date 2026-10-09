@@ -2,6 +2,7 @@ import Foundation
 
 public protocol RunAnalyticsServicing: Sendable {
   func snapshot(payloads: [Data]) async -> RunAnalyticsSnapshot
+  func trainingLoad(runs: [RunData], zones: HeartRateZones) async -> TrainingLoad
   func series(run: RunData) async -> [RunSeriesMetric: RunSeries]
 }
 
@@ -42,6 +43,9 @@ public actor CachedRunAnalyticsService: RunAnalyticsServicing {
     previousPayloads = payloads
     previousSnapshot = RunAnalyticsSnapshot(runs: runs, metrics: metrics)
     return previousSnapshot
+  }
+  public func trainingLoad(runs: [RunData], zones: HeartRateZones) -> TrainingLoad {
+    TrainingLoad(runs: runs, zones: zones)
   }
   public func series(run: RunData) -> [RunSeriesMetric: RunSeries] {
     if let cached = charts[run.id], RunRevision.hasSameAnalysisData(cached.run, run) {

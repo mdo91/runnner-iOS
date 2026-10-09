@@ -6,7 +6,7 @@ This audit covers private running data visualization. Social feeds, leaderboards
 
 Runner imports Apple Health workouts, distance, heart rate, GPS, power, and running-form measurements. It already provides run totals, moving/elapsed time, splits, colored routes, route-density maps, current-period volume, matched-period comparisons, dated VO₂ max, heart-rate recovery, and comparisons with runs of similar distance/effort. These work from recorded measurements; missing values remain unavailable.
 
-## Staged additions
+## Implemented additions
 
 1. iOS 26: adaptive light/dark surfaces, native Liquid Glass navigation and actions, compact period summaries, accessible layouts, and automated simulator UI-test infrastructure.
 2. Exploration: time/elevation volume, custom ranges, calendar views, chart-to-run navigation, history filters, linked pace/elevation/power/form charts and split selections.
@@ -14,7 +14,7 @@ Runner imports Apple Health workouts, distance, heart rate, GPS, power, and runn
 
 Strava's [Training Log](https://support.strava.com/en-us/articles/15402077-training-log) emphasizes a visual weekly history with distance/time/elevation filters. Its [Progress Summary](https://support.strava.com/en-us/articles/15401618-progress-summary-chart) offers custom ranges and totals. Runner's calendar and drill-down views address the same need using imported running data.
 
-Strava's [run analysis](https://support.strava.com/en-us/articles/15401883-run-activity-pages) connects splits, maps, elevation, pace, and heart-rate analysis. Runner's linked selection will make its already-imported samples easier to explore.
+Strava's [run analysis](https://support.strava.com/en-us/articles/15401883-run-activity-pages) connects splits, maps, elevation, pace, and heart-rate analysis. Runner's linked selection makes its already-imported samples easier to explore.
 
 Strava offers [goals](https://support.strava.com/en-us/articles/15401694-goals-on-the-strava-app), [Best Efforts](https://support.strava.com/hc/en-us/articles/19685360245005-Best-Efforts-Overview), [matched activities](https://support.strava.com/en-us/articles/15401955-how-do-i-view-my-matched-activities), and [training zones](https://support.strava.com/en-us/articles/15401569-training-zones-on-strava). Runner's new equivalents are local, running-specific, and expose data coverage and calculation assumptions.
 

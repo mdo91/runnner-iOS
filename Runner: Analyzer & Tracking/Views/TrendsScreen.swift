@@ -76,6 +76,8 @@ struct TrendsScreen: View {
               title: "Comparable runs", runIDs: analytics.snapshot.baselineRunIDs)
           }.accessibilityIdentifier("trends.baselineRuns")
         }
+        PerformanceInsights(
+          snapshot: analytics.snapshot, rows: rows, measurements: measurements, units: units)
         Text(
           "These are fitness trends, not a medical assessment. Runner does not estimate missing VO₂ max or recovery values."
         ).font(.footnote).foregroundStyle(RunnerStyle.muted)

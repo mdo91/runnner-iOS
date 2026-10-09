@@ -44,7 +44,8 @@
           id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", index + 1))!,
           start: start, end: start.addingTimeInterval(active + pauseSeconds), duration: active,
           distanceMeters: partial && index == 0 ? nil : 5000, activeEnergyKcal: 382 + Double(index),
-          source: "Fixture Apple Watch", indoor: indoor,
+          source: AppRuntime.scenario == "mixed-source" && index.isMultiple(of: 3)
+            ? "Fixture Garmin" : "Fixture Apple Watch", indoor: indoor,
           heartRate: partial && index < 2 ? [] : heart,
           distances: partial && index == 0 ? [] : distances,
           pauses: paused

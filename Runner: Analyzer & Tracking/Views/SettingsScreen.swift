@@ -18,6 +18,7 @@ struct SettingsScreen: View {
   @State private var pace = ""
   @State private var targetError: String?
   @State private var deleteAccount = false
+  @EnvironmentObject private var training: TrainingSettings
   @State private var clearLocal = false
   @State private var clearCloud = false
   @State private var connectDashboard = false
@@ -25,20 +26,24 @@ struct SettingsScreen: View {
   var body: some View {
     NavigationStack {
       Form {
-        Section("Apple Health") {
+        Section {
           Text(
             "Workouts, heart rate, GPS routes, and running measurements are stored on this device. Runner can import runs recorded by Apple Workout and other Watch apps."
           ).font(.subheadline)
           Button("Review Health access") { Task { await health.requestAccess() } }
           Text(
             "Apple does not reveal which read permissions you granted. Empty results can mean no data, disabled access, or a pending Watch sync."
-          ).font(.caption).foregroundStyle(.secondary)
+          ).font(.caption).foregroundStyle(RunnerStyle.muted)
+        } header: {
+          Text("Apple Health").foregroundStyle(RunnerStyle.muted)
         }
-        Section("Display") {
+        Section {
           Picker("Units", selection: $units) {
-            Text("Kilometers").tag("metric")
-            Text("Miles").tag("imperial")
+            Text("Kilometers").foregroundStyle(RunnerStyle.muted).tag("metric")
+            Text("Miles").foregroundStyle(RunnerStyle.muted).tag("imperial")
           }
+        } header: {
+          Text("Display").foregroundStyle(RunnerStyle.muted)
         }
         Section {
           TextField("Lower heart rate (bpm)", text: $lower).keyboardType(.numberPad)
@@ -48,7 +53,7 @@ struct SettingsScreen: View {
           Button("Save targets") { saveTargets() }
           if let targetError { Text(targetError).foregroundStyle(.orange) }
         } header: {
-          Text("Your live targets")
+          Text("Your live targets").foregroundStyle(RunnerStyle.muted)
         } footer: {
           Text(
             "Targets are optional. Without your settings, Runner shows measurements without assigning heart-rate zones. Cues appear on screen; haptics are optional."
@@ -63,19 +68,21 @@ struct SettingsScreen: View {
             SignInWithAppleButton(
               .signIn, onRequest: { account.prepare($0) },
               onCompletion: { result in Task { await account.finish(result) } }
-            ).signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black).frame(height: 48).disabled(
-              !AccountManager.configured)
+            ).signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black).frame(height: 48)
+              .disabled(
+                !AccountManager.configured)
           }
           Toggle("I am 18 or older", isOn: $account.adultConfirmed).onChange(
             of: account.adultConfirmed
           ) { _, value in
             AppRuntime.defaults.set(value, forKey: "adultConfirmed")
             if !value { account.setConsent(false) }
-          }
+          }.accessibilityIdentifier("settings.adult")
           Toggle(
             "Allow AI analysis",
             isOn: Binding(get: { account.consent }, set: { account.setConsent($0) })
           ).disabled(!account.signedIn || !account.adultConfirmed)
+            .accessibilityIdentifier("settings.aiConsent")
           Text(
             "With your permission, Runner sends numerical run summaries, splits, data-quality flags, and a compact historical baseline to Runner’s backend and Google Gemini to provide fitness coaching. Precise GPS routes, names, email addresses, and raw HealthKit samples are excluded."
           ).font(.footnote)
@@ -84,7 +91,7 @@ struct SettingsScreen: View {
           ).font(.footnote)
           Text(
             "Limits: 3 completed runs and 24 live updates per day. Live AI updates are at least five minutes apart. Measured stats and local Watch coaching work without AI."
-          ).font(.caption).foregroundStyle(.secondary)
+          ).font(.caption).foregroundStyle(RunnerStyle.muted)
           if let message = account.message { Text(message).font(.footnote) }
         } header: {
           Text("Private by choice")
@@ -94,35 +101,69 @@ struct SettingsScreen: View {
           )
         }
         Section {
-          Toggle("Sync running history",isOn:Binding(get:{ historySync.enabled },set:{ value in
-            Task { await historySync.configure(enabled:value,gps:value && historySync.gpsEnabled) }
-          })).disabled(!account.signedIn || historySync.changingConsent)
-          Text("With your consent, Runner stores your running history, measured stats, splits, chart summaries, dated VO₂ max and recovery measurements, and saved AI reports in your private backend account. Synced history stays until you delete it; it does not expire after 24 hours.").font(.footnote)
-          Toggle("Also sync precise GPS routes",isOn:Binding(get:{ historySync.gpsEnabled },set:{ value in
-            Task { await historySync.configure(enabled:historySync.enabled,gps:value) }
-          })).disabled(!account.signedIn || !historySync.enabled || historySync.changingConsent)
-          Text("GPS sharing is a separate choice. Routes reveal where you run. They are stored in your account for dashboard maps and are never sent to Gemini. Turning this off deletes uploaded coordinates across your account. If offline, removal finishes when this phone reconnects.").font(.footnote)
+          Toggle(
+            "Sync running history",
+            isOn: Binding(
+              get: { historySync.enabled },
+              set: { value in
+                Task {
+                  await historySync.configure(enabled: value, gps: value && historySync.gpsEnabled)
+                }
+              })
+          ).disabled(!account.signedIn || historySync.changingConsent)
+          Text(
+            "With your consent, Runner stores your running history, measured stats, splits, chart summaries, dated VO₂ max and recovery measurements, and saved AI reports in your private backend account. Synced history stays until you delete it; it does not expire after 24 hours."
+          ).font(.footnote)
+          Toggle(
+            "Also sync precise GPS routes",
+            isOn: Binding(
+              get: { historySync.gpsEnabled },
+              set: { value in
+                Task { await historySync.configure(enabled: historySync.enabled, gps: value) }
+              })
+          ).disabled(!account.signedIn || !historySync.enabled || historySync.changingConsent)
+          Text(
+            "GPS sharing is a separate choice. Routes reveal where you run. They are stored in your account for dashboard maps and are never sent to Gemini. Turning this off deletes uploaded coordinates across your account. If offline, removal finishes when this phone reconnects."
+          ).font(.footnote)
           if historySync.isSyncing || historySync.changingConsent { ProgressView() }
-          if let message = historySync.message { Text(message).font(.caption).foregroundStyle(.secondary) }
-          Button("Sync now") { Task { await historySync.sync(context:context,account:account) } }
-            .disabled(!account.signedIn || !historySync.enabled || health.isSyncing || historySync.isSyncing || historySync.changingConsent)
-          Button("Connect dashboard") { connectDashboard = true }.disabled(!account.signedIn).accessibilityIdentifier("settings.dashboard")
-          if let url = dashboardService.dashboardURL { Link("Open dashboard",destination:url) }
-        } header: { Text("Cloud history") } footer: {
-          Text("Only runs available through Apple Health on this phone can be uploaded. Sign in with the same Runner Apple account on each phone. Consent version: October 3, 2026.")
-        }
-        Section("Your data") {
-          Button("Clear data from this device", role: .destructive) { clearLocal = true }.disabled(health.isSyncing || historySync.isSyncing)
-          if account.signedIn {
-            Button("Delete uploaded history",role:.destructive) { clearCloud = true }.disabled(historySync.changingConsent)
-            Button("Delete cloud account", role: .destructive) { deleteAccount = true }
+          if let message = historySync.message {
+            Text(message).font(.caption).foregroundStyle(RunnerStyle.muted)
           }
+          Button("Sync now") { Task { await historySync.sync(context: context, account: account) } }
+            .disabled(
+              !account.signedIn || !historySync.enabled || health.isSyncing || historySync.isSyncing
+                || historySync.changingConsent)
+          Button("Connect dashboard") { connectDashboard = true }.disabled(!account.signedIn)
+            .accessibilityIdentifier("settings.dashboard")
+          if let url = dashboardService.dashboardURL { Link("Open dashboard", destination: url) }
+        } header: {
+          Text("Cloud history")
+        } footer: {
+          Text(
+            "Only runs available through Apple Health on this phone can be uploaded. Sign in with the same Runner Apple account on each phone. Consent version: October 3, 2026."
+          )
         }
         Section {
-          Text("Runner 1.0 · Built for the long run").font(.caption).foregroundStyle(.secondary)
+          NavigationLink("Heart-rate zones") { ZoneEditor() }.accessibilityIdentifier(
+            "settings.zones")
+          Button("Clear data from this device", role: .destructive) { clearLocal = true }.disabled(
+            health.isSyncing || historySync.isSyncing)
+          if account.signedIn {
+            Button("Delete uploaded history", role: .destructive) { clearCloud = true }.disabled(
+              historySync.changingConsent).accessibilityIdentifier("settings.deleteCloudHistory")
+            Button("Delete cloud account", role: .destructive) { deleteAccount = true }
+          }
+        } header: {
+          Text("Your data").foregroundStyle(RunnerStyle.muted)
+        }
+        Section {
+          Text("Runner 1.0 · Built for the long run").font(.caption).foregroundStyle(
+            RunnerStyle.muted)
         }
       }.navigationTitle("Settings").toolbar {
-        ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() }.accessibilityIdentifier("settings.done") }
+        ToolbarItem(placement: .topBarTrailing) {
+          Button("Done") { dismiss() }.accessibilityIdentifier("settings.done")
+        }
       }
     }
     .onAppear {
@@ -144,6 +185,7 @@ struct SettingsScreen: View {
           try context.delete(model: CloudSyncCheckpoint.self)
           try context.delete(model: DeletedHealthRecord.self)
           try context.save()
+          training.clear()
           health.didRequestAccess = false
           AppRuntime.defaults.set(false, forKey: "healthRequested")
         } catch { targetError = "Local data could not be cleared." }
@@ -153,11 +195,17 @@ struct SettingsScreen: View {
         "This does not delete workouts from Apple Health. You can reconnect Health to import them again."
       )
     }
-    .sheet(isPresented:$connectDashboard) { DashboardConnectScreen(service: dashboardService) }
-    .confirmationDialog("Delete uploaded history and routes?",isPresented:$clearCloud,titleVisibility:.visible) {
-      Button("Delete uploaded history",role:.destructive) { Task { await historySync.clear(context:context) } }
+    .sheet(isPresented: $connectDashboard) { DashboardConnectScreen(service: dashboardService) }
+    .confirmationDialog(
+      "Delete uploaded history and routes?", isPresented: $clearCloud, titleVisibility: .visible
+    ) {
+      Button("Delete uploaded history", role: .destructive) {
+        Task { await historySync.clear(context: context) }
+      }.accessibilityIdentifier("settings.confirmDeleteCloudHistory")
     } message: {
-      Text("This removes dashboard history and routes from the database and disables history sync. Local workouts and Apple Health records remain. AI analysis cache and account access are removed separately by deleting your cloud account.")
+      Text(
+        "This removes dashboard history and routes from the database and disables history sync. Local workouts and Apple Health records remain. AI analysis cache and account access are removed separately by deleting your cloud account."
+      )
     }
     .sheet(isPresented: $deleteAccount) {
       VStack(spacing: 24) {

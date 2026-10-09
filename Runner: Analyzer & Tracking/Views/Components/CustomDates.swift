@@ -1,3 +1,4 @@
+import RunCore
 import SwiftUI
 
 struct CustomDates: View {
@@ -5,6 +6,10 @@ struct CustomDates: View {
   @State var start: Date
   @State var end: Date
   var apply: (DateInterval) -> Void
+  private var interval: DateInterval? {
+    ActivityDateRange.interval(
+      from: start, through: end, now: AppRuntime.now, calendar: AppRuntime.calendar)
+  }
   var body: some View {
     NavigationStack {
       Form {
@@ -12,7 +17,7 @@ struct CustomDates: View {
           .accessibilityIdentifier("activity.from")
         DatePicker("Through", selection: $end, in: ...AppRuntime.now, displayedComponents: .date)
           .accessibilityIdentifier("activity.through")
-        if end < start {
+        if interval == nil {
           Text("End date must be on or after the start date.").foregroundStyle(.red)
         }
         Text("Daily totals through 31 days, weekly through 180 days, monthly for longer ranges.")
@@ -21,14 +26,10 @@ struct CustomDates: View {
         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
           Button("Apply") {
-            let calendar = AppRuntime.calendar
-            let first = calendar.startOfDay(for: start)
-            let until = min(
-              AppRuntime.now,
-              calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: end))!)
-            apply(DateInterval(start: first, end: until))
+            guard let interval else { return }
+            apply(interval)
             dismiss()
-          }.disabled(end < start).accessibilityIdentifier("activity.applyDates")
+          }.disabled(interval == nil).accessibilityIdentifier("activity.applyDates")
         }
       }
     }

@@ -222,12 +222,16 @@ public struct RunAnalyticsSnapshot: Sendable {
   public let metrics: [UUID: MeasuredMetrics]
   public let baseline: HistoricalBaseline?
   public let baselineRunIDs: [UUID]
+  public let efforts: [BestEffort]
+  public let routeMatches: [RouteMatch]
   public init(runs: [RunData], metrics: [UUID: MeasuredMetrics]? = nil) {
     let ordered = runs.sorted { $0.start > $1.start }
     let measured =
       metrics ?? Dictionary(uniqueKeysWithValues: runs.map { ($0.id, RunCalculator.metrics($0)) })
     self.runs = ordered
     self.metrics = measured
+    efforts = ordered.flatMap { BestEfforts.make(run: $0) }
+    routeMatches = RepeatedRoutes.match(runs: ordered)
     baseline = ordered.first.map {
       HistoricalBaseline.make(
         for: $0, history: ordered, vo2: [], recovery: [], metricsByRun: measured)

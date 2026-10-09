@@ -14,6 +14,7 @@ struct APIClient {
     return url
   }
   static func request(path: String, method: String, body: Data? = nil, expectedUID: String? = nil) async throws -> Data {
+    guard !AppRuntime.isFixture else { throw APIError.notReady }
     guard let baseURL, let user = Auth.auth().currentUser else { throw APIError.notReady }
     let uid = user.uid
     guard expectedUID == nil || expectedUID == uid else { throw APIError.authentication }
@@ -95,6 +96,7 @@ struct APIClient {
     _ row: RecordedRun, history: [RunData], measurements: [HealthMeasurement],
     account: AccountManager, context: ModelContext, automatic: Bool = false
   ) async {
+    guard !AppRuntime.isFixture else { return }
     guard account.signedIn, account.consent, account.adultConfirmed, let run = row.run,
       !working.contains(row.id)
     else { return }

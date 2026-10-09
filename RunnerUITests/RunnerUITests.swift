@@ -6,7 +6,7 @@ import XCTest
   override func setUpWithError() throws { continueAfterFailure = false }
   override func tearDownWithError() throws {
     if let app {
-      let shot = XCTAttachment(screenshot: app.screenshot())
+      let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
       shot.name = name
       shot.lifetime = .keepAlways
       add(shot)
@@ -38,10 +38,15 @@ import XCTest
     for _ in 0..<limit {
       if element.exists && element.isHittable { return }
       let upwards = !element.exists || element.frame.midY >= app.frame.midY
-      app.coordinate(withNormalizedOffset: CGVector(dx: 0.96, dy: upwards ? 0.8 : 0.3)).press(
+      let edge = min(app.frame.width, app.frame.height) > 600 ? 0.98 : 0.92
+      app.coordinate(
+        withNormalizedOffset: CGVector(
+          dx: edge, dy: upwards ? (app.keyboards.firstMatch.exists ? 0.55 : 0.8) : 0.3)
+      ).press(
         forDuration: 0.05,
         thenDragTo: app.coordinate(
-          withNormalizedOffset: CGVector(dx: 0.96, dy: upwards ? 0.3 : 0.8)))
+          withNormalizedOffset: CGVector(
+            dx: edge, dy: upwards ? 0.3 : (app.keyboards.firstMatch.exists ? 0.55 : 0.8))))
     }
     XCTAssertTrue(element.exists && element.isHittable, "Could not reveal \(element)")
   }
@@ -84,8 +89,20 @@ import XCTest
     let rotated = NSPredicate { _, _ in self.app.frame.width > self.app.frame.height }
     expectation(for: rotated, evaluatedWith: app)
     waitForExpectations(timeout: 5)
-    add(XCTAttachment(screenshot: app.screenshot()))
+    reveal(app.buttons["activity.customDates"])
+    app.buttons["activity.customDates"].tap()
+    XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5))
+    app.buttons["Cancel"].tap()
+    let landscape = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+    landscape.name = "Dark large-text landscape"
+    landscape.lifetime = .keepAlways
+    add(landscape)
     XCUIDevice.shared.orientation = .portrait
+    let restored = NSPredicate { _, _ in self.app.frame.height > self.app.frame.width }
+    expectation(for: restored, evaluatedWith: app)
+    waitForExpectations(timeout: 5)
+    tab("Latest")
+    tab("Activity")
   }
   func testDashboardReviewAndApproval() {
     launch()
@@ -99,6 +116,30 @@ import XCTest
     XCTAssertTrue(app.staticTexts["Simulator Safari · Fixture browser"].exists)
     approve.tap()
     XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+  }
+  func testFixtureConsentAnalysisAndCloudDeleteStayIsolated() {
+    launch()
+    app.buttons["navigation.settings"].tap()
+    let adult = app.switches["settings.adult"]
+    reveal(adult)
+    adult.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+    XCTAssertEqual(adult.value as? String, "1")
+    let consent = app.switches["settings.aiConsent"]
+    reveal(consent)
+    XCTAssertTrue(consent.isEnabled)
+    consent.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+    XCTAssertEqual(consent.value as? String, "1")
+    reveal(app.buttons["settings.deleteCloudHistory"])
+    app.buttons["settings.deleteCloudHistory"].tap()
+    let confirm = app.buttons["settings.confirmDeleteCloudHistory"].firstMatch
+    XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+    confirm.tap()
+    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+    app.buttons["settings.done"].tap()
+    reveal(app.buttons["run.analyze"])
+    app.buttons["run.analyze"].tap()
+    tab("Activity")
+    XCTAssertEqual(app.staticTexts["activity.total"].label, "3 runs")
   }
   func testDashboardExpiryAndReviewRetry() {
     launch("dashboard-expired")
@@ -217,6 +258,154 @@ import XCTest
     XCTAssertTrue(app.staticTexts["run.unavailable"].waitForExistence(timeout: 5))
     XCTAssertTrue(app.staticTexts["run.unavailable"].label.contains("power"))
   }
+  func testGoalsCreateEditPersistAndDelete() {
+    launch()
+    tab("Activity")
+    reveal(app.buttons["goal.add"])
+    app.buttons["goal.add"].tap()
+    let target = app.textFields["goal.target"]
+    XCTAssertTrue(target.waitForExistence(timeout: 5))
+    target.tap()
+    target.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6))
+    XCTAssertFalse(app.buttons["goal.save"].isEnabled)
+    target.typeText("10\n")
+    XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+    reveal(app.buttons["goal.save"])
+    app.buttons["goal.save"].tap()
+    XCTAssertTrue(app.buttons["goal.save"].waitForNonExistence(timeout: 5))
+    let edit = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'goal.edit.'"))
+      .firstMatch
+    XCTAssertTrue(edit.waitForExistence(timeout: 5))
+    XCTAssertTrue(edit.label.contains("10.00 km"))
+    app.terminate()
+    launch()
+    tab("Activity")
+    let persisted = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'goal.edit.'"))
+      .firstMatch
+    reveal(persisted)
+    XCTAssertTrue(persisted.label.contains("10.00 km"))
+    persisted.tap()
+    let editTarget = app.textFields["goal.target"]
+    editTarget.tap()
+    editTarget.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + "15\n")
+    XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+    reveal(app.buttons["goal.save"])
+    app.buttons["goal.save"].tap()
+    XCTAssertTrue(persisted.label.contains("15.00 km"))
+    persisted.tap()
+    app.buttons["goal.delete"].tap()
+    XCTAssertFalse(
+      app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'goal.edit.'")).firstMatch
+        .exists)
+  }
+  func testZonesAndCompleteVersusIncompleteLoad() {
+    launch()
+    app.buttons["navigation.settings"].tap()
+    reveal(app.buttons["settings.zones"])
+    app.buttons["settings.zones"].tap()
+    XCTAssertFalse(app.buttons["zones.save"].isEnabled)
+    let maximum = app.textFields["zones.maximum"]
+    maximum.tap()
+    maximum.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "190")
+    app.buttons["zones.generate"].tap()
+    app.buttons["zones.keyboardDone"].tap()
+    reveal(app.buttons["zones.save"])
+    app.buttons["zones.save"].tap()
+    app.buttons["settings.done"].tap()
+    tab("Trends")
+    reveal(app.staticTexts["load.total.7"])
+    XCTAssertFalse(app.staticTexts["load.total.7"].label.contains("unavailable"))
+    XCTAssertTrue(app.otherElements["zones.total.3"].exists || app.staticTexts["Zone 3"].exists)
+    app.terminate()
+    launch("partial")
+    tab("Trends")
+    reveal(app.staticTexts["load.total.7"])
+    XCTAssertTrue(app.staticTexts["load.total.7"].label.contains("unavailable"))
+  }
+  func testBestEffortExclusionAndRepeatedRouteNavigation() {
+    launch("repeated-route")
+    tab("Trends")
+    reveal(app.staticTexts["bests.annual"])
+    XCTAssertEqual(app.staticTexts["bests.annual"].label, "2026 best: 25:00")
+    XCTAssertTrue(app.buttons["bests.year"].exists)
+    reveal(app.buttons["bests.rank.1"])
+    let original = app.buttons["bests.rank.1"].label
+    app.buttons["bests.exclude.1"].tap()
+    XCTAssertNotEqual(app.buttons["bests.rank.1"].label, original)
+    app.buttons["bests.restore"].tap()
+    XCTAssertEqual(app.buttons["bests.rank.1"].label, original)
+    app.buttons["bests.rank.1"].tap()
+    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 runs")
+    app.buttons["explorer.done"].tap()
+    tab("Latest")
+    reveal(app.buttons["route.runs"])
+    XCTAssertEqual(app.staticTexts["route.completions"].label, "9 completions")
+    app.buttons["route.runs"].tap()
+    XCTAssertTrue(app.staticTexts["explorer.count"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.staticTexts["explorer.count"].label, "9 runs")
+  }
+  func testAppOwnedScreenAccessibility() throws {
+    launch("empty")
+    for name in ["Latest", "History", "Trends", "Live"] {
+      tab(name)
+      try app.performAccessibilityAudit(for: [
+        .contrast, .textClipped, .sufficientElementDescription,
+      ]) { issue in
+        guard issue.auditType == .contrast, let element = issue.element else { return false }
+        let bar = self.app.tabBars.firstMatch
+        return bar.exists && bar.frame.minY > self.app.frame.midY
+          && element.frame.maxY > bar.frame.minY
+      }
+      let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+      image.name = name
+      image.lifetime = .keepAlways
+      add(image)
+    }
+    tab("Latest")
+    app.buttons["navigation.settings"].tap()
+    try app.performAccessibilityAudit(for: [.contrast, .textClipped, .sufficientElementDescription])
+    { issue in
+      return false
+    }
+  }
+  func testRecordedChartsAndDistanceAxes() {
+    launch()
+    reveal(app.buttons["run.metric"])
+    for metric in [
+      "Pace", "Heart rate", "Elevation", "Power", "Stride length", "Ground contact",
+      "Vertical oscillation",
+    ] {
+      app.buttons["run.metric"].tap()
+      app.collectionViews.buttons[metric].firstMatch.tap()
+      XCTAssertFalse(app.staticTexts["run.unavailable"].exists)
+      app.buttons["Distance"].tap()
+      reveal(app.buttons["run.samples"])
+      app.buttons["run.samples"].tap()
+      app.buttons["run.sample.0"].tap()
+      XCTAssertTrue(app.staticTexts["run.selection"].exists)
+      app.buttons["Elapsed time"].tap()
+      reveal(app.buttons["run.metric"])
+    }
+  }
+  func testHistorySourceAndDistanceFilters() {
+    launch("mixed-source")
+    tab("History")
+    reveal(app.buttons["history.source"])
+    app.buttons["history.source"].tap()
+    app.buttons["Fixture Garmin"].tap()
+    XCTAssertEqual(app.staticTexts["history.count"].label, "2 runs")
+    let minimum = app.textFields["history.minimum"]
+    minimum.tap()
+    minimum.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 5) + "6")
+    app.buttons["history.source"].tap()
+    app.buttons["Fixture Garmin"].tap()
+    XCTAssertEqual(app.staticTexts["history.count"].label, "0 runs")
+    app.buttons["history.reset"].tap()
+    XCTAssertEqual(app.staticTexts["history.count"].label, "6 runs")
+    app.buttons["history.customDates"].tap()
+    app.buttons["activity.applyDates"].tap()
+    XCTAssertEqual(app.staticTexts["history.count"].label, "6 runs")
+  }
   func testReducedMotionAndTransparency() throws {
     let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
     func navigate(_ section: String, toggle: String) -> XCUIElement {
@@ -257,7 +446,7 @@ import XCTest
     launch()
     tab("Activity")
     XCTAssertEqual(app.staticTexts["activity.total"].label, "3 runs")
-    let screenshot = XCTAttachment(screenshot: app.screenshot())
+    let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
     screenshot.name = "Reduced motion and transparency"
     screenshot.lifetime = .keepAlways
     add(screenshot)

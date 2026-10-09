@@ -73,7 +73,9 @@ struct ContentView: View {
     .task { live.onWorkoutSaved = { Task { await health.sync() } } }
     .onChange(of: automaticKey, initial: true) { _, _ in
       Task {
-        if !health.isSyncing, !analytics.loading, let row = rows.first {
+        if !health.isSyncing, analytics.isCurrent(payloads: rows.map(\.payload)),
+          let row = rows.first
+        {
           await analysis.analyze(
             row, history: analytics.snapshot.runs, measurements: measurements, account: account,
             context: context, automatic: true)
@@ -95,6 +97,6 @@ struct ContentView: View {
     "\(account.userID ?? "")-\(health.isSyncing)-\(historySync.changeCounter)-\(historySync.changingConsent)-\(rows.map { "\($0.id)-\($0.importedAt.timeIntervalSince1970)-\($0.reportData?.hashValue ?? 0)-\($0.routeDeleted)" }.joined())-\(measurements.count)-\(deletions.count)"
   }
   private var automaticKey: String {
-    "\(rows.first?.id.uuidString ?? "")-\(rows.first?.importedAt.timeIntervalSince1970 ?? 0)-\(account.signedIn)-\(account.consent)-\(health.isSyncing)-\(analytics.loading)"
+    "\(rows.first?.id.uuidString ?? "")-\(rows.first?.importedAt.timeIntervalSince1970 ?? 0)-\(account.signedIn)-\(account.consent)-\(health.isSyncing)-\(analytics.loading)-\(analytics.revision)"
   }
 }
