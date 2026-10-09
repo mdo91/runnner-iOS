@@ -53,8 +53,10 @@ import SwiftData
 
 @Model final class CloudSyncCheckpoint {
   @Attribute(.unique) var key: String
-  var hash: String
-  init(key: String, hash: String) { self.key = key; self.hash = hash }
+  // `hash` collides with NSObject.hash on SwiftData's Core Data backing object.
+  // Keep the renaming identifier so existing checkpoint values migrate in place.
+  @Attribute(originalName: "hash") var payloadDigest: String
+  init(key: String, payloadDigest: String) { self.key = key; self.payloadDigest = payloadDigest }
 }
 @Model final class DeletedHealthRecord {
   @Attribute(.unique) var key: String

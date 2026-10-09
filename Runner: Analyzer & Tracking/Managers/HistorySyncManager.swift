@@ -123,7 +123,7 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
       persist(HistoryPreferences(enabled:server.enabled,gpsEnabled:gps,privacyRevision:server.privacyRevision,consentVersion:server.consentVersion,updatedAt:server.updatedAt),uid:uid)
       guard server.enabled else { message = "History sync is paused. Saved dashboard history remains available."; return }
       let checkpoints = try context.fetch(FetchDescriptor<CloudSyncCheckpoint>())
-      var hashes = Dictionary(uniqueKeysWithValues:checkpoints.map { ($0.key,$0.hash) })
+      var hashes = Dictionary(uniqueKeysWithValues:checkpoints.map { ($0.key,$0.payloadDigest) })
       let tombstones = try context.fetch(FetchDescriptor<DeletedHealthRecord>())
       var pendingDeletes = tombstones.filter { hashes[key("delete-"+$0.key,uid)] != "\(server.privacyRevision):deleted" }
       while !pendingDeletes.isEmpty {
@@ -192,8 +192,8 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
   }
   private func checkpoint(key: String, hash: String, context: ModelContext, hashes: inout [String:String]) throws {
     let descriptor = FetchDescriptor<CloudSyncCheckpoint>(predicate:#Predicate { $0.key == key })
-    if let row = try context.fetch(descriptor).first { row.hash = hash }
-    else { context.insert(CloudSyncCheckpoint(key:key,hash:hash)) }
+    if let row = try context.fetch(descriptor).first { row.payloadDigest = hash }
+    else { context.insert(CloudSyncCheckpoint(key:key,payloadDigest:hash)) }
     try context.save();hashes[key] = hash
   }
   func pauseOnDevice() {
