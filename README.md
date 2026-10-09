@@ -52,6 +52,10 @@ Each phone must opt in under the same Runner Apple identity. Runner uploads only
 
 The dashboard is at https://runner-api-lradqed2xa-ew.a.run.app/dashboard. Request a code in the browser, then open **Settings → Cloud history → Connect dashboard** in Runner. Enter the code, review the requesting browser, and explicitly approve access to your uploaded history. Apple identity and App Check are verified on the phone; no Apple password or Health authorization is entered in the dashboard. Browser sessions are read-only, use secure HttpOnly cookies, last at most 12 hours, and expire after 30 minutes without API activity. Sign out from shared computers.
 
+The iOS connection flow separates validated codes and dated browser requests, authenticated transport (`DashboardLinkService`), and presentation state (`DashboardConnectionModel`). It accepts formatted hexadecimal codes, checks expiry again before approval, and invalidates reviews when the code or account changes or the sheet closes. Tests inject a service and clock to cover delayed responses, expiry, retries, and duplicate approval attempts without granting a real browser access.
+
+Cloud checkpoint digests use `payloadDigest`, with `originalName: "hash"` for an in-place migration. The previous property name collided with Core Data's numeric `hash` accessor and could crash when saved checkpoints were fetched. Storage regressions cover reopening saved checkpoints and migrating an old populated store while preserving workouts, Health anchors, measurements, and deletion records. Updating does not require clearing local data.
+
 The dashboard shows Latest Run, History, Trends, numerical tables, dated endurance measurements, saved AI assessments, and separately consented route maps. Chart aggregates retain gaps and pauses; numerical metrics use the same RunCore calculations as iOS. Maps render in the browser without transmitting coordinates to an external map provider. Historical density counts one traversal per run per approximate 100-meter cell. GPS paths are simplified to bounded representations; this is a performance dashboard, not a raw HealthKit backup.
 
 ## Release validation

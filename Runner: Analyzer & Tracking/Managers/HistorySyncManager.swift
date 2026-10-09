@@ -25,7 +25,6 @@ private struct HistoryBatch: Encodable {
   var deletedRunIDs: [UUID] = []
   var deletedMeasurementIDs: [UUID] = []
 }
-struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
 @MainActor final class HistorySyncManager: ObservableObject {
   @Published private(set) var enabled = false
   @Published private(set) var gpsEnabled = false
@@ -37,7 +36,6 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
   private var uid: String?
   private var retryNeeded = false
   private var consentGeneration = 0
-  var dashboardURL: URL? { APIClient.baseURL?.appendingPathComponent("dashboard") }
   private func key(_ name: String, _ uid: String) -> String { "cloudHistory.\(uid).\(name)" }
   func selectAccount(_ userID: String?) {
     guard uid != userID else { return }
@@ -212,14 +210,5 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
       for row in try context.fetch(FetchDescriptor<CloudSyncCheckpoint>()) where row.key.hasPrefix("cloudHistory.\(uid).") { context.delete(row) }
       try context.save();message = "Your uploaded history and routes have been deleted. Local Health workouts remain."
     } catch { message = "Cloud history could not be deleted. Please reconnect and retry." }
-  }
-  func previewBrowser(code: String) async throws -> DashboardBrowser {
-    guard let uid else { throw APIClient.APIError.authentication }
-    let data = try await APIClient.request(path:"v1/dashboard/link/\(code)",method:"GET",expectedUID:uid)
-    return try JSONDecoder().decode(DashboardBrowser.self,from:data)
-  }
-  func approveBrowser(code: String) async throws {
-    guard let uid else { throw APIClient.APIError.authentication }
-    _ = try await APIClient.request(path:"v1/dashboard/approve",method:"POST",body:APIClient.encode(["code":code]),expectedUID:uid)
   }
 }
