@@ -206,6 +206,7 @@ struct RunDetailScreen: View {
                 maxWidth: .infinity)
             }
           }.buttonStyle(.bordered).disabled(analysis.working.contains(row.id))
+            .accessibilityIdentifier("run.analyze")
         }
         if let message = analysis.messages[row.id] {
           Text(message).font(.footnote).foregroundStyle(RunnerStyle.muted)

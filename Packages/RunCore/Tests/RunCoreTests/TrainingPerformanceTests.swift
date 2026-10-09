@@ -101,6 +101,26 @@ final class TrainingPerformanceTests: XCTestCase {
       BestEfforts.ranked(efforts, distance: .km1, excluded: [ranked[0].id]).first?.runID, second.id)
     XCTAssertTrue(BestEfforts.ranked(efforts, distance: .km1, excluded: [], year: 1990).isEmpty)
   }
+  func testBestEffortSearchIncludesPausesInsideDistanceSamples() throws {
+    var run = RunData(
+      start: start, end: start.addingTimeInterval(380), duration: 290, distanceMeters: 1000,
+      source: "Test")
+    var cursor = 0.0
+    for index in 0..<10 {
+      let seconds = index == 4 ? 110.0 : 30.0
+      run.distances.append(
+        TimedValue(
+          start: start.addingTimeInterval(cursor),
+          end: start.addingTimeInterval(cursor + seconds), value: 100))
+      cursor += seconds
+    }
+    run.pauses = [Pause(start: start.addingTimeInterval(130), end: start.addingTimeInterval(220))]
+    let effort = try XCTUnwrap(BestEfforts.make(run: run).first { $0.distance == .m400 })
+    XCTAssertEqual(effort.seconds, 115, accuracy: 0.001)
+    XCTAssertTrue(effort.end <= run.pauses[0].start || effort.start >= run.pauses[0].end)
+    XCTAssertEqual(
+      BestEfforts.make(run: run).first { $0.distance == .km1 }?.seconds, 380)
+  }
   func testGoalIncludesPreexistingRunsAndPreferencesRoundTrip() throws {
     let run = fixture()
     let goal = TrainingGoal(metric: .distance, period: .month, target: 10000)

@@ -79,6 +79,42 @@ final class InteractiveAnalyticsTests: XCTestCase {
       selection.runIDs(in: DateInterval(start: run.start.addingTimeInterval(-300), end: run.start)),
       [])
   }
+  func testPastCustomDatesRoundTripAcrossDSTWithoutExpanding() throws {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(identifier: "America/New_York")!
+    let formatter = ISO8601DateFormatter()
+    let first = formatter.date(from: "2026-03-07T00:00:00-05:00")!
+    let through = formatter.date(from: "2026-03-08T00:00:00-05:00")!
+    let now = formatter.date(from: "2026-03-12T12:00:00-04:00")!
+    let original = try XCTUnwrap(
+      ActivityDateRange.interval(from: first, through: through, now: now, calendar: calendar))
+    XCTAssertEqual(original.duration, 47 * 3600)
+    var reopened = original
+    for _ in 0..<3 {
+      reopened = try XCTUnwrap(
+        ActivityDateRange.interval(
+          from: reopened.start, through: ActivityDateRange.inclusiveEnd(of: reopened),
+          now: now, calendar: calendar))
+      XCTAssertEqual(reopened, original)
+    }
+  }
+  func testCustomDatesThroughNowAndMidnightKeepTheirBoundaries() throws {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let first = calendar.startOfDay(for: start)
+    for now in [start, calendar.date(byAdding: .day, value: 1, to: first)!] {
+      let original = try XCTUnwrap(
+        ActivityDateRange.interval(from: first, through: now, now: now, calendar: calendar))
+      XCTAssertEqual(original.end, now)
+      XCTAssertEqual(
+        ActivityDateRange.interval(
+          from: original.start, through: ActivityDateRange.inclusiveEnd(of: original),
+          now: now, calendar: calendar), original)
+    }
+    XCTAssertNil(
+      ActivityDateRange.interval(
+        from: first.addingTimeInterval(86400), through: first, now: start, calendar: calendar))
+  }
   func testFiltersExcludeUnknownDistanceAndSortPace() {
     let first = fixtureRun()
     var second = fixtureRun()

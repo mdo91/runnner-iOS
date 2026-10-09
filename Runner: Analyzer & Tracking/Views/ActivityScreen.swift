@@ -84,7 +84,7 @@ private struct ActivityContent: View {
       CustomDates(
         start: customInterval?.start
           ?? AppRuntime.calendar.dateInterval(of: .month, for: AppRuntime.now)!.start,
-        end: customInterval?.end ?? AppRuntime.now
+        end: customInterval.map { ActivityDateRange.inclusiveEnd(of: $0) } ?? AppRuntime.now
       ) {
         customInterval = $0
         selectedDate = nil

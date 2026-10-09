@@ -117,6 +117,30 @@ import XCTest
     approve.tap()
     XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
   }
+  func testFixtureConsentAnalysisAndCloudDeleteStayIsolated() {
+    launch()
+    app.buttons["navigation.settings"].tap()
+    let adult = app.switches["settings.adult"]
+    reveal(adult)
+    adult.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+    XCTAssertEqual(adult.value as? String, "1")
+    let consent = app.switches["settings.aiConsent"]
+    reveal(consent)
+    XCTAssertTrue(consent.isEnabled)
+    consent.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+    XCTAssertEqual(consent.value as? String, "1")
+    reveal(app.buttons["settings.deleteCloudHistory"])
+    app.buttons["settings.deleteCloudHistory"].tap()
+    let confirm = app.buttons["settings.confirmDeleteCloudHistory"].firstMatch
+    XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+    confirm.tap()
+    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+    app.buttons["settings.done"].tap()
+    reveal(app.buttons["run.analyze"])
+    app.buttons["run.analyze"].tap()
+    tab("Activity")
+    XCTAssertEqual(app.staticTexts["activity.total"].label, "3 runs")
+  }
   func testDashboardExpiryAndReviewRetry() {
     launch("dashboard-expired")
     openDashboard()

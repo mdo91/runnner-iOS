@@ -31,3 +31,18 @@ Use `scripts/test-ui.sh` for the full test plan or `scripts/test-matrix.sh` for 
 All uniquely named `.xcresult` bundles are retained under `/tmp/runner-ui-results`, including initial failures. Retries are manual and documented rather than automatic. This machine's global command-line selection points to Command Line Tools: optional Xcode simulator diagnostic collection reports missing `simctl`, but the test runner explicitly selects Xcode and preserves test results, logs, and screenshots. This does not change test outcomes.
 
 Build caches and disposable simulators can be removed after validation without deleting these results. Cloud authentication, actual Health imports, AI calls, and Watch connections are outside fixture execution; web-dashboard parity remains a follow-up.
+
+## Pre-merge correctness review
+
+The October 9 review found four P2 issues, all corrected before merge:
+
+- Custom-date editors now convert the exclusive query endpoint to the last included day. Repeated past-range edits preserve dates, including DST, midnight, and through-now boundaries.
+- Automatic analysis checks the completed snapshot's exact payload revision against current rows, and completion retriggers analysis. Delayed and out-of-order refresh tests cover the scheduling window before a refresh task starts.
+- Estimated best efforts include pause distances inside sample intervals among candidate boundaries. A 400 m regression now finds the valid 115-second effort previously missed at 120 seconds, while internal pauses still count toward elapsed time.
+- Fixture analysis and API entry points return before Firebase or network access, even after enabling AI consent or confirming cloud deletion.
+
+After these fixes, 44 RunCore tests passed (`/tmp/runner-review-core-repaired.log`) and all 59 app/storage/dashboard/refresh tests passed in `/tmp/runner-ui-results/20261009-145239-7050.xcresult`. That iPhone 16 / 26.0 run also passed the 17 existing UI scenarios; the new fixture case stopped at a duplicated native confirmation button. A focused recent-runtime attempt then exposed label taps that had not enabled the native switches. Both initial reports are retained, including `/tmp/runner-ui-results/20261009-150608-4307.xcresult`.
+
+The corrected fixture case explicitly enables and asserts both switches, confirms cloud deletion, requests manual analysis, and navigates to Activity without accessing live services. It passed on iPhone 16 / iOS 26.0 in `/tmp/runner-ui-results/20261009-151203-26753.xcresult`, completing coverage of all 18 UI scenarios across the full run and focused repair. Exact focused command: `scripts/test-ui.sh '' -only-testing:RunnerUITests/RunnerUITests/testFixtureConsentAnalysisAndCloudDeleteStayIsolated`. Log: `/tmp/runner-review-fixture-final.log`.
+
+The final Release ARM64 simulator build also passed after the review fixes (`/tmp/runner-review-release.log`), using the Release command above. No physical device was installed, launched, or tested.

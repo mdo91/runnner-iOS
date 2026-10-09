@@ -43,9 +43,12 @@ public enum BestEfforts {
     let sparse = timeline.intervals.filter {
       RunCalculator.activeSeconds(from: $0.start, to: $0.end, pauses: pauses) > 30
     }
+    // A pause inside an interval adds a breakpoint to the elapsed-time function.
+    let boundaries = timeline.intervals.flatMap { [$0.fromMeters, $0.toMeters] }
+      + pauses.flatMap { [timeline.distance(at: $0.start), timeline.distance(at: $0.end)] }
+        .compactMap { $0 }
     return EffortDistance.allCases.compactMap { distance in
       guard total >= distance.meters else { return nil }
-      let boundaries = timeline.intervals.flatMap { [$0.fromMeters, $0.toMeters] }
       let candidates = Set(
         ([0, total - distance.meters] + boundaries + boundaries.map { $0 - distance.meters }).filter
         { $0 >= 0 && $0 + distance.meters <= total })

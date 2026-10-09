@@ -104,7 +104,7 @@ struct HistoryScreen: View {
     .sheet(isPresented: $dates) {
       CustomDates(
         start: filter.interval?.start ?? AppRuntime.now.addingTimeInterval(-30 * 86400),
-        end: filter.interval?.end ?? AppRuntime.now
+        end: filter.interval.map { ActivityDateRange.inclusiveEnd(of: $0) } ?? AppRuntime.now
       ) { filter.interval = $0 }
     }
   }

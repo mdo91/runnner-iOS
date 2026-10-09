@@ -77,11 +77,12 @@ struct SettingsScreen: View {
           ) { _, value in
             AppRuntime.defaults.set(value, forKey: "adultConfirmed")
             if !value { account.setConsent(false) }
-          }
+          }.accessibilityIdentifier("settings.adult")
           Toggle(
             "Allow AI analysis",
             isOn: Binding(get: { account.consent }, set: { account.setConsent($0) })
           ).disabled(!account.signedIn || !account.adultConfirmed)
+            .accessibilityIdentifier("settings.aiConsent")
           Text(
             "With your permission, Runner sends numerical run summaries, splits, data-quality flags, and a compact historical baseline to Runner’s backend and Google Gemini to provide fitness coaching. Precise GPS routes, names, email addresses, and raw HealthKit samples are excluded."
           ).font(.footnote)
@@ -149,7 +150,7 @@ struct SettingsScreen: View {
             health.isSyncing || historySync.isSyncing)
           if account.signedIn {
             Button("Delete uploaded history", role: .destructive) { clearCloud = true }.disabled(
-              historySync.changingConsent)
+              historySync.changingConsent).accessibilityIdentifier("settings.deleteCloudHistory")
             Button("Delete cloud account", role: .destructive) { deleteAccount = true }
           }
         } header: {
@@ -200,7 +201,7 @@ struct SettingsScreen: View {
     ) {
       Button("Delete uploaded history", role: .destructive) {
         Task { await historySync.clear(context: context) }
-      }
+      }.accessibilityIdentifier("settings.confirmDeleteCloudHistory")
     } message: {
       Text(
         "This removes dashboard history and routes from the database and disables history sync. Local workouts and Apple Health records remain. AI analysis cache and account access are removed separately by deleting your cloud account."

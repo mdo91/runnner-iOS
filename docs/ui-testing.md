@@ -28,6 +28,8 @@ Scenarios: `populated`, `empty`, `partial`, `paused`, `indoor`, `repeated-route`
 
 Fixture mode bypasses Firebase setup, Health authorization/imports, cloud sync, AI analysis, and Watch activation. Release builds ignore all fixture controls. Maps may retrieve standard MapKit tiles; tests assert recorded route data rather than tile imagery.
 
+`testFixtureConsentAnalysisAndCloudDeleteStayIsolated` enables adult/AI consent, confirms the fixture cloud-history action, and requests manual analysis. Analysis and API entry points reject fixture execution before reaching Firebase or the network, even when fixture settings enable consent.
+
 `RUNNER_APPEARANCE=light|dark` and `RUNNER_LARGE_TEXT=1` select deterministic appearance cases. Functional assertions use accessibility identifiers and measured values rather than screenshots. Screenshots remain visual-review evidence.
 
 ## Matrix
@@ -42,11 +44,15 @@ The contrast audit excludes content occluded behind the bottom glass tab bar. Fu
 
 RunCore/iOS unit tests cover daily buckets across DST, validated distance interpolation, pause boundaries, rejected overlapping samples, unit conversion, missing altitude, source filtering, series caps and gaps, and cache invalidation. Numeric tests do not depend on chart rendering.
 
+Custom-date regressions reopen and reapply past ranges across DST and verify through-now/midnight endpoints without expanding the selected dates. `AnalyticsStoreTests` delays and completes injected refreshes out of order; automatic analysis requires the completed payloads to match current rows, including before a new refresh task starts.
+
 ## Training performance scenarios
 
 `testGoalsCreateEditPersistAndDelete` creates and edits a distance goal, relaunches with isolated preferences, and deletes it. `testZonesAndCompleteVersusIncompleteLoad` verifies invalid initial settings, explicit known maximum, generated boundaries, complete load, and a partial-heart-rate relaunch. `testBestEffortExclusionAndRepeatedRouteNavigation` checks the selected annual best, reranking/restoration, originating runs, and matching route completions. `testAppOwnedScreenAccessibility` audits the empty Latest, History, Trends, Live, and Settings screens; the separate Activity audit covers its performance cards.
 
 The numerical suite also checks exact zone boundaries, below-zone and above-maximum time, paused pulse coverage, the inclusive 80% threshold, elapsed efforts with internal pauses, interpolation, exclusions, annual filtering, preference serialization, and route false matches.
+
+Best-effort candidates include pause boundaries inside distance samples, so a fastest window ending before or beginning after an internal pause is considered without dropping pauses from elapsed time.
 
 To review a specific screenshot in a bundle, use Xcode or `xcrun xcresulttool export attachments --path RESULT.xcresult --output-path OUTPUT --test-id 'RunnerUITests/TEST_NAME()'`. Keep the initial failure bundle when rerunning a repaired test.
 
