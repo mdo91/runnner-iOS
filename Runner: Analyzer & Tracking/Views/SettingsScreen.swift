@@ -20,6 +20,7 @@ struct SettingsScreen: View {
   @State private var clearLocal = false
   @State private var clearCloud = false
   @State private var connectDashboard = false
+  private let dashboardService = DashboardLinkService()
   var body: some View {
     NavigationStack {
       Form {
@@ -105,7 +106,7 @@ struct SettingsScreen: View {
           Button("Sync now") { Task { await historySync.sync(context:context,account:account) } }
             .disabled(!account.signedIn || !historySync.enabled || health.isSyncing || historySync.isSyncing || historySync.changingConsent)
           Button("Connect dashboard") { connectDashboard = true }.disabled(!account.signedIn)
-          if let url = historySync.dashboardURL { Link("Open dashboard",destination:url) }
+          if let url = dashboardService.dashboardURL { Link("Open dashboard",destination:url) }
         } header: { Text("Cloud history") } footer: {
           Text("Only runs available through Apple Health on this phone can be uploaded. Sign in with the same Runner Apple account on each phone. Consent version: October 3, 2026.")
         }
@@ -151,7 +152,7 @@ struct SettingsScreen: View {
         "This does not delete workouts from Apple Health. You can reconnect Health to import them again."
       )
     }
-    .sheet(isPresented:$connectDashboard) { DashboardConnectScreen() }
+    .sheet(isPresented:$connectDashboard) { DashboardConnectScreen(service: dashboardService) }
     .confirmationDialog("Delete uploaded history and routes?",isPresented:$clearCloud,titleVisibility:.visible) {
       Button("Delete uploaded history",role:.destructive) { Task { await historySync.clear(context:context) } }
     } message: {

@@ -25,7 +25,6 @@ private struct HistoryBatch: Encodable {
   var deletedRunIDs: [UUID] = []
   var deletedMeasurementIDs: [UUID] = []
 }
-struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
 @MainActor final class HistorySyncManager: ObservableObject {
   @Published private(set) var enabled = false
   @Published private(set) var gpsEnabled = false
@@ -37,7 +36,6 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
   private var uid: String?
   private var retryNeeded = false
   private var consentGeneration = 0
-  var dashboardURL: URL? { APIClient.baseURL?.appendingPathComponent("dashboard") }
   private func key(_ name: String, _ uid: String) -> String { "cloudHistory.\(uid).\(name)" }
   func selectAccount(_ userID: String?) {
     guard uid != userID else { return }
@@ -123,7 +121,7 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
       persist(HistoryPreferences(enabled:server.enabled,gpsEnabled:gps,privacyRevision:server.privacyRevision,consentVersion:server.consentVersion,updatedAt:server.updatedAt),uid:uid)
       guard server.enabled else { message = "History sync is paused. Saved dashboard history remains available."; return }
       let checkpoints = try context.fetch(FetchDescriptor<CloudSyncCheckpoint>())
-      var hashes = Dictionary(uniqueKeysWithValues:checkpoints.map { ($0.key,$0.hash) })
+      var hashes = Dictionary(uniqueKeysWithValues:checkpoints.map { ($0.key,$0.payloadDigest) })
       let tombstones = try context.fetch(FetchDescriptor<DeletedHealthRecord>())
       var pendingDeletes = tombstones.filter { hashes[key("delete-"+$0.key,uid)] != "\(server.privacyRevision):deleted" }
       while !pendingDeletes.isEmpty {
@@ -192,8 +190,8 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
   }
   private func checkpoint(key: String, hash: String, context: ModelContext, hashes: inout [String:String]) throws {
     let descriptor = FetchDescriptor<CloudSyncCheckpoint>(predicate:#Predicate { $0.key == key })
-    if let row = try context.fetch(descriptor).first { row.hash = hash }
-    else { context.insert(CloudSyncCheckpoint(key:key,hash:hash)) }
+    if let row = try context.fetch(descriptor).first { row.payloadDigest = hash }
+    else { context.insert(CloudSyncCheckpoint(key:key,payloadDigest:hash)) }
     try context.save();hashes[key] = hash
   }
   func pauseOnDevice() {
@@ -212,14 +210,5 @@ struct DashboardBrowser: Decodable { var agent: String; var expiresAt: String }
       for row in try context.fetch(FetchDescriptor<CloudSyncCheckpoint>()) where row.key.hasPrefix("cloudHistory.\(uid).") { context.delete(row) }
       try context.save();message = "Your uploaded history and routes have been deleted. Local Health workouts remain."
     } catch { message = "Cloud history could not be deleted. Please reconnect and retry." }
-  }
-  func previewBrowser(code: String) async throws -> DashboardBrowser {
-    guard let uid else { throw APIClient.APIError.authentication }
-    let data = try await APIClient.request(path:"v1/dashboard/link/\(code)",method:"GET",expectedUID:uid)
-    return try JSONDecoder().decode(DashboardBrowser.self,from:data)
-  }
-  func approveBrowser(code: String) async throws {
-    guard let uid else { throw APIClient.APIError.authentication }
-    _ = try await APIClient.request(path:"v1/dashboard/approve",method:"POST",body:APIClient.encode(["code":code]),expectedUID:uid)
   }
 }
