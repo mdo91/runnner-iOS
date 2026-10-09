@@ -8,6 +8,9 @@ struct TrainingCalendar: View {
   var select: (RunDrilldown) -> Void
   @State private var month = AppRuntime.now
   private var calendar: Calendar { statistics.calendar }
+  private var dateStyle: Date.FormatStyle {
+    Date.FormatStyle(calendar: calendar, timeZone: calendar.timeZone)
+  }
   var body: some View {
     let interval = calendar.dateInterval(of: .month, for: month)!
     let days = calendar.range(of: .day, in: .month, for: month)!
@@ -32,7 +35,7 @@ struct TrainingCalendar: View {
             Image(systemName: "chevron.left")
           }.accessibilityLabel("Previous month").accessibilityIdentifier("calendar.previous")
           Spacer()
-          Text(interval.start.formatted(.dateTime.month(.wide).year())).font(.headline)
+          Text(interval.start.formatted(dateStyle.month(.wide).year())).font(.headline)
             .accessibilityIdentifier("calendar.month")
           Spacer()
           Button {
@@ -48,10 +51,10 @@ struct TrainingCalendar: View {
           ForEach(0..<7, id: \.self) { index in
             Text(
               calendar.veryShortStandaloneWeekdaySymbols[(calendar.firstWeekday - 1 + index) % 7]
-            ).font(.caption).accessibilityHidden(true)
+            ).font(.caption).accessibilityHidden(true).id("weekday.\(index)")
           }
-          ForEach(0..<offset, id: \.self) { _ in
-            Color.clear.frame(minHeight: 44).accessibilityHidden(true)
+          ForEach(0..<offset, id: \.self) { index in
+            Color.clear.frame(minHeight: 44).accessibilityHidden(true).id("spacer.\(index)")
           }
           ForEach(Array(days), id: \.self) { day in
             let date = calendar.date(byAdding: .day, value: day - 1, to: interval.start)!
@@ -60,7 +63,7 @@ struct TrainingCalendar: View {
             Button {
               select(
                 RunDrilldown(
-                  title: date.formatted(date: .abbreviated, time: .omitted),
+                  title: date.formatted(dateStyle.month(.abbreviated).day().year()),
                   runIDs: statistics.runIDs(in: window)))
             } label: {
               VStack(spacing: 2) {
@@ -75,9 +78,10 @@ struct TrainingCalendar: View {
                   in: RoundedRectangle(cornerRadius: 8))
             }.buttonStyle(.plain).disabled(date > statistics.now)
               .accessibilityLabel(
-                "\(date.formatted(date: .complete, time: .omitted)), \(summary.runCount) runs, \(metric.formatted(summary, units: units))"
+                "\(date.formatted(dateStyle.weekday(.wide).month(.wide).day().year())), \(summary.runCount) runs, \(metric.formatted(summary, units: units))"
               )
               .accessibilityIdentifier("calendar.day.\(day)")
+              .id("day.\(day)")
           }
         }
       }

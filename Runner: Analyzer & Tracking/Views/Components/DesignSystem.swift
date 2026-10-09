@@ -82,7 +82,7 @@ struct RunListRow: View {
         Text(units.distance(m.distanceMeters)).font(.title3.bold().monospacedDigit())
         Text(units.distanceUnit).font(.caption).foregroundStyle(RunnerStyle.muted)
       }
-    }.padding(.vertical, 8).accessibilityElement(children: .combine)
+    }.padding(.vertical, 8).contentShape(Rectangle()).accessibilityElement(children: .combine)
   }
 }
 

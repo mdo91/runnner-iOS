@@ -27,6 +27,7 @@ struct SettingsScreen: View {
     NavigationStack {
       Form {
         Section {
+          SettingsHeading("Apple Health")
           Text(
             "Workouts, heart rate, GPS routes, and running measurements are stored on this device. Runner can import runs recorded by Apple Workout and other Watch apps."
           ).font(.subheadline)
@@ -34,32 +35,44 @@ struct SettingsScreen: View {
           Text(
             "Apple does not reveal which read permissions you granted. Empty results can mean no data, disabled access, or a pending Watch sync."
           ).font(.caption).foregroundStyle(RunnerStyle.muted)
-        } header: {
-          Text("Apple Health").foregroundStyle(RunnerStyle.muted)
         }
         Section {
+          SettingsHeading("Display")
           Picker("Units", selection: $units) {
             Text("Kilometers").foregroundStyle(RunnerStyle.muted).tag("metric")
             Text("Miles").foregroundStyle(RunnerStyle.muted).tag("imperial")
-          }
-        } header: {
-          Text("Display").foregroundStyle(RunnerStyle.muted)
+          }.pickerStyle(.inline)
         }
         Section {
-          TextField("Lower heart rate (bpm)", text: $lower).keyboardType(.numberPad)
-          TextField("Upper heart rate (bpm)", text: $upper).keyboardType(.numberPad)
-          TextField("Target pace, min:sec / km", text: $pace).keyboardType(.numbersAndPunctuation)
+          SettingsHeading("Your live targets")
+          VStack(alignment: .leading, spacing: 6) {
+            Text("Lower heart rate (bpm)").font(.subheadline)
+              .fixedSize(horizontal: false, vertical: true)
+            TextField("", text: $lower).keyboardType(.numberPad)
+              .accessibilityLabel("Lower heart rate, beats per minute")
+          }
+          VStack(alignment: .leading, spacing: 6) {
+            Text("Upper heart rate (bpm)").font(.subheadline)
+              .fixedSize(horizontal: false, vertical: true)
+            TextField("", text: $upper).keyboardType(.numberPad)
+              .accessibilityLabel("Upper heart rate, beats per minute")
+          }
+          VStack(alignment: .leading, spacing: 6) {
+            Text("Target pace, min:sec / km").font(.subheadline)
+              .fixedSize(horizontal: false, vertical: true)
+            TextField("", text: $pace).keyboardType(.numbersAndPunctuation)
+              .accessibilityLabel("Target pace, minutes and seconds per kilometer")
+          }
           Toggle("Watch haptics", isOn: $haptics)
           Button("Save targets") { saveTargets() }
           if let targetError { Text(targetError).foregroundStyle(.orange) }
-        } header: {
-          Text("Your live targets").foregroundStyle(RunnerStyle.muted)
         } footer: {
           Text(
             "Targets are optional. Without your settings, Runner shows measurements without assigning heart-rate zones. Cues appear on screen; haptics are optional."
-          )
+          ).foregroundStyle(RunnerStyle.muted)
         }
         Section {
+          SettingsHeading("Private by choice")
           if account.signedIn {
             Label("Signed in with Apple", systemImage: "checkmark.circle.fill").foregroundStyle(
               .green)
@@ -93,14 +106,13 @@ struct SettingsScreen: View {
             "Limits: 3 completed runs and 24 live updates per day. Live AI updates are at least five minutes apart. Measured stats and local Watch coaching work without AI."
           ).font(.caption).foregroundStyle(RunnerStyle.muted)
           if let message = account.message { Text(message).font(.footnote) }
-        } header: {
-          Text("Private by choice")
         } footer: {
           Text(
             "AI feedback is adult fitness coaching, not medical diagnosis. Consent version: October 3, 2026."
-          )
+          ).foregroundStyle(RunnerStyle.muted)
         }
         Section {
+          SettingsHeading("Cloud history")
           Toggle(
             "Sync running history",
             isOn: Binding(
@@ -136,14 +148,13 @@ struct SettingsScreen: View {
           Button("Connect dashboard") { connectDashboard = true }.disabled(!account.signedIn)
             .accessibilityIdentifier("settings.dashboard")
           if let url = dashboardService.dashboardURL { Link("Open dashboard", destination: url) }
-        } header: {
-          Text("Cloud history")
         } footer: {
           Text(
             "Only runs available through Apple Health on this phone can be uploaded. Sign in with the same Runner Apple account on each phone. Consent version: October 3, 2026."
-          )
+          ).foregroundStyle(RunnerStyle.muted)
         }
         Section {
+          SettingsHeading("Your data")
           NavigationLink("Heart-rate zones") { ZoneEditor() }.accessibilityIdentifier(
             "settings.zones")
           Button("Clear data from this device", role: .destructive) { clearLocal = true }.disabled(
@@ -153,14 +164,13 @@ struct SettingsScreen: View {
               historySync.changingConsent).accessibilityIdentifier("settings.deleteCloudHistory")
             Button("Delete cloud account", role: .destructive) { deleteAccount = true }
           }
-        } header: {
-          Text("Your data").foregroundStyle(RunnerStyle.muted)
         }
         Section {
           Text("Runner 1.0 · Built for the long run").font(.caption).foregroundStyle(
             RunnerStyle.muted)
         }
-      }.navigationTitle("Settings").toolbar {
+      }.scrollContentBackground(.hidden).background(RunnerStyle.background)
+        .navigationTitle("Settings").navigationBarTitleDisplayMode(.inline).toolbar {
         ToolbarItem(placement: .topBarTrailing) {
           Button("Done") { dismiss() }.accessibilityIdentifier("settings.done")
         }
@@ -257,5 +267,15 @@ struct SettingsScreen: View {
     AppRuntime.defaults.set(target, forKey: "paceTarget")
     live.sendTargets()
     targetError = "Targets saved to sync with your Watch."
+  }
+}
+
+private struct SettingsHeading: View {
+  let title: String
+  init(_ title: String) { self.title = title }
+  var body: some View {
+    Text(title).font(.headline).foregroundStyle(Color(uiColor: .label))
+      .fixedSize(horizontal: false, vertical: true)
+      .accessibilityAddTraits(.isHeader).listRowSeparator(.hidden)
   }
 }

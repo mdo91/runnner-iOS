@@ -6,13 +6,25 @@ import XCTest
   override func setUpWithError() throws { continueAfterFailure = false }
   override func tearDownWithError() throws {
     if let app {
-      let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+      let screenshot = XCUIScreen.main.screenshot()
+      let shot = XCTAttachment(screenshot: screenshot)
       shot.name = name
       shot.lifetime = .keepAlways
       add(shot)
+      // Keep a direct copy when a toolchain cannot decode older-runtime attachments.
+      try? screenshot.pngRepresentation.write(to: evidenceURL("png"))
+      try? app.debugDescription.write(to: evidenceURL("txt"), atomically: true, encoding: .utf8)
       app.terminate()
     }
     XCUIDevice.shared.orientation = .portrait
+  }
+  private func evidenceURL(_ suffix: String) -> URL {
+    let directory = URL(fileURLWithPath:
+      ProcessInfo.processInfo.environment["RUNNER_EVIDENCE_DIR"]
+        ?? "/tmp/runner-ui-results/direct-screenshots", isDirectory: true)
+    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let filename = name.map { $0.isLetter || $0.isNumber ? $0 : "_" }
+    return directory.appendingPathComponent("\(String(filename)).\(testID).\(suffix)")
   }
   @discardableResult private func launch(
     _ scenario: String = "populated", appearance: String = "light", largeText: Bool = false
@@ -23,10 +35,15 @@ import XCTest
     ]
     app.launchEnvironment = [
       "RUNNER_TEST_ID": testID, "RUNNER_APPEARANCE": appearance,
-      "RUNNER_LARGE_TEXT": largeText ? "1" : "0",
+      "RUNNER_LARGE_TEXT": largeText ? "1" : "0", "TZ": "America/Los_Angeles",
     ]
     app.launch()
     XCTAssertTrue(app.buttons["Activity"].firstMatch.waitForExistence(timeout: 15))
+    let ready = XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "exists == true AND value == %@", "Fixtures ready"),
+      object: app.buttons["navigation.settings"])
+    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed,
+      "Fixture analytics did not finish loading")
     return app
   }
   private func tab(_ name: String) {
@@ -34,10 +51,26 @@ import XCTest
     XCTAssertTrue(button.waitForExistence(timeout: 5))
     button.tap()
   }
-  private func reveal(_ element: XCUIElement, limit: Int = 12) {
+  private func waitForLabel(_ element: XCUIElement, containing text: String) {
+    let predicate = NSPredicate(format: "exists == true AND label CONTAINS %@", text)
+    let ready = XCTNSPredicateExpectation(predicate: predicate, object: element)
+    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed,
+      "Expected \(element) to contain \(text)")
+  }
+  private func waitForUnobscuredScreen() {
+    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    let banner = springboard.descendants(matching: .any)
+      .matching(identifier: "NotificationShortLookView").firstMatch
+    XCTAssertTrue(banner.waitForNonExistence(timeout: 15),
+      "A system notification obscures the accessibility audit")
+  }
+  private func reveal(_ element: XCUIElement, towardTop: Bool = false, limit: Int = 12) {
     for _ in 0..<limit {
-      if element.exists && element.isHittable { return }
-      let upwards = !element.exists || element.frame.midY >= app.frame.midY
+      let bar = app.tabBars.firstMatch
+      let bottom = bar.exists && bar.isHittable && bar.frame.minY > app.frame.midY
+        ? bar.frame.minY : app.frame.maxY
+      if element.exists && element.isHittable && element.frame.maxY <= bottom { return }
+      let upwards = !towardTop && (!element.exists || element.frame.midY >= app.frame.midY)
       let edge = min(app.frame.width, app.frame.height) > 600 ? 0.98 : 0.92
       app.coordinate(
         withNormalizedOffset: CGVector(
@@ -167,13 +200,16 @@ import XCTest
     app.buttons["dashboard.review"].tap()
     reveal(app.buttons["dashboard.approve"])
     app.buttons["dashboard.approve"].tap()
-    XCTAssertTrue(app.staticTexts["dashboard.message"].waitForExistence(timeout: 5))
+    reveal(app.staticTexts["dashboard.message"])
+    waitForLabel(app.staticTexts["dashboard.message"], containing: "Approval could not finish")
+    reveal(app.buttons["dashboard.approve"])
     app.buttons["dashboard.approve"].tap()
     XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
   }
   func testAccessibilityAudit() throws {
     launch("empty")
     tab("Activity")
+    waitForUnobscuredScreen()
     try app.performAccessibilityAudit(for: [.contrast, .textClipped, .sufficientElementDescription])
     { issue in
       guard issue.auditType == .contrast, let element = issue.element else { return false }
@@ -218,15 +254,21 @@ import XCTest
   func testCalendarAndHistoryFilters() {
     launch("indoor")
     tab("Activity")
+    reveal(app.staticTexts["calendar.month"])
+    waitForLabel(app.staticTexts["calendar.month"], containing: "October")
     reveal(app.buttons["calendar.day.8"])
+    waitForLabel(app.buttons["calendar.day.8"], containing: "October 8")
     app.buttons["calendar.day.8"].tap()
     XCTAssertTrue(app.staticTexts["explorer.count"].waitForExistence(timeout: 5))
     XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 runs")
     app.buttons["explorer.done"].tap()
+    XCTAssertTrue(app.buttons["explorer.done"].waitForNonExistence(timeout: 10))
+    reveal(app.buttons["calendar.previous"])
     app.buttons["calendar.previous"].tap()
-    XCTAssertTrue(app.staticTexts["calendar.month"].label.contains("September"))
+    waitForLabel(app.staticTexts["calendar.month"], containing: "September")
+    reveal(app.buttons["calendar.next"])
     app.buttons["calendar.next"].tap()
-    XCTAssertTrue(app.staticTexts["calendar.month"].label.contains("October"))
+    waitForLabel(app.staticTexts["calendar.month"], containing: "October")
     tab("History")
     reveal(app.buttons["Indoor"])
     app.buttons["Indoor"].tap()
@@ -303,24 +345,34 @@ import XCTest
     app.buttons["navigation.settings"].tap()
     reveal(app.buttons["settings.zones"])
     app.buttons["settings.zones"].tap()
+    reveal(app.buttons["zones.save"])
     XCTAssertFalse(app.buttons["zones.save"].isEnabled)
     let maximum = app.textFields["zones.maximum"]
+    reveal(maximum, towardTop: true)
     maximum.tap()
     maximum.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4) + "190")
+    reveal(app.buttons["zones.generate"])
     app.buttons["zones.generate"].tap()
     app.buttons["zones.keyboardDone"].tap()
+    XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 10))
     reveal(app.buttons["zones.save"])
+    XCTAssertTrue(app.buttons["zones.save"].isEnabled)
     app.buttons["zones.save"].tap()
+    XCTAssertTrue(app.buttons["zones.save"].waitForNonExistence(timeout: 10))
+    XCTAssertTrue(app.buttons["settings.done"].waitForExistence(timeout: 10))
     app.buttons["settings.done"].tap()
     tab("Trends")
+    XCTAssertTrue(app.staticTexts["load.total.7"].waitForExistence(timeout: 10))
     reveal(app.staticTexts["load.total.7"])
-    XCTAssertFalse(app.staticTexts["load.total.7"].label.contains("unavailable"))
+    waitForLabel(app.staticTexts["load.total.7"], containing: " effort")
+    reveal(app.staticTexts["Zone 3"], towardTop: true)
     XCTAssertTrue(app.otherElements["zones.total.3"].exists || app.staticTexts["Zone 3"].exists)
     app.terminate()
     launch("partial")
     tab("Trends")
+    XCTAssertTrue(app.staticTexts["load.total.7"].waitForExistence(timeout: 10))
     reveal(app.staticTexts["load.total.7"])
-    XCTAssertTrue(app.staticTexts["load.total.7"].label.contains("unavailable"))
+    waitForLabel(app.staticTexts["load.total.7"], containing: "unavailable")
   }
   func testBestEffortExclusionAndRepeatedRouteNavigation() {
     launch("repeated-route")
@@ -348,6 +400,7 @@ import XCTest
     launch("empty")
     for name in ["Latest", "History", "Trends", "Live"] {
       tab(name)
+      waitForUnobscuredScreen()
       try app.performAccessibilityAudit(for: [
         .contrast, .textClipped, .sufficientElementDescription,
       ]) { issue in
@@ -363,8 +416,13 @@ import XCTest
     }
     tab("Latest")
     app.buttons["navigation.settings"].tap()
+    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+    waitForUnobscuredScreen()
+    XCTAssertTrue(app.buttons["settings.done"].isHittable)
     try app.performAccessibilityAudit(for: [.contrast, .textClipped, .sufficientElementDescription])
     { issue in
+      let description = "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
+      try? description.write(to: self.evidenceURL("audit.txt"), atomically: true, encoding: .utf8)
       return false
     }
   }
