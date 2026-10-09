@@ -37,7 +37,7 @@ struct HistoryScreen: View {
           }
         }
         if health.isSyncing { ProgressView("Importing history…").frame(maxWidth: .infinity) }
-      }.padding(20)
+      }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).navigationTitle("History").refreshable {
       await health.sync()
     }

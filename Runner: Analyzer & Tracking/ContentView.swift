@@ -47,10 +47,10 @@ struct ContentView: View {
               settings = true
             } label: {
               Image(systemName: "slider.horizontal.3")
-            }.accessibilityLabel("Settings")
+            }.accessibilityLabel("Settings").accessibilityIdentifier("navigation.settings")
           }
         }
-      }.tabItem { Label("Latest Run", systemImage: "figure.run") }
+      }.tabItem { Label("Latest", systemImage: "figure.run") }
       NavigationStack { HistoryScreen(rows: rows, measurements: measurements, units: units) }
         .tabItem { Label("History", systemImage: "clock") }
       NavigationStack { ActivityScreen(rows: rows) }
@@ -60,7 +60,7 @@ struct ContentView: View {
       NavigationStack { LiveScreen(history: rows.compactMap(\.run), units: units) }.tabItem {
         Label("Live", systemImage: "waveform.path.ecg")
       }
-    }.tint(RunnerStyle.blue).background(RunnerStyle.background)
+    }.tint(RunnerStyle.blue).background(RunnerStyle.background).scrollEdgeEffectStyle(.hard, for: .bottom)
       .sheet(isPresented: $settings) { SettingsScreen().presentationDragIndicator(.visible) }
       .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await health.sync() } } }
       .task { live.onWorkoutSaved = { Task { await health.sync() } } }

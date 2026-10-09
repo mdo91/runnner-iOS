@@ -64,7 +64,7 @@ struct TrendsScreen: View {
         Text(
           "These are fitness trends, not a medical assessment. Runner does not estimate missing VO₂ max or recovery values."
         ).font(.footnote).foregroundStyle(RunnerStyle.muted)
-      }.padding(20)
+      }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).navigationTitle("Trends")
   }
   private func measurementCard(kind: String, title: String, unit: String, symbol: String)

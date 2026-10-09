@@ -11,11 +11,17 @@ import SwiftUI
   @StateObject private var historySync = HistorySyncManager()
   private let container: ModelContainer
   init() {
-    if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
+    if !AppRuntime.isFixture, Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
       AppCheck.setAppCheckProviderFactory(AttestationFactory())
       FirebaseApp.configure()
     }
-    _account = StateObject(wrappedValue: AccountManager())
+    let account = AccountManager()
+    if AppRuntime.isFixture {
+      account.signedIn = true
+      account.userID = "fixture-account"
+      account.consent = false
+    }
+    _account = StateObject(wrappedValue: account)
     do {
       #if DEBUG
         if PreviewFixtures.enabled {
@@ -50,7 +56,9 @@ import SwiftUI
     WindowGroup {
       ContentView().environmentObject(health).environmentObject(account).environmentObject(analysis)
         .environmentObject(live).environmentObject(historySync)
-        .preferredColorScheme(.dark)
+        .defaultAppStorage(AppRuntime.defaults)
+        .preferredColorScheme(AppRuntime.appearance)
+        .modifier(FixtureTextSize())
         .task {
           #if DEBUG
             if PreviewFixtures.enabled { return }
@@ -60,5 +68,12 @@ import SwiftUI
           await health.sync()
         }
     }.modelContainer(container)
+  }
+}
+
+private struct FixtureTextSize: ViewModifier {
+  @Environment(\.dynamicTypeSize) private var size
+  func body(content: Content) -> some View {
+    content.environment(\.dynamicTypeSize, AppRuntime.largeText ? .accessibility3 : size)
   }
 }

@@ -2,17 +2,19 @@ import RunCore
 import SwiftUI
 
 enum RunnerStyle {
-  static let background = Color(red: 0.045, green: 0.052, blue: 0.065)
-  static let surface = Color(red: 0.085, green: 0.098, blue: 0.12)
-  static let blue = Color(red: 0.22, green: 0.55, blue: 1)
-  static let muted = Color(red: 0.65, green: 0.70, blue: 0.77)
+  static let background = Color(uiColor: .systemGroupedBackground)
+  static let surface = Color(uiColor: .secondarySystemGroupedBackground)
+  static let blue = Color.accentColor
+  static let muted = Color(uiColor: UIColor { traits in
+    traits.userInterfaceStyle == .dark ? UIColor(white: 0.72, alpha: 1) : UIColor(white: 0.30, alpha: 1)
+  })
 }
 struct Surface<Content: View>: View {
   @ViewBuilder var content: Content
   var body: some View {
     content.padding(20).frame(maxWidth: .infinity, alignment: .leading).background(
-      RunnerStyle.surface, in: RoundedRectangle(cornerRadius: 24)
-    ).overlay(RoundedRectangle(cornerRadius: 24).stroke(.white.opacity(0.045), lineWidth: 1))
+      RunnerStyle.surface, in: RoundedRectangle(cornerRadius: 20)
+    ).overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.primary.opacity(0.05), lineWidth: 1))
   }
 }
 struct Stat: View {
@@ -22,9 +24,9 @@ struct Stat: View {
   var symbol: String
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Label(title, systemImage: symbol).font(.subheadline).foregroundStyle(RunnerStyle.muted)
-      Text(value).font(.system(.title, design: .rounded, weight: .semibold)).monospacedDigit()
-      Text(unit).font(.caption).foregroundStyle(RunnerStyle.muted)
+      Label(title, systemImage: symbol).fixedSize(horizontal: false, vertical: true).font(.subheadline).foregroundStyle(RunnerStyle.muted)
+      Text(value).font(.system(.title2, design: .rounded, weight: .semibold)).monospacedDigit()
+      Text(unit).fixedSize(horizontal: false, vertical: true).font(.caption).foregroundStyle(RunnerStyle.muted)
     }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .ignore)
       .accessibilityLabel("\(title), \(value) \(unit)")
   }
@@ -87,5 +89,12 @@ struct MetricPair<Content: View>: View {
       ? AnyLayout(VStackLayout(alignment: .leading, spacing: 22))
       : AnyLayout(HStackLayout(alignment: .top, spacing: 16))
     layout { content }
+  }
+}
+
+struct ScreenLayout<Content: View>: View {
+  @ViewBuilder var content: Content
+  var body: some View {
+    content.frame(maxWidth: 960, alignment: .leading).frame(maxWidth: .infinity)
   }
 }
