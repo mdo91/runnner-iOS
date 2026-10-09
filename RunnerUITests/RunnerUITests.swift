@@ -8,7 +8,7 @@ import XCTest
     if let app {
       let shot = XCTAttachment(screenshot: app.screenshot())
       shot.name = name
-      shot.lifetime = testRun?.hasSucceeded == true ? .deleteOnSuccess : .keepAlways
+      shot.lifetime = .keepAlways
       add(shot)
       app.terminate()
     }
@@ -37,7 +37,11 @@ import XCTest
   private func reveal(_ element: XCUIElement, limit: Int = 12) {
     for _ in 0..<limit {
       if element.exists && element.isHittable { return }
-      app.swipeUp()
+      let upwards = !element.exists || element.frame.midY >= app.frame.midY
+      app.coordinate(withNormalizedOffset: CGVector(dx: 0.96, dy: upwards ? 0.8 : 0.3)).press(
+        forDuration: 0.05,
+        thenDragTo: app.coordinate(
+          withNormalizedOffset: CGVector(dx: 0.96, dy: upwards ? 0.3 : 0.8)))
     }
     XCTAssertTrue(element.exists && element.isHittable, "Could not reveal \(element)")
   }
@@ -68,7 +72,7 @@ import XCTest
     XCTAssertEqual(app.staticTexts["activity.total"].label, "0 runs")
     XCTAssertTrue(app.staticTexts["No runs in this period. Imported runs will appear here."].exists)
     for range in ["3 Months", "6 Months", "Year", "Month"] { app.buttons[range].tap() }
-    app.buttons["Kilometers"].tap()
+    app.buttons["Distance"].tap()
     XCTAssertEqual(app.staticTexts["activity.total"].label, "0.00 km")
   }
   func testAppearanceLargeTextAndLandscape() {
@@ -129,13 +133,89 @@ import XCTest
   func testAccessibilityAudit() throws {
     launch("empty")
     tab("Activity")
-    try app.performAccessibilityAudit(for: [.contrast, .textClipped, .sufficientElementDescription]) { issue in
+    try app.performAccessibilityAudit(for: [.contrast, .textClipped, .sufficientElementDescription])
+    { issue in
       guard issue.auditType == .contrast, let element = issue.element else { return false }
       let bar = self.app.tabBars.firstMatch
       // The audit also inspects scroll content behind or below the glass tab bar.
       // Fully visible content above the bar must pass without exceptions.
-      return bar.exists && bar.frame.minY > self.app.frame.midY && element.frame.maxY > bar.frame.minY
+      return bar.exists && bar.frame.minY > self.app.frame.midY
+        && element.frame.maxY > bar.frame.minY
     }
+  }
+  func testVolumeRangesMetricsAndBucketDrilldown() {
+    launch()
+    tab("Activity")
+    for (range, total) in [
+      ("3 Months", "7 runs"), ("6 Months", "8 runs"), ("Year", "9 runs"), ("Month", "3 runs"),
+    ] {
+      app.buttons[range].tap()
+      XCTAssertEqual(app.staticTexts["activity.total"].label, total)
+    }
+    app.buttons["Distance"].tap()
+    XCTAssertEqual(app.staticTexts["activity.total"].label, "15.00 km")
+    app.buttons["Moving Time"].tap()
+    XCTAssertEqual(app.staticTexts["activity.total"].label, "1:16:30")
+    app.buttons["Elevation Gain"].tap()
+    XCTAssertFalse(app.staticTexts["activity.total"].label.contains("—"))
+    app.buttons["Runs"].tap()
+    reveal(app.buttons["activity.chartData"])
+    app.buttons["activity.chartData"].tap()
+    reveal(app.buttons["activity.bucket.8"])
+    app.buttons["activity.bucket.8"].tap()
+    XCTAssertTrue(app.staticTexts["activity.selection"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["activity.selection"].label.contains("1 runs"))
+    app.buttons["activity.viewRuns"].tap()
+    XCTAssertTrue(app.staticTexts["explorer.count"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 runs")
+    app.buttons["explorer.done"].tap()
+    reveal(app.buttons["activity.customDates"])
+    app.buttons["activity.customDates"].tap()
+    app.buttons["activity.applyDates"].tap()
+    XCTAssertEqual(app.staticTexts["activity.total"].label, "3 runs")
+  }
+  func testCalendarAndHistoryFilters() {
+    launch("indoor")
+    tab("Activity")
+    reveal(app.buttons["calendar.day.8"])
+    app.buttons["calendar.day.8"].tap()
+    XCTAssertTrue(app.staticTexts["explorer.count"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 runs")
+    app.buttons["explorer.done"].tap()
+    app.buttons["calendar.previous"].tap()
+    XCTAssertTrue(app.staticTexts["calendar.month"].label.contains("September"))
+    app.buttons["calendar.next"].tap()
+    XCTAssertTrue(app.staticTexts["calendar.month"].label.contains("October"))
+    tab("History")
+    reveal(app.buttons["Indoor"])
+    app.buttons["Indoor"].tap()
+    XCTAssertEqual(app.staticTexts["history.count"].label, "1 runs")
+    app.buttons["Outdoor"].tap()
+    XCTAssertEqual(app.staticTexts["history.count"].label, "5 runs")
+    app.buttons["history.reset"].tap()
+    app.buttons["Pace"].tap()
+    let latest = app.buttons["history.run.00000000-0000-0000-0000-000000000001"]
+    reveal(latest)
+    latest.tap()
+    XCTAssertTrue(app.navigationBars["Run Details"].waitForExistence(timeout: 5))
+  }
+  func testLinkedSamplesSplitsAndMissingSensors() {
+    launch("paused")
+    reveal(app.buttons["run.samples"])
+    app.buttons["run.samples"].tap()
+    app.buttons["run.sample.0"].tap()
+    XCTAssertTrue(app.staticTexts["run.selection"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["run.selection"].label.contains("5:00"))
+    reveal(app.buttons["run.split.1"])
+    app.buttons["run.split.1"].tap()
+    XCTAssertTrue(app.staticTexts["run.splitSelection"].exists)
+    app.terminate()
+    launch("partial")
+    reveal(app.buttons["run.metric"])
+    app.buttons["run.metric"].tap()
+    app.buttons["Power"].tap()
+    XCTAssertTrue(app.staticTexts["run.unavailable"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["run.unavailable"].label.contains("power"))
   }
   func testReducedMotionAndTransparency() throws {
     let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")

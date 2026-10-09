@@ -5,9 +5,11 @@ enum RunnerStyle {
   static let background = Color(uiColor: .systemGroupedBackground)
   static let surface = Color(uiColor: .secondarySystemGroupedBackground)
   static let blue = Color.accentColor
-  static let muted = Color(uiColor: UIColor { traits in
-    traits.userInterfaceStyle == .dark ? UIColor(white: 0.72, alpha: 1) : UIColor(white: 0.30, alpha: 1)
-  })
+  static let muted = Color(
+    uiColor: UIColor { traits in
+      traits.userInterfaceStyle == .dark
+        ? UIColor(white: 0.72, alpha: 1) : UIColor(white: 0.30, alpha: 1)
+    })
 }
 struct Surface<Content: View>: View {
   @ViewBuilder var content: Content
@@ -24,9 +26,12 @@ struct Stat: View {
   var symbol: String
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      Label(title, systemImage: symbol).fixedSize(horizontal: false, vertical: true).font(.subheadline).foregroundStyle(RunnerStyle.muted)
+      Label(title, systemImage: symbol).fixedSize(horizontal: false, vertical: true).font(
+        .subheadline
+      ).foregroundStyle(RunnerStyle.muted)
       Text(value).font(.system(.title2, design: .rounded, weight: .semibold)).monospacedDigit()
-      Text(unit).fixedSize(horizontal: false, vertical: true).font(.caption).foregroundStyle(RunnerStyle.muted)
+      Text(unit).fixedSize(horizontal: false, vertical: true).font(.caption).foregroundStyle(
+        RunnerStyle.muted)
     }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .ignore)
       .accessibilityLabel("\(title), \(value) \(unit)")
   }
@@ -57,10 +62,11 @@ struct SectionTitle: View {
 }
 struct RunListRow: View {
   @Environment(\.dynamicTypeSize) private var typeSize
+  @EnvironmentObject private var analytics: AnalyticsStore
   var run: RunData
   var units: UnitSystem
   var body: some View {
-    let m = RunCalculator.metrics(run)
+    let m = analytics.snapshot.metrics[run.id] ?? RunCalculator.metrics(run)
     MetricPair {
       Image(systemName: run.indoor ? "figure.run.treadmill" : "figure.run").font(.title2)
         .foregroundStyle(RunnerStyle.blue).frame(width: 44, height: 48).background(

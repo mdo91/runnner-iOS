@@ -15,10 +15,12 @@ struct RunDetailScreen: View {
   var measurements: [HealthMeasurement]
   var units: UnitSystem
   var latest = false
+  @EnvironmentObject private var analytics: AnalyticsStore
   @State private var selection: Date?
+  @State private var selectedSplit: DateInterval?
   @ScaledMetric(relativeTo: .largeTitle) private var heroSize = 52.0
   var body: some View {
-    let metrics = RunCalculator.metrics(run)
+    let metrics = analytics.snapshot.metrics[run.id] ?? RunCalculator.metrics(run)
     ScrollView {
       VStack(alignment: .leading, spacing: 22) {
         MetricPair {
@@ -64,7 +66,7 @@ struct RunDetailScreen: View {
           }
         }
         if !run.route.isEmpty {
-          RouteCard(run: run, units: units, selection: $selection)
+          RouteCard(run: run, units: units, selection: $selection, selectedInterval: selectedSplit)
         } else {
           Surface {
             Label(
@@ -75,54 +77,9 @@ struct RunDetailScreen: View {
               .foregroundStyle(RunnerStyle.muted)
           }
         }
-        if !run.heartRate.isEmpty {
-          Surface {
-            VStack(alignment: .leading, spacing: 14) {
-              SectionTitle(
-                title: "Heart rate",
-                subtitle:
-                  "\(Int(metrics.heartRateCoverage*100))% coverage · select a point to explore")
-              Chart {
-                ForEach(run.heartRate, id: \.start) { sample in
-                  PointMark(x: .value("Time", sample.start), y: .value("Heart rate", sample.value))
-                    .foregroundStyle(.pink.opacity(0.85)).symbolSize(8)
-                }
-                if let selection {
-                  RuleMark(x: .value("Selected", selection)).foregroundStyle(Color.primary.opacity(0.45))
-                }
-              }.chartXSelection(value: $selection).chartYAxisLabel("bpm").frame(height: 150)
-              if let selection,
-                let nearest = run.heartRate.min(by: {
-                  abs($0.start.timeIntervalSince(selection))
-                    < abs($1.start.timeIntervalSince(selection))
-                }), abs(nearest.start.timeIntervalSince(selection)) <= 30
-              {
-                Text(
-                  "\(nearest.start.formatted(date:.omitted,time:.shortened)) · \(Int(nearest.value)) bpm"
-                ).font(.caption.monospacedDigit()).foregroundStyle(RunnerStyle.muted)
-              }
-            }
-          }
-        }
+        RunCharts(run: run, units: units, selection: $selection)
         splitSection
         assessment(metrics)
-        if !run.dynamics.isEmpty {
-          Surface {
-            VStack(alignment: .leading, spacing: 14) {
-              SectionTitle(title: "Running form")
-              ForEach(run.dynamics.keys.sorted(), id: \.self) { key in
-                if let samples = run.dynamics[key], !samples.isEmpty {
-                  let value = samples.reduce(0) { $0 + $1.value } / Double(samples.count)
-                  HStack {
-                    Text(dynamicsLabel(key))
-                    Spacer()
-                    Text(dynamicsValue(key, value)).monospacedDigit()
-                  }.font(.subheadline)
-                }
-              }
-            }
-          }
-        }
         HStack(alignment: .top, spacing: 8) {
           Image(systemName: "applewatch")
           Text("Imported from \(run.source). Missing measurements appear as —.")
@@ -143,19 +100,46 @@ struct RunDetailScreen: View {
             .foregroundStyle(RunnerStyle.muted)
         } else {
           ForEach(splits) { split in
-            HStack {
-              Text("\(split.index)").frame(width: 24, alignment: .leading).foregroundStyle(
-                RunnerStyle.muted)
-              Text(units.pace(split.pace)).font(.headline.monospacedDigit())
-              GeometryReader { proxy in
-                RoundedRectangle(cornerRadius: 3).fill(RunnerStyle.blue.opacity(0.75)).frame(
-                  width: max(4, proxy.size.width * min(1, 240 / max(240, split.pace))), height: 6
-                ).frame(height: proxy.size.height)
-              }.frame(height: 20)
-              Text(split.averageHeartRate.map { String(Int($0.rounded())) } ?? "—").font(
-                .subheadline.monospacedDigit()
-              ).frame(width: 44, alignment: .trailing)
-            }.accessibilityElement(children: .combine)
+            Button {
+              guard let timeline = DistanceTimeline(run),
+                let start = timeline.time(
+                  at: Double(split.index - 1) * units.metersPerUnit, starting: true),
+                let end = timeline.time(
+                  at: min(Double(split.index) * units.metersPerUnit, run.distanceMeters ?? 0),
+                  starting: false)
+              else { return }
+              selectedSplit = DateInterval(start: start, end: end)
+              selection = start.addingTimeInterval(end.timeIntervalSince(start) / 2)
+            } label: {
+              HStack {
+                Text("\(split.index)").frame(width: 24, alignment: .leading).foregroundStyle(
+                  RunnerStyle.muted)
+                Text(units.pace(split.pace)).font(.headline.monospacedDigit())
+                GeometryReader { proxy in
+                  RoundedRectangle(cornerRadius: 3).fill(RunnerStyle.blue.opacity(0.75)).frame(
+                    width: max(
+                      4,
+                      proxy.size.width
+                        * min(1, (splits.map(\.pace).min() ?? split.pace) / max(1, split.pace))),
+                    height: 6
+                  ).frame(height: proxy.size.height)
+                }.frame(height: 20)
+                Text(split.averageHeartRate.map { String(Int($0.rounded())) } ?? "—").font(
+                  .subheadline.monospacedDigit()
+                ).frame(width: 44, alignment: .trailing)
+              }
+            }.buttonStyle(.plain).accessibilityElement(children: .combine).accessibilityLabel(
+              "Split \(split.index), \(units.pace(split.pace)) minutes per \(units.distanceUnit)"
+            ).accessibilityIdentifier("run.split.\(split.index)")
+          }
+          if selectedSplit != nil {
+            Text("Selected split highlighted on the route.").accessibilityIdentifier(
+              "run.splitSelection"
+            ).font(.caption)
+            Button("Clear split") {
+              selectedSplit = nil
+              selection = nil
+            }
           }
         }
       }

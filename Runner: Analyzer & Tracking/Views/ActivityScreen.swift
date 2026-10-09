@@ -4,37 +4,43 @@ import SwiftUI
 
 struct ActivityScreen: View {
   var rows: [RecordedRun]
+  var measurements: [HealthMeasurement]
+  var units: UnitSystem
+  @EnvironmentObject private var analytics: AnalyticsStore
 
   var body: some View {
-    ActivityContent(runs: rows.compactMap(\.run))
+    ActivityContent(
+      snapshot: analytics.snapshot, rows: rows, measurements: measurements, units: units)
   }
 }
 
 private struct ActivityContent: View {
-  // Decode stored workouts outside the interactive view so chart taps and clock
-  // updates do not repeatedly decode the entire history, including GPS payloads.
-  var runs: [RunData]
+  var snapshot: RunAnalyticsSnapshot
+  var rows: [RecordedRun]
+  var measurements: [HealthMeasurement]
+  var units: UnitSystem
   @Environment(\.dynamicTypeSize) private var typeSize
   @State private var range: ActivityRange = .month
   @State private var metric: ActivityMetric = .runs
   @State private var selectedDate: Date?
 
-  private enum ActivityMetric: String, CaseIterable {
-    case runs = "Runs"
-    case kilometers = "Kilometers"
-  }
+  @State private var customInterval: DateInterval?
+  @State private var dates = false
+  @State private var bucketList = false
+  @State private var drilldown: RunDrilldown?
 
   var body: some View {
     TimelineView(.periodic(from: .now, by: 60)) { timeline in
       let statistics = ActivityStatistics(
-        runs: runs, now: AppRuntime.isFixture ? AppRuntime.now : timeline.date,
-        calendar: AppRuntime.calendar)
+        runs: snapshot.runs, now: AppRuntime.isFixture ? AppRuntime.now : timeline.date,
+        calendar: AppRuntime.calendar, metrics: snapshot.metrics)
       ScrollView {
         VStack(alignment: .leading, spacing: 22) {
           SectionTitle(
             title: "Every run adds up",
             subtitle: "Your running volume and progress over time.")
           activityChart(statistics)
+          TrainingCalendar(statistics: statistics, metric: metric, units: units) { drilldown = $0 }
           SectionTitle(
             title: "Performance",
             subtitle: "Current periods are totals so far. Previous periods show their full totals.")
@@ -66,25 +72,44 @@ private struct ActivityContent: View {
           comparisonCard("Monthly progress", comparison: statistics.comparison(.month))
           comparisonCard("Weekly progress", comparison: statistics.comparison(.weekOfYear))
           Text(
-            "Based on imported, completed runs and their start dates. Weeks follow your calendar settings. Distance is shown in kilometers; average pace uses total moving time divided by measured distance. Different routes and effort can affect pace."
+            "Based on imported, completed runs and their start dates. Weeks follow your calendar settings. Distance follows your unit preference; average pace uses total moving time divided by measured distance. Different routes and effort can affect pace."
           )
           .font(.footnote).foregroundStyle(RunnerStyle.muted)
         }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
       }
     }
     .background(RunnerStyle.background).navigationTitle("Activity")
-    .onChange(of: range) { _, _ in selectedDate = nil }
+    .sheet(isPresented: $dates) {
+      CustomDates(
+        start: customInterval?.start
+          ?? AppRuntime.calendar.dateInterval(of: .month, for: AppRuntime.now)!.start,
+        end: customInterval?.end ?? AppRuntime.now
+      ) {
+        customInterval = $0
+        selectedDate = nil
+      }
+    }
+    .sheet(item: $drilldown) { selection in
+      RunExplorer(selection: selection, rows: rows, measurements: measurements, units: units)
+    }
+    .onChange(of: range) { _, _ in
+      customInterval = nil
+      selectedDate = nil
+    }
     .onChange(of: metric) { _, _ in selectedDate = nil }
   }
 
   private func activityChart(_ statistics: ActivityStatistics) -> some View {
-    let buckets = statistics.buckets(for: range)
-    let total = statistics.summary(
-      in: range.interval(now: statistics.now, calendar: statistics.calendar))
+    let interval =
+      customInterval ?? range.interval(now: statistics.now, calendar: statistics.calendar)
+    let component =
+      customInterval == nil ? range.bucketComponent : statistics.customBucketComponent(in: interval)
+    let buckets = statistics.buckets(in: interval, component: component)
+    let total = statistics.summary(in: interval)
     let selected = selectedDate.flatMap { date in
       buckets.first { date >= $0.interval.start && date < $0.interval.end }
     }
-    let maximum = max(1, buckets.compactMap { chartValue($0.summary) }.max() ?? 0)
+    let maximum = max(1, buckets.compactMap { metric.value($0.summary, units: units) }.max() ?? 0)
     return Surface {
       VStack(alignment: .leading, spacing: 18) {
         if typeSize.isAccessibilitySize {
@@ -102,49 +127,63 @@ private struct ActivityContent: View {
             ForEach(ActivityMetric.allCases, id: \.self) { Text($0.rawValue).tag($0) }
           }.pickerStyle(.segmented)
         }
+        HStack {
+          Button("Custom dates") { dates = true }.accessibilityIdentifier("activity.customDates")
+          if customInterval != nil {
+            Button("Use preset") {
+              customInterval = nil
+              selectedDate = nil
+            }
+          }
+        }.buttonStyle(.bordered)
         VStack(alignment: .leading, spacing: 6) {
-          Text(rangeTitle).font(.headline).foregroundStyle(RunnerStyle.muted)
-          Text(metric == .runs ? "\(total.runCount) runs" : "\(distance(total)) km")
+          Text(customInterval == nil ? rangeTitle : "Custom dates").font(.headline).foregroundStyle(
+            RunnerStyle.muted)
+          Text(metric.formatted(total, units: units))
             .accessibilityIdentifier("activity.total")
             .font(.system(.largeTitle, design: .rounded, weight: .semibold)).monospacedDigit()
           Text(
-            dateRange(
-              range.interval(now: statistics.now, calendar: statistics.calendar), throughNow: true)
+            dateRange(interval, throughNow: interval.end == statistics.now)
           )
           .font(.subheadline).foregroundStyle(RunnerStyle.muted)
         }
-        if total.runCount > 0 {
+        if total.runCount > 0, metric.value(total, units: units) != nil, let first = buckets.first,
+          let last = buckets.last
+        {
           Chart {
             ForEach(buckets) { bucket in
-              if let value = chartValue(bucket.summary) {
+              if let value = metric.value(bucket.summary, units: units) {
                 BarMark(
-                  x: .value("Date", bucket.interval.start, unit: range.bucketComponent),
+                  x: .value("Date", bucket.interval.start, unit: component),
                   y: .value(metric.rawValue, value)
                 )
                 .foregroundStyle(RunnerStyle.blue.gradient).cornerRadius(4)
                 .opacity(selected == nil || selected?.id == bucket.id ? 1 : 0.35)
                 .accessibilityLabel(bucketLabel(bucket))
                 .accessibilityValue(
-                  metric == .runs
-                    ? "\(bucket.summary.runCount) runs" : "\(distance(bucket.summary)) kilometers")
+                  metric.formatted(bucket.summary, units: units))
               }
             }
             if let selected {
               RuleMark(
-                x: .value("Selected date", selected.interval.start, unit: range.bucketComponent)
+                x: .value("Selected date", selected.interval.start, unit: component)
               )
               .foregroundStyle(RunnerStyle.muted).lineStyle(StrokeStyle(dash: [4]))
               .accessibilityHidden(true)
             }
           }
-          .chartXScale(domain: buckets.first!.interval.start...buckets.last!.interval.end)
+          .chartXScale(domain: first.interval.start...last.interval.end)
           .chartYScale(domain: 0...(maximum * 1.15))
           .chartXAxis {
-            AxisMarks(values: .stride(by: range.bucketComponent, count: range == .month ? 5 : 1)) {
+            AxisMarks(
+              values: .stride(
+                by: component, count: component == .day ? max(1, buckets.count / 6) : 1)
+            ) {
               _ in
               AxisGridLine()
               AxisValueLabel(
-                format: range == .month ? .dateTime.day() : .dateTime.month(.abbreviated))
+                format: component == .month
+                  ? .dateTime.month(.abbreviated) : .dateTime.month(.abbreviated).day())
             }
           }
           .chartYAxis {
@@ -157,7 +196,7 @@ private struct ActivityContent: View {
               AxisMarks(position: .leading)
             }
           }
-          .chartYAxisLabel(metric == .runs ? "Runs" : "km")
+          .chartYAxisLabel(metric.unit(units))
           .chartXSelection(value: $selectedDate)
           .chartGesture { proxy in
             SpatialTapGesture().onEnded { value in
@@ -168,14 +207,17 @@ private struct ActivityContent: View {
         }
         if let selected {
           Text(
-            "\(bucketLabel(selected)): \(selected.summary.runCount) runs · \(distance(selected.summary)) km"
+            "\(bucketLabel(selected)): \(metric.formatted(selected.summary, units: units))"
           )
           .font(.subheadline).monospacedDigit().accessibilityAddTraits(.updatesFrequently)
+          .accessibilityIdentifier("activity.selection")
+          Button("View runs") {
+            drilldown = RunDrilldown(
+              title: bucketLabel(selected), runIDs: statistics.runIDs(in: selected.interval))
+          }.accessibilityIdentifier("activity.viewRuns")
         } else if total.runCount > 0 {
           Text(
-            range == .month
-              ? "Daily totals · Tap the chart to explore"
-              : "Monthly totals · Tap the chart to explore"
+            "Select a chart bucket to explore its totals and runs."
           )
           .font(.caption).foregroundStyle(RunnerStyle.muted)
         }
@@ -185,11 +227,29 @@ private struct ActivityContent: View {
           )
           .font(.subheadline).foregroundStyle(RunnerStyle.muted)
         }
-        if total.missingDistanceCount > 0 {
+        if metric.missingCount(total) > 0 {
           Text(
-            "Distance is unavailable for \(total.missingDistanceCount) runs. Distance totals include only measured kilometers; those runs still count toward Runs."
-          )
-          .font(.footnote).foregroundStyle(RunnerStyle.muted)
+            "\(metric.missingCount(total)) runs have no \(metric.rawValue.lowercased()) measurement. Totals include available data."
+          ).font(.footnote).foregroundStyle(RunnerStyle.muted)
+        }
+        if total.runCount > 0 {
+          Button("Explore chart data") { bucketList = true }.accessibilityIdentifier(
+            "activity.chartData")
+        }
+      }
+    }.sheet(isPresented: $bucketList) {
+      NavigationStack {
+        List(buckets) { bucket in
+          Button {
+            selectedDate = bucket.interval.start
+            bucketList = false
+          } label: {
+            Text("\(bucketLabel(bucket)) · \(metric.formatted(bucket.summary, units: units))")
+          }
+          .accessibilityIdentifier(
+            "activity.bucket.\(statistics.calendar.component(.day, from: bucket.interval.start))")
+        }.navigationTitle("Chart data").toolbar {
+          ToolbarItem(placement: .confirmationAction) { Button("Done") { bucketList = false } }
         }
       }
     }
@@ -210,14 +270,14 @@ private struct ActivityContent: View {
       ) {
         Stat(title: "Runs", value: "\(summary.runCount)", unit: "completed", symbol: "figure.run")
         Stat(
-          title: "Distance", value: distance(summary), unit: "km",
+          title: "Distance", value: distance(summary), unit: units.distanceUnit,
           symbol: "point.topleft.down.to.point.bottomright.curvepath")
         Stat(
-          title: "Moving time", value: UnitSystem.duration(summary.movingSeconds),
+          title: "Moving time", value: summary.movingTimeSeconds.map(UnitSystem.duration) ?? "—",
           unit: "h:mm:ss / m:ss", symbol: "stopwatch")
         Stat(
-          title: "Average pace", value: UnitSystem.metric.pace(summary.averagePaceSecondsPerKm),
-          unit: "min/km", symbol: "speedometer")
+          title: "Average pace", value: units.pace(summary.averagePaceSecondsPerKm),
+          unit: "min/\(units.distanceUnit)", symbol: "speedometer")
       }
       if summary.missingDistanceCount > 0 {
         Text(
@@ -280,18 +340,12 @@ private struct ActivityContent: View {
     }
   }
 
-  private func chartValue(_ summary: ActivitySummary) -> Double? {
-    metric == .runs ? Double(summary.runCount) : summary.distanceMeters.map { $0 / 1000 }
-  }
-
   private func distance(_ summary: ActivitySummary) -> String {
-    UnitSystem.metric.distance(summary.distanceMeters)
+    units.distance(summary.distanceMeters)
   }
 
   private func bucketLabel(_ bucket: ActivityBucket) -> String {
-    range == .month
-      ? bucket.interval.start.formatted(.dateTime.month(.abbreviated).day())
-      : bucket.interval.start.formatted(.dateTime.month(.wide).year())
+    bucket.interval.start.formatted(.dateTime.month(.abbreviated).day().year())
   }
 
   private func dateRange(_ interval: DateInterval, throughNow: Bool) -> String {
@@ -313,6 +367,6 @@ private struct ActivityContent: View {
   private func distanceChangeText(_ change: Double) -> String {
     abs(change) < 5
       ? "Distance unchanged"
-      : "\(UnitSystem.metric.distance(abs(change))) km \(change > 0 ? "more" : "less")"
+      : "\(units.distance(abs(change))) \(units.distanceUnit) \(change > 0 ? "more" : "less")"
   }
 }
