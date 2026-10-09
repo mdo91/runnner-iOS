@@ -41,8 +41,8 @@ private struct HistoryBatch: Encodable {
     guard uid != userID else { return }
     uid = userID
     consentGeneration += 1
-    enabled = userID.map { UserDefaults.standard.bool(forKey: key("enabled",$0)) } ?? false
-    gpsEnabled = enabled && (userID.map { UserDefaults.standard.bool(forKey: key("gps",$0)) } ?? false)
+    enabled = userID.map { AppRuntime.defaults.bool(forKey: key("enabled",$0)) } ?? false
+    gpsEnabled = enabled && (userID.map { AppRuntime.defaults.bool(forKey: key("gps",$0)) } ?? false)
     message = nil
     changeCounter += 1
   }
@@ -50,11 +50,12 @@ private struct HistoryBatch: Encodable {
     guard self.uid == uid else { return }
     let changed = enabled != prefs.enabled || gpsEnabled != prefs.gpsEnabled || revision != prefs.privacyRevision
     enabled = prefs.enabled; gpsEnabled = prefs.gpsEnabled; revision = prefs.privacyRevision
-    UserDefaults.standard.set(enabled,forKey:key("enabled",uid))
-    UserDefaults.standard.set(gpsEnabled,forKey:key("gps",uid))
+    AppRuntime.defaults.set(enabled,forKey:key("enabled",uid))
+    AppRuntime.defaults.set(gpsEnabled,forKey:key("gps",uid))
     if changed { changeCounter += 1 }
   }
   func configure(enabled: Bool, gps: Bool) async {
+    guard !AppRuntime.isFixture else { return }
     guard let uid, Auth.auth().currentUser?.uid == uid, !changingConsent else { return }
     consentGeneration += 1
     changingConsent = true
@@ -64,17 +65,17 @@ private struct HistoryBatch: Encodable {
     let input = HistoryPreferenceInput(enabled: enabled, gpsEnabled: enabled && gps)
     if !enabled || !gps {
       self.enabled = enabled; self.gpsEnabled = enabled && gps
-      UserDefaults.standard.set(enabled,forKey:key("enabled",uid))
-      UserDefaults.standard.set(enabled && gps,forKey:key("gps",uid))
+      AppRuntime.defaults.set(enabled,forKey:key("enabled",uid))
+      AppRuntime.defaults.set(enabled && gps,forKey:key("gps",uid))
     }
     do {
       let payload = try APIClient.encode(input)
       // Persist a withdrawal until the server confirms removal, even if the app closes offline.
-      if withdrawal { UserDefaults.standard.set(payload,forKey:key("pendingPrivacy",uid)) }
+      if withdrawal { AppRuntime.defaults.set(payload,forKey:key("pendingPrivacy",uid)) }
       let data = try await APIClient.request(path:"v1/history/preferences",method:"PUT",body:payload,expectedUID:uid)
       let prefs = try JSONDecoder().decode(HistoryPreferences.self,from:data)
       guard self.uid == uid else { return }
-      UserDefaults.standard.removeObject(forKey:key("pendingPrivacy",uid))
+      AppRuntime.defaults.removeObject(forKey:key("pendingPrivacy",uid))
       persist(prefs,uid:uid)
       message = prefs.enabled ? (prefs.gpsEnabled ? "History and routes sync is enabled." : "History sync is enabled. Uploaded GPS coordinates have been removed.") : "History sync is off. Uploaded GPS coordinates have been removed; numerical history remains until you delete it."
     } catch {
@@ -82,8 +83,8 @@ private struct HistoryBatch: Encodable {
       // Never silently retry an unconfirmed opt-in. Withdrawals are retried on the next sync.
       if !withdrawal {
         self.enabled = previousEnabled; self.gpsEnabled = previousGPS
-        UserDefaults.standard.set(previousEnabled,forKey:key("enabled",uid))
-        UserDefaults.standard.set(previousGPS,forKey:key("gps",uid))
+        AppRuntime.defaults.set(previousEnabled,forKey:key("enabled",uid))
+        AppRuntime.defaults.set(previousGPS,forKey:key("gps",uid))
       }
       message = withdrawal ? "Sharing is paused on this phone. Connect to the internet to finish the privacy change and remove uploaded GPS coordinates." : "Consent could not be saved. Please retry when connected."
     }
@@ -103,13 +104,13 @@ private struct HistoryBatch: Encodable {
       if retryNeeded { retryNeeded = false; Task { await sync(context:context,account:account) } }
     }
     do {
-      if let pending = UserDefaults.standard.data(forKey:key("pendingPrivacy",uid)) {
+      if let pending = AppRuntime.defaults.data(forKey:key("pendingPrivacy",uid)) {
         let input = try JSONDecoder().decode(HistoryPreferenceInput.self,from:pending)
         // Only retry withdrawals automatically; opt-ins must complete from the consent control.
         guard !input.enabled || !input.gpsEnabled else { return }
         let data = try await APIClient.request(path:"v1/history/preferences",method:"PUT",body:pending,expectedUID:uid)
         guard consentGeneration == generation, self.uid == uid, !changingConsent else { return }
-        UserDefaults.standard.removeObject(forKey:key("pendingPrivacy",uid))
+        AppRuntime.defaults.removeObject(forKey:key("pendingPrivacy",uid))
         persist(try JSONDecoder().decode(HistoryPreferences.self,from:data),uid:uid)
       }
       guard enabled, !changingConsent else { return }
@@ -198,8 +199,8 @@ private struct HistoryBatch: Encodable {
     guard let uid else { return }
     consentGeneration += 1
     enabled = false; gpsEnabled = false
-    UserDefaults.standard.set(false,forKey:key("enabled",uid))
-    UserDefaults.standard.set(false,forKey:key("gps",uid))
+    AppRuntime.defaults.set(false,forKey:key("enabled",uid))
+    AppRuntime.defaults.set(false,forKey:key("gps",uid))
     changeCounter += 1
   }
   func clear(context: ModelContext) async {

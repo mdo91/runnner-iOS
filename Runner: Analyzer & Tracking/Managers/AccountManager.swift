@@ -13,14 +13,14 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
   @Published var userID: String?
   @Published var message: String?
   @Published var isWorking = false
-  @Published var consent = UserDefaults.standard.string(forKey: "aiConsentVersion") == "2026-10-03"
-  @Published var adultConfirmed = UserDefaults.standard.bool(forKey: "adultConfirmed")
+  @Published var consent = AppRuntime.defaults.string(forKey: "aiConsentVersion") == "2026-10-03"
+  @Published var adultConfirmed = AppRuntime.defaults.bool(forKey: "adultConfirmed")
   private var nonce: String?
   private var deleting = false
   private var listener: AuthStateDidChangeListenerHandle?
   static var configured: Bool { FirebaseApp.app() != nil }
   init() {
-    if Self.configured {
+    if !AppRuntime.isFixture, Self.configured {
       listener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
         Task { @MainActor in self?.signedIn = user != nil; self?.userID = user?.uid }
       }
@@ -82,11 +82,11 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
   }
   func setConsent(_ value: Bool) {
     consent = value && adultConfirmed
-    UserDefaults.standard.set(consent ? "2026-10-03" : nil, forKey: "aiConsentVersion")
-    UserDefaults.standard.set(adultConfirmed, forKey: "adultConfirmed")
+    AppRuntime.defaults.set(consent ? "2026-10-03" : nil, forKey: "aiConsentVersion")
+    AppRuntime.defaults.set(adultConfirmed, forKey: "adultConfirmed")
   }
   func signOut() {
-    try? Auth.auth().signOut()
+    if Self.configured { try? Auth.auth().signOut() }
     signedIn = false
     userID = nil
     setConsent(false)

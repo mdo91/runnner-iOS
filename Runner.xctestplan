@@ -1,0 +1,35 @@
+{
+  "configurations": [
+    {
+      "id": "49A7E68B-7093-47A4-BDE7-44D7FC98CF0E",
+      "name": "Simulator",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {
+    "targetForVariableExpansion": {
+      "containerPath": "container:The Runner.xcodeproj",
+      "identifier": "544EDE2E2E7EC284000E9126",
+      "name": "The Runner"
+    }
+  },
+  "testTargets": [
+    {
+      "target": {
+        "containerPath": "container:The Runner.xcodeproj",
+        "identifier": "ADD2D41B2AF146EDA28F7B7B",
+        "name": "RunnerTests"
+      },
+      "parallelizable": false
+    },
+    {
+      "target": {
+        "containerPath": "container:The Runner.xcodeproj",
+        "identifier": "B26000000000000000000003",
+        "name": "RunnerUITests"
+      },
+      "parallelizable": false
+    }
+  ],
+  "version": 1
+}

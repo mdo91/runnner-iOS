@@ -8,7 +8,7 @@ import SwiftData
   let healthStore = HKHealthStore()
   @Published var isSyncing = false
   @Published var status: String?
-  @Published var didRequestAccess = UserDefaults.standard.bool(forKey: "healthRequested")
+  @Published var didRequestAccess = AppRuntime.defaults.bool(forKey: "healthRequested")
   @Published var importedCount = 0
   private var context: ModelContext?
   private var observers: [HKQuery] = []
@@ -35,6 +35,7 @@ import SwiftData
     startObserving()
   }
   func requestAccess() async {
+    guard !AppRuntime.isFixture else { status = "Health access is simulated for UI tests."; return }
     guard HKHealthStore.isHealthDataAvailable() else {
       status = "Health data is unavailable on this device."
       return
@@ -42,7 +43,7 @@ import SwiftData
     do {
       try await healthStore.requestAuthorization(toShare: [], read: readTypes)
       didRequestAccess = true
-      UserDefaults.standard.set(true, forKey: "healthRequested")
+      AppRuntime.defaults.set(true, forKey: "healthRequested")
       // Completion means the sheet finished. Apple intentionally does not disclose read authorization.
       await sync()
     } catch { status = "Health access could not be requested. You can try again in Settings." }
@@ -63,6 +64,7 @@ import SwiftData
     }
   }
   func sync() async {
+    guard !AppRuntime.isFixture else { return }
     guard didRequestAccess, let context else { return }
     guard !isSyncing else {
       needsAnotherSync = true

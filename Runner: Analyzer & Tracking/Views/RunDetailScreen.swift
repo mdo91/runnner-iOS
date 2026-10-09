@@ -16,7 +16,7 @@ struct RunDetailScreen: View {
   var units: UnitSystem
   var latest = false
   @State private var selection: Date?
-  @ScaledMetric(relativeTo: .largeTitle) private var heroSize = 72.0
+  @ScaledMetric(relativeTo: .largeTitle) private var heroSize = 52.0
   var body: some View {
     let metrics = RunCalculator.metrics(run)
     ScrollView {
@@ -50,7 +50,7 @@ struct RunDetailScreen: View {
                 title: "Average pace", value: units.pace(metrics.averagePaceSecondsPerKm),
                 unit: "min / \(units.distanceUnit)", symbol: "speedometer")
             }
-            Divider().overlay(.white.opacity(0.04))
+            Divider()
             MetricPair {
               Stat(
                 title: "Average heart rate",
@@ -88,7 +88,7 @@ struct RunDetailScreen: View {
                     .foregroundStyle(.pink.opacity(0.85)).symbolSize(8)
                 }
                 if let selection {
-                  RuleMark(x: .value("Selected", selection)).foregroundStyle(.white.opacity(0.45))
+                  RuleMark(x: .value("Selected", selection)).foregroundStyle(Color.primary.opacity(0.45))
                 }
               }.chartXSelection(value: $selection).chartYAxisLabel("bpm").frame(height: 150)
               if let selection,
@@ -128,7 +128,7 @@ struct RunDetailScreen: View {
           Text("Imported from \(run.source). Missing measurements appear as —.")
         }.font(.caption).foregroundStyle(RunnerStyle.muted).padding(.bottom, 20)
         if let status = health.status { Text(status).font(.footnote).foregroundStyle(.orange) }
-      }.padding(20)
+      }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).refreshable { await health.sync() }
       .navigationTitle(latest ? "Latest Run" : "Run Details").navigationBarTitleDisplayMode(
         latest ? .large : .inline)

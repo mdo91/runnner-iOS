@@ -4,6 +4,7 @@ import SwiftData
 import SwiftUI
 
 struct SettingsScreen: View {
+  @Environment(\.colorScheme) private var colorScheme
   @Environment(\.dismiss) private var dismiss
   @Environment(\.modelContext) private var context
   @EnvironmentObject private var health: HealthKitManager
@@ -20,7 +21,7 @@ struct SettingsScreen: View {
   @State private var clearLocal = false
   @State private var clearCloud = false
   @State private var connectDashboard = false
-  private let dashboardService = DashboardLinkService()
+  private let dashboardService: any DashboardLinkServicing = AppRuntime.dashboardService()
   var body: some View {
     NavigationStack {
       Form {
@@ -62,13 +63,13 @@ struct SettingsScreen: View {
             SignInWithAppleButton(
               .signIn, onRequest: { account.prepare($0) },
               onCompletion: { result in Task { await account.finish(result) } }
-            ).signInWithAppleButtonStyle(.white).frame(height: 48).disabled(
+            ).signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black).frame(height: 48).disabled(
               !AccountManager.configured)
           }
           Toggle("I am 18 or older", isOn: $account.adultConfirmed).onChange(
             of: account.adultConfirmed
           ) { _, value in
-            UserDefaults.standard.set(value, forKey: "adultConfirmed")
+            AppRuntime.defaults.set(value, forKey: "adultConfirmed")
             if !value { account.setConsent(false) }
           }
           Toggle(
@@ -105,7 +106,7 @@ struct SettingsScreen: View {
           if let message = historySync.message { Text(message).font(.caption).foregroundStyle(.secondary) }
           Button("Sync now") { Task { await historySync.sync(context:context,account:account) } }
             .disabled(!account.signedIn || !historySync.enabled || health.isSyncing || historySync.isSyncing || historySync.changingConsent)
-          Button("Connect dashboard") { connectDashboard = true }.disabled(!account.signedIn)
+          Button("Connect dashboard") { connectDashboard = true }.disabled(!account.signedIn).accessibilityIdentifier("settings.dashboard")
           if let url = dashboardService.dashboardURL { Link("Open dashboard",destination:url) }
         } header: { Text("Cloud history") } footer: {
           Text("Only runs available through Apple Health on this phone can be uploaded. Sign in with the same Runner Apple account on each phone. Consent version: October 3, 2026.")
@@ -121,7 +122,7 @@ struct SettingsScreen: View {
           Text("Runner 1.0 · Built for the long run").font(.caption).foregroundStyle(.secondary)
         }
       }.navigationTitle("Settings").toolbar {
-        ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
+        ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() }.accessibilityIdentifier("settings.done") }
       }
     }
     .onAppear {
@@ -144,7 +145,7 @@ struct SettingsScreen: View {
           try context.delete(model: DeletedHealthRecord.self)
           try context.save()
           health.didRequestAccess = false
-          UserDefaults.standard.set(false, forKey: "healthRequested")
+          AppRuntime.defaults.set(false, forKey: "healthRequested")
         } catch { targetError = "Local data could not be cleared." }
       }
     } message: {
@@ -172,7 +173,7 @@ struct SettingsScreen: View {
               if !account.signedIn { deleteAccount = false }
             }
           }
-        ).signInWithAppleButtonStyle(.white).frame(height: 50)
+        ).signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black).frame(height: 50)
         if let message = account.message { Text(message).font(.footnote) }
         Button("Cancel") { deleteAccount = false }
       }.padding(28).presentationDetents([.medium])
@@ -203,9 +204,9 @@ struct SettingsScreen: View {
       targetError = "Use a pace such as 5:30, in minutes per kilometer."
       return
     }
-    UserDefaults.standard.set(low, forKey: "lowerHR")
-    UserDefaults.standard.set(high, forKey: "upperHR")
-    UserDefaults.standard.set(target, forKey: "paceTarget")
+    AppRuntime.defaults.set(low, forKey: "lowerHR")
+    AppRuntime.defaults.set(high, forKey: "upperHR")
+    AppRuntime.defaults.set(target, forKey: "paceTarget")
     live.sendTargets()
     targetError = "Targets saved to sync with your Watch."
   }

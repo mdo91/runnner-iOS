@@ -16,7 +16,7 @@ import WatchConnectivity
   var onWorkoutSaved: (() -> Void)?
   override init() {
     super.init()
-    if WCSession.isSupported() {
+    if !AppRuntime.isFixture, WCSession.isSupported() {
       WCSession.default.delegate = self
       WCSession.default.activate()
     }
@@ -49,18 +49,19 @@ import WatchConnectivity
   }
   var targets: CoachingTargets {
     CoachingTargets(
-      lowerHeartRate: UserDefaults.standard.object(forKey: "lowerHR") as? Double,
-      upperHeartRate: UserDefaults.standard.object(forKey: "upperHR") as? Double,
-      targetPaceSecondsPerKm: UserDefaults.standard.object(forKey: "paceTarget") as? Double,
-      haptics: UserDefaults.standard.bool(forKey: "haptics"))
+      lowerHeartRate: AppRuntime.defaults.object(forKey: "lowerHR") as? Double,
+      upperHeartRate: AppRuntime.defaults.object(forKey: "upperHR") as? Double,
+      targetPaceSecondsPerKm: AppRuntime.defaults.object(forKey: "paceTarget") as? Double,
+      haptics: AppRuntime.defaults.bool(forKey: "haptics"))
   }
   func sendTargets() {
+    guard !AppRuntime.isFixture else { return }
     let value = targets
     send(WorkoutMessage(kind: "targets", targets: value))
     if WCSession.default.activationState == .activated, let data = try? JSONEncoder().encode(value)
     {
       try? WCSession.default.updateApplicationContext([
-        "targets": data, "units": UserDefaults.standard.string(forKey: "units") ?? "metric",
+        "targets": data, "units": AppRuntime.defaults.string(forKey: "units") ?? "metric",
       ])
     }
   }

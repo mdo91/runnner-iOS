@@ -6,7 +6,7 @@ struct DashboardConnectScreen: View {
   @StateObject private var connection: DashboardConnectionModel
 
   init(service: any DashboardLinkServicing) {
-    _connection = StateObject(wrappedValue: DashboardConnectionModel(service: service))
+    _connection = StateObject(wrappedValue: DashboardConnectionModel(service: service, now: { AppRuntime.now }))
   }
 
   var body: some View {
@@ -19,10 +19,10 @@ struct DashboardConnectScreen: View {
           if let url = connection.dashboardURL { Link("Open dashboard", destination: url) }
           TextField("Dashboard code", text: $connection.code)
             .textInputAutocapitalization(.characters).autocorrectionDisabled()
-            .font(.title3.monospaced()).accessibilityLabel("Ten-character dashboard code")
+            .font(.title3.monospaced()).accessibilityLabel("Ten-character dashboard code").accessibilityIdentifier("dashboard.code")
             .disabled(connection.isWorking)
           Button("Review browser") { Task { await connection.review() } }
-            .disabled(!connection.canReview)
+            .disabled(!connection.canReview).accessibilityIdentifier("dashboard.review")
         }
         if let browser = connection.browser {
           Section("Approve dashboard access") {
@@ -36,11 +36,11 @@ struct DashboardConnectScreen: View {
             )
             .font(.footnote)
             Button("Approve this browser") { Task { await connection.approve() } }
-              .disabled(connection.isWorking).tint(RunnerStyle.blue)
+              .disabled(connection.isWorking).buttonStyle(.glassProminent).accessibilityIdentifier("dashboard.approve")
           }
         }
         if connection.isWorking { ProgressView().accessibilityLabel("Connecting dashboard") }
-        if let message = connection.message { Text(message).foregroundStyle(.orange) }
+        if let message = connection.message { Text(message).foregroundStyle(.orange).accessibilityIdentifier("dashboard.message") }
       }.navigationTitle("Connect dashboard").toolbar {
         ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
       }

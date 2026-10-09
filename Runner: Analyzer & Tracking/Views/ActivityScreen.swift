@@ -26,7 +26,9 @@ private struct ActivityContent: View {
 
   var body: some View {
     TimelineView(.periodic(from: .now, by: 60)) { timeline in
-      let statistics = ActivityStatistics(runs: runs, now: timeline.date)
+      let statistics = ActivityStatistics(
+        runs: runs, now: AppRuntime.isFixture ? AppRuntime.now : timeline.date,
+        calendar: AppRuntime.calendar)
       ScrollView {
         VStack(alignment: .leading, spacing: 22) {
           SectionTitle(
@@ -36,16 +38,26 @@ private struct ActivityContent: View {
           SectionTitle(
             title: "Performance",
             subtitle: "Current periods are totals so far. Previous periods show their full totals.")
-          performanceCard(
-            "Current month", interval: statistics.period(.month), statistics: statistics)
-          performanceCard(
-            "Last month", interval: statistics.period(.month, previous: true),
-            statistics: statistics)
-          performanceCard(
-            "Current week", interval: statistics.period(.weekOfYear), statistics: statistics)
-          performanceCard(
-            "Last week", interval: statistics.period(.weekOfYear, previous: true),
-            statistics: statistics)
+          Surface {
+            VStack(alignment: .leading, spacing: 18) {
+              compactPerformance(
+                "Current month", interval: statistics.period(.month), statistics: statistics)
+              Divider()
+              compactPerformance(
+                "Last month", interval: statistics.period(.month, previous: true),
+                statistics: statistics)
+            }
+          }
+          Surface {
+            VStack(alignment: .leading, spacing: 18) {
+              compactPerformance(
+                "Current week", interval: statistics.period(.weekOfYear), statistics: statistics)
+              Divider()
+              compactPerformance(
+                "Last week", interval: statistics.period(.weekOfYear, previous: true),
+                statistics: statistics)
+            }
+          }
           SectionTitle(
             title: "Improvements",
             subtitle:
@@ -57,7 +69,7 @@ private struct ActivityContent: View {
             "Based on imported, completed runs and their start dates. Weeks follow your calendar settings. Distance is shown in kilometers; average pace uses total moving time divided by measured distance. Different routes and effort can affect pace."
           )
           .font(.footnote).foregroundStyle(RunnerStyle.muted)
-        }.padding(20)
+        }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
       }
     }
     .background(RunnerStyle.background).navigationTitle("Activity")
@@ -93,70 +105,73 @@ private struct ActivityContent: View {
         VStack(alignment: .leading, spacing: 6) {
           Text(rangeTitle).font(.headline).foregroundStyle(RunnerStyle.muted)
           Text(metric == .runs ? "\(total.runCount) runs" : "\(distance(total)) km")
+            .accessibilityIdentifier("activity.total")
             .font(.system(.largeTitle, design: .rounded, weight: .semibold)).monospacedDigit()
           Text(
             dateRange(
               range.interval(now: statistics.now, calendar: statistics.calendar), throughNow: true)
           )
           .font(.subheadline).foregroundStyle(RunnerStyle.muted)
-        }.accessibilityElement(children: .combine)
-        Chart {
-          ForEach(buckets) { bucket in
-            if let value = chartValue(bucket.summary) {
-              BarMark(
-                x: .value("Date", bucket.interval.start, unit: range.bucketComponent),
-                y: .value(metric.rawValue, value)
+        }
+        if total.runCount > 0 {
+          Chart {
+            ForEach(buckets) { bucket in
+              if let value = chartValue(bucket.summary) {
+                BarMark(
+                  x: .value("Date", bucket.interval.start, unit: range.bucketComponent),
+                  y: .value(metric.rawValue, value)
+                )
+                .foregroundStyle(RunnerStyle.blue.gradient).cornerRadius(4)
+                .opacity(selected == nil || selected?.id == bucket.id ? 1 : 0.35)
+                .accessibilityLabel(bucketLabel(bucket))
+                .accessibilityValue(
+                  metric == .runs
+                    ? "\(bucket.summary.runCount) runs" : "\(distance(bucket.summary)) kilometers")
+              }
+            }
+            if let selected {
+              RuleMark(
+                x: .value("Selected date", selected.interval.start, unit: range.bucketComponent)
               )
-              .foregroundStyle(RunnerStyle.blue.gradient).cornerRadius(4)
-              .opacity(selected == nil || selected?.id == bucket.id ? 1 : 0.35)
-              .accessibilityLabel(bucketLabel(bucket))
-              .accessibilityValue(
-                metric == .runs
-                  ? "\(bucket.summary.runCount) runs" : "\(distance(bucket.summary)) kilometers")
+              .foregroundStyle(RunnerStyle.muted).lineStyle(StrokeStyle(dash: [4]))
+              .accessibilityHidden(true)
             }
           }
-          if let selected {
-            RuleMark(
-              x: .value("Selected date", selected.interval.start, unit: range.bucketComponent)
-            )
-            .foregroundStyle(RunnerStyle.muted).lineStyle(StrokeStyle(dash: [4]))
-            .accessibilityHidden(true)
-          }
-        }
-        .chartXScale(domain: buckets.first!.interval.start...buckets.last!.interval.end)
-        .chartYScale(domain: 0...(maximum * 1.15))
-        .chartXAxis {
-          AxisMarks(values: .stride(by: range.bucketComponent, count: range == .month ? 5 : 1)) {
-            _ in
-            AxisGridLine()
-            AxisValueLabel(
-              format: range == .month ? .dateTime.day() : .dateTime.month(.abbreviated))
-          }
-        }
-        .chartYAxis {
-          if metric == .runs {
-            AxisMarks(values: .stride(by: max(1, ceil(maximum / 4)))) {
+          .chartXScale(domain: buckets.first!.interval.start...buckets.last!.interval.end)
+          .chartYScale(domain: 0...(maximum * 1.15))
+          .chartXAxis {
+            AxisMarks(values: .stride(by: range.bucketComponent, count: range == .month ? 5 : 1)) {
+              _ in
               AxisGridLine()
-              AxisValueLabel(format: Decimal.FormatStyle.number.precision(.fractionLength(0)))
+              AxisValueLabel(
+                format: range == .month ? .dateTime.day() : .dateTime.month(.abbreviated))
             }
-          } else {
-            AxisMarks(position: .leading)
           }
-        }
-        .chartYAxisLabel(metric == .runs ? "Runs" : "km")
-        .chartXSelection(value: $selectedDate)
-        .chartGesture { proxy in
-          SpatialTapGesture().onEnded { value in
-            proxy.selectXValue(at: value.location.x)
+          .chartYAxis {
+            if metric == .runs {
+              AxisMarks(values: .stride(by: max(1, ceil(maximum / 4)))) {
+                AxisGridLine()
+                AxisValueLabel(format: Decimal.FormatStyle.number.precision(.fractionLength(0)))
+              }
+            } else {
+              AxisMarks(position: .leading)
+            }
           }
+          .chartYAxisLabel(metric == .runs ? "Runs" : "km")
+          .chartXSelection(value: $selectedDate)
+          .chartGesture { proxy in
+            SpatialTapGesture().onEnded { value in
+              proxy.selectXValue(at: value.location.x)
+            }
+          }
+          .frame(height: 220)
         }
-        .frame(height: 220)
         if let selected {
           Text(
             "\(bucketLabel(selected)): \(selected.summary.runCount) runs · \(distance(selected.summary)) km"
           )
           .font(.subheadline).monospacedDigit().accessibilityAddTraits(.updatesFrequently)
-        } else {
+        } else if total.runCount > 0 {
           Text(
             range == .month
               ? "Daily totals · Tap the chart to explore"
@@ -180,34 +195,34 @@ private struct ActivityContent: View {
     }
   }
 
-  private func performanceCard(
+  private func compactPerformance(
     _ title: String, interval: DateInterval, statistics: ActivityStatistics
   ) -> some View {
     let summary = statistics.summary(in: interval)
-    return Surface {
-      VStack(alignment: .leading, spacing: 18) {
-        SectionTitle(
-          title: title, subtitle: dateRange(interval, throughNow: interval.end == statistics.now))
-        MetricPair {
-          Stat(title: "Runs", value: "\(summary.runCount)", unit: "completed", symbol: "figure.run")
-          Stat(
-            title: "Distance", value: distance(summary), unit: "km",
-            symbol: "point.topleft.down.to.point.bottomright.curvepath")
-        }
-        MetricPair {
-          Stat(
-            title: "Moving time", value: UnitSystem.duration(summary.movingSeconds),
-            unit: summary.movingSeconds >= 3600 ? "h:mm:ss" : "m:ss", symbol: "stopwatch")
-          Stat(
-            title: "Average pace", value: UnitSystem.metric.pace(summary.averagePaceSecondsPerKm),
-            unit: "min/km", symbol: "speedometer")
-        }
-        if summary.missingDistanceCount > 0 {
-          Text(
-            "\(summary.missingDistanceCount) runs have no distance. Distance and pace use available measurements."
-          )
-          .font(.footnote).foregroundStyle(RunnerStyle.muted)
-        }
+    return VStack(alignment: .leading, spacing: 12) {
+      SectionTitle(
+        title: title, subtitle: dateRange(interval, throughNow: interval.end == statistics.now))
+      LazyVGrid(
+        columns: [
+          GridItem(
+            .adaptive(minimum: typeSize.isAccessibilitySize ? 220 : 140), alignment: .leading)
+        ], alignment: .leading, spacing: 16
+      ) {
+        Stat(title: "Runs", value: "\(summary.runCount)", unit: "completed", symbol: "figure.run")
+        Stat(
+          title: "Distance", value: distance(summary), unit: "km",
+          symbol: "point.topleft.down.to.point.bottomright.curvepath")
+        Stat(
+          title: "Moving time", value: UnitSystem.duration(summary.movingSeconds),
+          unit: "h:mm:ss / m:ss", symbol: "stopwatch")
+        Stat(
+          title: "Average pace", value: UnitSystem.metric.pace(summary.averagePaceSecondsPerKm),
+          unit: "min/km", symbol: "speedometer")
+      }
+      if summary.missingDistanceCount > 0 {
+        Text(
+          "\(summary.missingDistanceCount) runs have no distance. Totals use available measurements."
+        ).font(.footnote).foregroundStyle(.secondary)
       }
     }
   }

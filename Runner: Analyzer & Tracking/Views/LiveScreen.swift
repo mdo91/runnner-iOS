@@ -19,7 +19,7 @@ struct LiveScreen: View {
                 systemImage: fresh ? "applewatch.radiowaves.left.and.right" : "wifi.slash"
               ).font(.caption.bold()).foregroundStyle(fresh ? RunnerStyle.blue : .orange)
               Text(UnitSystem.duration(snapshot.elapsed)).font(
-                .system(size: 64, weight: .semibold, design: .rounded)
+                .system(size: 48, weight: .semibold, design: .rounded)
               ).minimumScaleFactor(0.5).monospacedDigit()
               Surface {
                 MetricPair {
@@ -61,7 +61,7 @@ struct LiveScreen: View {
                 }
               }
               Button(snapshot.paused ? "Resume run" : "Pause run") { live.pauseOrResume() }
-                .buttonStyle(.borderedProminent).controlSize(.large).disabled(!fresh)
+                .buttonStyle(.glassProminent).controlSize(.large).disabled(!fresh)
               Text(
                 "End and save your run on Apple Watch. Recording and local coaching continue if your phone disconnects."
               ).font(.footnote).foregroundStyle(RunnerStyle.muted)
@@ -77,12 +77,12 @@ struct LiveScreen: View {
             Task { await live.startWatch() }
           } label: {
             Label("Open Runner on Watch", systemImage: "applewatch").frame(maxWidth: .infinity)
-          }.buttonStyle(.borderedProminent).controlSize(.large)
+          }.buttonStyle(.glassProminent).controlSize(.large)
         }
         if let message = live.message {
           Text(message).font(.footnote).foregroundStyle(RunnerStyle.muted)
         }
-      }.padding(20)
+      }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).navigationTitle("Live")
 
   }
