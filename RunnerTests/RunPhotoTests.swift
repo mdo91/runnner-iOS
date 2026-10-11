@@ -179,6 +179,56 @@ import XCTest
     XCTAssertFalse(FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path))
   }
 
+  func testEveryRouteColorExportsExactPixelsAndPreservesPlacement() throws {
+    var run = makeRun()
+    run.pauses = []
+    run.route = [gps(0, 29, 0), gps(0, 29.0001, 5), gps(0, 29.0002, 10)]
+    let route = RunPhotoRoute(run: run)
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1
+    let background = UIGraphicsImageRenderer(size: CGSize(width: 1080, height: 1080), format: format)
+      .image { context in
+        UIColor(white: 0.5, alpha: 1).setFill()
+        context.fill(CGRect(x: 0, y: 0, width: 1080, height: 1080))
+      }
+    var composition = RunPhotoComposition()
+    XCTAssertEqual(composition.routeColor, .white)
+    XCTAssertEqual(RunPhotoRouteColor.runnerYellow.rgb, 0xD7FF00)
+    composition.image = background
+    composition.resetLayout()
+    composition.showsRoute = true
+    composition.route = RunPhotoTransform(center: CGPoint(x: 0.5, y: 0.25), scale: 1)
+    let routeTransform = composition.route, statsTransform = composition.stats
+    for color in RunPhotoRouteColor.allCases {
+      composition.routeColor = color
+      let data = try RunPhotoIO.render(composition, stats: RunPhotoStats(run: run, units: .metric), route: route)
+      let source = try XCTUnwrap(CGImageSourceCreateWithData(data as CFData, nil))
+      let cg = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+      let pixels = rgba(cg)
+      let index = (270 * cg.width + 540) * 4
+      for (channel, expected) in [Int((color.rgb >> 16) & 255), Int((color.rgb >> 8) & 255),
+        Int(color.rgb & 255)].enumerated() {
+        XCTAssertEqual(Int(pixels[index + channel]), expected, accuracy: 12,
+          "\(color.label) route uses its sRGB preset in exported pixels")
+      }
+      XCTAssertEqual(composition.route, routeTransform)
+      XCTAssertEqual(composition.stats, statsTransform)
+      composition.selection = .route
+      XCTAssertEqual(data, try RunPhotoIO.render(composition, stats: RunPhotoStats(run: run, units: .metric), route: route))
+      let attachment = XCTAttachment(data: data, uniformTypeIdentifier: UTType.jpeg.identifier)
+      attachment.name = "route-color-\(color.rawValue).jpg"
+      attachment.lifetime = .keepAlways
+      add(attachment)
+    }
+    composition.routeColor = .runnerYellow
+    composition.showsRoute = false
+    composition.image = image()
+    composition.resetLayout()
+    XCTAssertEqual(composition.routeColor, .runnerYellow)
+    composition.showsRoute = true
+    XCTAssertEqual(composition.routeColor, .runnerYellow)
+  }
+
   func testEveryFontAndAlignmentRendersMetricsWithinMeasuredBounds() throws {
     let background = UIGraphicsImageRenderer(size: CGSize(width: 360, height: 480)).image { context in
       UIColor.black.setFill(); context.fill(CGRect(x: 0, y: 0, width: 360, height: 480))

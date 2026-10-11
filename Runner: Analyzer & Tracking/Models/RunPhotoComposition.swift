@@ -38,6 +38,48 @@ enum RunPhotoAlignment: String, CaseIterable, Identifiable {
   var id: Self { self }
 }
 
+/// Fixed sRGB presets keep artwork colors identical in light/dark previews and exports.
+enum RunPhotoRouteColor: String, CaseIterable, Identifiable {
+  case white, runnerYellow, orange, red, green, blue, purple, pink, black
+  var id: Self { self }
+  var label: String { self == .runnerYellow ? "Runner yellow" : rawValue.capitalized }
+  var rgb: UInt32 {
+    switch self {
+    case .white: return 0xFFFFFF
+    case .runnerYellow: return 0xD7FF00
+    case .orange: return 0xFF9500
+    case .red: return 0xFF3B30
+    case .green: return 0x34C759
+    case .blue: return 0x007AFF
+    case .purple: return 0xAF52DE
+    case .pink: return 0xFF2D55
+    case .black: return 0x000000
+    }
+  }
+  var uiColor: UIColor {
+    UIColor(red: CGFloat((rgb >> 16) & 255) / 255,
+      green: CGFloat((rgb >> 8) & 255) / 255, blue: CGFloat(rgb & 255) / 255, alpha: 1)
+  }
+}
+
+enum RunPhotoExportResult {
+  case saved(Data), shared, failed(String)
+  var title: String {
+    switch self {
+    case .saved: return "Image saved"
+    case .shared: return "Image shared"
+    case .failed: return "Couldn’t share"
+    }
+  }
+  var message: String {
+    switch self {
+    case .saved: return "Your run photo was saved to Photos. You can also share it to another app."
+    case .shared: return "Your run photo was shared using the selected app or service."
+    case .failed(let message): return message
+    }
+  }
+}
+
 enum RunPhotoFontStyle: String, CaseIterable, Identifiable {
   case sport = "Sport", clean = "Clean", rounded = "Rounded", mono = "Mono", serif = "Serif"
   var id: Self { self }
@@ -194,6 +236,7 @@ struct RunPhotoComposition {
   var format: RunPhotoFormat = .original
   var crop = RunPhotoCrop()
   var showsRoute = false
+  var routeColor: RunPhotoRouteColor = .white
   var showsIcon = false
   var alignment: RunPhotoAlignment = .leading
   var fontStyle: RunPhotoFontStyle = .sport

@@ -14,6 +14,7 @@ struct RunPhotoEditor: View {
   @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   private let stats: RunPhotoStats
   private let route: RunPhotoRoute
+  private let onExport: (RunPhotoExportResult) -> Void
   @State private var composition = RunPhotoComposition()
   @State private var pickerVisible = false
   @State private var pickerItem: PhotosPickerItem?
@@ -22,7 +23,6 @@ struct RunPhotoEditor: View {
   @State private var loading = false
   @State private var exporting = false
   @State private var started = false
-  @State private var message: String?
   @State private var errorMessage: String?
   @State private var permissionDenied = false
   @State private var retryExport: Bool?
@@ -30,6 +30,8 @@ struct RunPhotoEditor: View {
   @State private var hasUnexportedChanges = false
   @State private var shareURL: URL?
   @State private var shareVisible = false
+  @State private var shareCompleted = false
+  @State private var shareError: String?
   @State private var dragLayer: RunPhotoLayer?
   @State private var dragStart: RunPhotoTransform?
   @State private var pinchStart: CGFloat?
@@ -37,9 +39,10 @@ struct RunPhotoEditor: View {
   @State private var cropPinchStart: CGFloat?
   @State private var fixtureAttempts = 0
 
-  init(run: RunData, units: UnitSystem) {
+  init(run: RunData, units: UnitSystem, onExport: @escaping (RunPhotoExportResult) -> Void) {
     stats = RunPhotoStats(run: run, units: units)
     route = RunPhotoRoute(run: run)
+    self.onExport = onExport
   }
 
   var body: some View {
@@ -67,8 +70,9 @@ struct RunPhotoEditor: View {
         }
         ToolbarItem(placement: .primaryAction) {
           Button { export(share: true) } label: {
-            Label("Share", systemImage: "square.and.arrow.up")
+            Label("Share to apps", systemImage: "square.and.arrow.up")
           }.disabled(composition.image == nil || loading || exporting)
+            .accessibilityHint("Choose an installed app or another sharing service")
             .accessibilityIdentifier("photo.share")
         }
       }
@@ -88,19 +92,15 @@ struct RunPhotoEditor: View {
               .accessibilityIdentifier("photo.save")
           }.controlSize(.large).font(.subheadline.weight(.semibold))
             .disabled(exporting)
-          if let message {
-            Text(message).font(.subheadline).foregroundStyle(.white)
-              .accessibilityIdentifier("photo.status")
-          }
         }.padding(12).background(.bar)
       }
       .photosPicker(isPresented: $pickerVisible, selection: $pickerItem, matching: .images)
       .onChange(of: pickerItem) { _, item in if let item { loadPhoto(item) } }
-      .sheet(isPresented: $shareVisible, onDismiss: cleanShareFile) {
+      .sheet(isPresented: $shareVisible, onDismiss: shareDismissed) {
         if let shareURL {
-          RunPhotoShareSheet(url: shareURL) { completed, error in
-            if let error { errorMessage = error.localizedDescription }
-            if completed { hasUnexportedChanges = false }
+          RunPhotoSharePresentation(url: shareURL) { completed, error in
+            shareError = error?.localizedDescription
+            shareCompleted = completed && error == nil
             shareVisible = false
           }
         }
@@ -210,6 +210,7 @@ struct RunPhotoEditor: View {
           : "Drag to move. Pinch to resize the selected overlay.")
           .font(.caption).foregroundStyle(.secondary)
         if composition.selection == .stats { textStyleControls }
+        if composition.selection == .route { routeColorControls }
         VStack(alignment: .leading, spacing: 4) {
           Text(composition.selection == .photo ? "Zoom" : "Size").font(.subheadline.weight(.medium))
           Slider(value: sizeBinding, in: sizeRange)
@@ -255,6 +256,7 @@ struct RunPhotoEditor: View {
       edited()
     }
     .onChange(of: composition.alignment) { _, _ in edited() }
+    .onChange(of: composition.routeColor) { _, _ in edited() }
     .onChange(of: composition.fontStyle) { _, _ in
       composition.constrainOverlays()
       edited()
@@ -309,6 +311,51 @@ struct RunPhotoEditor: View {
       .accessibilityValue(composition.fontStyle == style ? "Selected" : "")
       .accessibilityAddTraits(composition.fontStyle == style ? .isSelected : [])
       .accessibilityIdentifier("photo.font.\(style.rawValue.lowercased())")
+  }
+
+  private var routeColorControls: some View {
+    VStack(alignment: .leading, spacing: 8) {
+      Text("Route color").font(.subheadline.weight(.medium))
+      Text("Choose a color that stands out against your photo.")
+        .font(.caption).foregroundStyle(.secondary)
+      let columns = dynamicTypeSize.isAccessibilitySize ? 1 : 2
+      Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+        ForEach(0..<((RunPhotoRouteColor.allCases.count + columns - 1) / columns), id: \.self) { row in
+          GridRow {
+            ForEach(0..<columns, id: \.self) { column in
+              let index = row * columns + column
+              if index < RunPhotoRouteColor.allCases.count {
+                routeColorButton(RunPhotoRouteColor.allCases[index])
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private func routeColorButton(_ color: RunPhotoRouteColor) -> some View {
+    let selected = composition.routeColor == color
+    return Button { composition.routeColor = color } label: {
+      HStack(spacing: 8) {
+        Circle().fill(Color(uiColor: color.uiColor)).frame(width: 20, height: 20)
+          .overlay { Circle().stroke(.white.opacity(0.6), lineWidth: 1) }
+          .accessibilityHidden(true)
+        Text(color.label).font(.subheadline.weight(.medium))
+        Spacer(minLength: 0)
+        if selected { Image(systemName: "checkmark").font(.caption.bold()) }
+      }.padding(10).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
+        .foregroundStyle(.white)
+        .background(.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+          RoundedRectangle(cornerRadius: 10)
+            .stroke(selected ? RunPhotoWordmark.yellow : .clear, lineWidth: 2)
+        }
+    }.buttonStyle(.plain)
+      .accessibilityLabel("Route color, \(color.label)")
+      .accessibilityValue(selected ? "Selected" : "")
+      .accessibilityAddTraits(selected ? .isSelected : [])
+      .accessibilityIdentifier("photo.routeColor.\(color.rawValue)")
   }
 
   private func transform(_ layer: RunPhotoLayer) -> RunPhotoTransform {
@@ -434,7 +481,7 @@ struct RunPhotoEditor: View {
     }.onEnded { _ in cropPinchStart = nil; pinchStart = nil }
   }
 
-  private func edited() { hasUnexportedChanges = true; message = nil }
+  private func edited() { hasUnexportedChanges = true }
   private func choosePhoto() {
     permissionDenied = false
     retryExport = nil
@@ -477,7 +524,6 @@ struct RunPhotoEditor: View {
     exporting = true
     retryExport = share
     permissionDenied = false
-    message = nil
     Task { @MainActor in
       defer { exporting = false }
       do {
@@ -487,19 +533,18 @@ struct RunPhotoEditor: View {
         #if DEBUG
           if AppRuntime.useFixturePhotos {
             if AppRuntime.scenario == "photo-save-denied" && !share { throw RunPhotoError.permissionDenied }
-            message = "\(share ? "Share" : "Saved") image · \(Int(composition.outputSize.width)) × \(Int(composition.outputSize.height))"
-            hasUnexportedChanges = false
-            return
+            if !share { finish(.saved(data)); return }
           }
         #endif
         if share {
           cleanShareFile()
+          shareCompleted = false
+          shareError = nil
           shareURL = try RunPhotoIO.shareFile(data)
           shareVisible = true
         } else {
           try await RunPhotoIO.save(data)
-          hasUnexportedChanges = false
-          message = "Saved to Photos"
+          finish(.saved(data))
         }
       } catch {
         retryExport = share
@@ -507,6 +552,18 @@ struct RunPhotoEditor: View {
         errorMessage = error.localizedDescription
       }
     }
+  }
+  private func finish(_ result: RunPhotoExportResult) {
+    hasUnexportedChanges = false
+    onExport(result)
+    dismiss()
+  }
+  private func shareDismissed() {
+    cleanShareFile()
+    if shareCompleted { finish(.shared) }
+    else if let shareError { errorMessage = shareError }
+    shareCompleted = false
+    shareError = nil
   }
   private func cleanShareFile() {
     if let shareURL { RunPhotoIO.removeShareFile(shareURL) }
@@ -536,4 +593,75 @@ struct RunPhotoEditor: View {
       acceptImage(image)
     }
   #endif
+}
+
+struct RunPhotoSharePresentation: View {
+  let url: URL
+  let completion: @MainActor (Bool, Error?) -> Void
+  var body: some View {
+    #if DEBUG
+      if AppRuntime.useFixturePhotos {
+        NavigationStack {
+          VStack(spacing: 24) {
+            Text("Fixture share destination").font(.headline)
+            Button("Complete sharing") { completion(true, nil) }
+              .accessibilityIdentifier("photo.fixtureShare.complete")
+            Button("Cancel", role: .cancel) { completion(false, nil) }
+              .accessibilityIdentifier("photo.fixtureShare.cancel")
+            Button("Fail sharing") { completion(false, RunPhotoError.sharingFailed) }
+              .accessibilityIdentifier("photo.fixtureShare.fail")
+          }.navigationTitle("Share Image")
+        }
+      } else { RunPhotoShareSheet(url: url, completion: completion) }
+    #else
+      RunPhotoShareSheet(url: url, completion: completion)
+    #endif
+  }
+}
+
+/// Receipts belong to the presenting screen so they appear after the editor closes.
+struct RunPhotoExportFeedback: ViewModifier {
+  @Binding var result: RunPhotoExportResult?
+  @State private var shareURL: URL?
+  @State private var shareVisible = false
+  @State private var pendingResult: RunPhotoExportResult?
+
+  func body(content: Content) -> some View {
+    content
+      .alert(result?.title ?? "", isPresented: Binding(
+        get: { result != nil }, set: { if !$0 { result = nil } })) {
+        if case .saved(let data) = result {
+          Button("Share Image") { share(data) }
+        }
+        Button("OK", role: .cancel) { result = nil }
+      } message: { Text(result?.message ?? "") }
+      .sheet(isPresented: $shareVisible, onDismiss: shareDismissed) {
+        if let shareURL {
+          RunPhotoSharePresentation(url: shareURL) { completed, error in
+            if let error { pendingResult = .failed(error.localizedDescription) }
+            else if completed { pendingResult = .shared }
+            shareVisible = false
+          }
+        }
+      }
+      .onDisappear { if !shareVisible { cleanShareFile() } }
+  }
+
+  private func share(_ data: Data) {
+    result = nil
+    pendingResult = nil
+    do {
+      shareURL = try RunPhotoIO.shareFile(data)
+      shareVisible = true
+    } catch { result = .failed(error.localizedDescription) }
+  }
+  private func shareDismissed() {
+    cleanShareFile()
+    result = pendingResult
+    pendingResult = nil
+  }
+  private func cleanShareFile() {
+    if let shareURL { RunPhotoIO.removeShareFile(shareURL) }
+    shareURL = nil
+  }
 }

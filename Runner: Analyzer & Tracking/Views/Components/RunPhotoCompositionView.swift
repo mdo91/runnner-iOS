@@ -19,7 +19,8 @@ struct RunPhotoCompositionView: View {
       }
       if composition.showsRoute {
         Path(route.path).applying(CGAffineTransform(scaleX: 170, y: 170))
-          .stroke(.white, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+          .stroke(Color(uiColor: composition.routeColor.uiColor),
+            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
           .frame(width: 170, height: 170)
           .shadow(color: .black.opacity(0.7), radius: 2, y: 1)
           .scaleEffect(composition.route.scale)
@@ -99,7 +100,7 @@ enum RunPhotoBrandAssets {
 /// A fixed identity, independent of the user's metric font choice.
 struct RunPhotoWordmark: View {
   private let font = UIFont.systemFont(ofSize: 32, weight: .heavy, width: .condensed)
-  static let yellow = Color(red: 215 / 255, green: 1, blue: 0)
+  static let yellow = Color(uiColor: RunPhotoRouteColor.runnerYellow.uiColor)
   var body: some View {
     HStack(alignment: .firstTextBaseline, spacing: 0) {
       Text("The ").foregroundStyle(.white)

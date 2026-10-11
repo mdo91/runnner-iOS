@@ -6,12 +6,13 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum RunPhotoError: LocalizedError, Equatable {
-  case unreadable, renderFailed, permissionDenied
+  case unreadable, renderFailed, permissionDenied, sharingFailed
   var errorDescription: String? {
     switch self {
     case .unreadable: return "This photo couldn’t be loaded. Try again, or choose another image. If it’s in iCloud, check your connection."
     case .renderFailed: return "The image couldn’t be exported. Your edits are still here. Please try again."
     case .permissionDenied: return "Runner needs add-only Photos access to save here. You can use Share instead. Changing access in Settings may restart Runner and discard this edit, so share a copy first."
+    case .sharingFailed: return "This app couldn’t finish sharing. Try again or choose another destination."
     }
   }
 }
@@ -108,7 +109,10 @@ struct RunPhotoShareSheet: UIViewControllerRepresentable {
   let url: URL
   let completion: @MainActor (Bool, Error?) -> Void
   func makeUIViewController(context: Context) -> UIActivityViewController {
-    let controller = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    // Image payloads advertise photo sharing to compatible installed social-app extensions.
+    let item: Any
+    if let image = UIImage(contentsOfFile: url.path) { item = image } else { item = url }
+    let controller = UIActivityViewController(activityItems: [item], applicationActivities: nil)
     if let popover = controller.popoverPresentationController {
       popover.sourceView = controller.view
       popover.sourceRect = CGRect(x: controller.view.bounds.midX,
