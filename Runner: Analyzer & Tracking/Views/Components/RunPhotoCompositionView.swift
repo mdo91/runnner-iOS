@@ -27,11 +27,22 @@ struct RunPhotoCompositionView: View {
             y: composition.route.center.y * canvas.height)
           .accessibilityHidden(true)
       }
-      RunPhotoStatsView(stats: stats)
+      RunPhotoStatsView(stats: stats, layout: composition.fontStyle.layout,
+        alignment: composition.alignment)
         .scaleEffect(composition.stats.scale)
         .position(x: composition.stats.center.x * canvas.width,
           y: composition.stats.center.y * canvas.height)
         .accessibilityHidden(true)
+      if composition.showsIcon, let icon = RunPhotoBrandAssets.icon {
+        Image(uiImage: icon).resizable().aspectRatio(contentMode: .fit)
+          .frame(width: 64, height: 64)
+          .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+          .shadow(color: .black.opacity(0.7), radius: 2, y: 1)
+          .scaleEffect(composition.icon.scale)
+          .position(x: composition.icon.center.x * canvas.width,
+            y: composition.icon.center.y * canvas.height)
+          .accessibilityHidden(true)
+      }
     }
     .frame(width: canvas.width, height: canvas.height).clipped()
     .environment(\.layoutDirection, .leftToRight)
@@ -45,30 +56,83 @@ struct RunPhotoCompositionView: View {
 
 private struct RunPhotoStatsView: View {
   let stats: RunPhotoStats
+  let layout: RunPhotoTextLayout
+  let alignment: RunPhotoAlignment
   var body: some View {
-    VStack(alignment: .leading, spacing: 10) {
+    VStack(alignment: alignment.horizontal, spacing: 10) {
       metric("Distance", value: stats.distance)
       metric("pace", value: stats.pace)
       metric("Time", value: stats.time)
-      HStack(spacing: 0) {
-        Text("The ").foregroundStyle(.white)
-        Text("Runner").foregroundStyle(Color(red: 215 / 255, green: 1, blue: 0))
-      }
-        .font(.system(size: 32, weight: .heavy).width(.condensed))
-        .frame(height: 40, alignment: .leading).padding(.top, 8)
+      RunPhotoWordmark()
+        .frame(width: layout.size.width, height: 40, alignment: alignment.frame)
+        .padding(.top, 8)
     }
-    .frame(width: RunPhotoComposition.statsSize.width,
-      height: RunPhotoComposition.statsSize.height, alignment: .topLeading)
+    .frame(width: layout.size.width, height: layout.size.height, alignment: .top)
     .foregroundStyle(.white)
     .shadow(color: .black.opacity(0.75), radius: 2, y: 1)
   }
   private func metric(_ title: String, value: String) -> some View {
-    VStack(alignment: .leading, spacing: 0) {
-      Text(title).font(.system(size: 13, weight: .medium))
-        .frame(height: 18, alignment: .leading)
-      Text(value).font(.system(size: 36, weight: .heavy).width(.condensed)).monospacedDigit()
+    VStack(alignment: alignment.horizontal, spacing: 0) {
+      Text(title).font(Font(layout.labelFont))
+        .frame(width: layout.size.width, height: layout.labelHeight, alignment: alignment.frame)
+      Text(value).font(Font(layout.valueFont)).monospacedDigit()
         .lineLimit(1).minimumScaleFactor(0.5)
-        .frame(width: 260, height: 44, alignment: .leading)
+        .frame(width: layout.size.width, height: layout.valueHeight, alignment: alignment.frame)
     }
+  }
+}
+
+private extension RunPhotoAlignment {
+  var horizontal: HorizontalAlignment {
+    switch self { case .leading: return .leading; case .center: return .center; case .trailing: return .trailing }
+  }
+  var frame: Alignment {
+    switch self { case .leading: return .leading; case .center: return .center; case .trailing: return .trailing }
+  }
+}
+
+enum RunPhotoBrandAssets {
+  private final class Token: NSObject {}
+  static let icon = UIImage(named: "RunPhotoAppIcon", in: Bundle(for: Token.self), compatibleWith: nil)
+}
+
+/// A fixed identity, independent of the user's metric font choice.
+struct RunPhotoWordmark: View {
+  private let font = UIFont.systemFont(ofSize: 32, weight: .heavy, width: .condensed)
+  static let yellow = Color(red: 215 / 255, green: 1, blue: 0)
+  var body: some View {
+    HStack(alignment: .firstTextBaseline, spacing: 0) {
+      Text("The ").foregroundStyle(.white)
+      RunPhotoRunnerR().fill(Self.yellow, style: FillStyle(eoFill: true))
+        .frame(width: font.capHeight * 0.86, height: font.capHeight)
+        .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
+      Text("unner").foregroundStyle(Self.yellow)
+    }.font(Font(font)).fixedSize()
+      .accessibilityElement(children: .ignore).accessibilityLabel("The Runner")
+  }
+}
+
+/// Angular bowl and split forward leg form an original, readable capital R.
+struct RunPhotoRunnerR: Shape {
+  func path(in rect: CGRect) -> Path {
+    var path = Path()
+    func polygon(_ points: [CGPoint]) {
+      guard let first = points.first else { return }
+      path.move(to: first)
+      for point in points.dropFirst() { path.addLine(to: point) }
+      path.closeSubpath()
+    }
+    polygon([CGPoint(x: 0, y: 1), CGPoint(x: 0, y: 0), CGPoint(x: 0.68, y: 0),
+      CGPoint(x: 0.96, y: 0.16), CGPoint(x: 0.96, y: 0.42), CGPoint(x: 0.68, y: 0.60),
+      CGPoint(x: 0.30, y: 0.60), CGPoint(x: 0.30, y: 1)])
+    polygon([CGPoint(x: 0.30, y: 0.20), CGPoint(x: 0.64, y: 0.20),
+      CGPoint(x: 0.70, y: 0.26), CGPoint(x: 0.70, y: 0.34),
+      CGPoint(x: 0.64, y: 0.40), CGPoint(x: 0.30, y: 0.40)])
+    polygon([CGPoint(x: 0.49, y: 0.57), CGPoint(x: 0.75, y: 0.49),
+      CGPoint(x: 0.85, y: 0.70), CGPoint(x: 0.62, y: 0.80)])
+    polygon([CGPoint(x: 0.65, y: 0.86), CGPoint(x: 0.88, y: 0.76),
+      CGPoint(x: 1, y: 1), CGPoint(x: 0.72, y: 1)])
+    return path.applying(CGAffineTransform(scaleX: rect.width, y: rect.height)
+      .concatenating(CGAffineTransform(translationX: rect.minX, y: rect.minY)))
   }
 }

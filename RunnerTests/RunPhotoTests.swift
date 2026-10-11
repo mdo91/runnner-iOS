@@ -75,7 +75,8 @@ import XCTest
       composition.constrainOverlays()
       let canvas = composition.canvasSize
       let value = composition.stats
-      let half = CGSize(width: 260 * value.scale / 2, height: 264 * value.scale / 2)
+      let half = CGSize(width: composition.statsSize.width * value.scale / 2,
+        height: composition.statsSize.height * value.scale / 2)
       XCTAssertGreaterThanOrEqual(value.center.x * canvas.width - half.width, 0)
       XCTAssertLessThanOrEqual(value.center.y * canvas.height + half.height, canvas.height)
       XCTAssertGreaterThan(value.scale, 0)
@@ -176,6 +177,148 @@ import XCTest
     RunPhotoIO.removeShareFile(url)
     XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     XCTAssertFalse(FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path))
+  }
+
+  func testEveryFontAndAlignmentRendersMetricsWithinMeasuredBounds() throws {
+    let background = UIGraphicsImageRenderer(size: CGSize(width: 360, height: 480)).image { context in
+      UIColor.black.setFill(); context.fill(CGRect(x: 0, y: 0, width: 360, height: 480))
+    }
+    // Include missing values and long moving-time/imperial strings in every style.
+    let inputs: [(RunData, UnitSystem)] = [(makeRun(), .metric),
+      (makeRun(distance: 42195, duration: 3842), .imperial), (makeRun(distance: nil), .metric)]
+    for style in RunPhotoFontStyle.allCases {
+      let layout = style.layout
+      XCTAssertGreaterThanOrEqual(layout.labelHeight, layout.labelFont.lineHeight)
+      XCTAssertGreaterThanOrEqual(layout.valueHeight, layout.valueFont.lineHeight)
+      for alignment in RunPhotoAlignment.allCases {
+        for (run, units) in inputs {
+          var composition = RunPhotoComposition()
+          composition.image = background
+          composition.fontStyle = style
+          composition.alignment = alignment
+          composition.stats = RunPhotoTransform(center: CGPoint(x: 0.5, y: 0.5), scale: 1)
+          let data = try RunPhotoIO.render(composition, stats: RunPhotoStats(run: run, units: units),
+            route: RunPhotoRoute(run: run))
+          let source = try XCTUnwrap(CGImageSourceCreateWithData(data as CFData, nil))
+          let cg = try XCTUnwrap(CGImageSourceCreateImageAtIndex(source, 0, nil))
+          let pixels = rgba(cg)
+          let top = Int((480 - layout.size.height) / 2)
+          let labelPixels = (max(0, top)..<Int(CGFloat(top) + layout.labelHeight + 1)).flatMap { y in
+            (0..<360).filter { x in
+              let index = (y * 360 + x) * 4
+              return pixels[index] > 210 && pixels[index + 1] > 210 && pixels[index + 2] > 210
+            }
+          }
+          let width = ("Distance" as NSString).size(withAttributes: [.font: layout.labelFont]).width
+          let expected: CGFloat
+          switch alignment {
+          case .leading: expected = 50
+          case .center: expected = (360 - width) / 2
+          case .trailing: expected = 310 - width
+          }
+          XCTAssertEqual(CGFloat(try XCTUnwrap(labelPixels.min())), expected, accuracy: 4,
+            "\(style) \(alignment) label follows alignment")
+          for y in 0..<cg.height {
+            for x in 0..<cg.width {
+              let index = (y * cg.width + x) * 4
+              if pixels[index] > 150 && pixels[index + 1] > 200 {
+                XCTAssertTrue(x >= 49 && x <= 311 && y >= top - 1
+                  && y <= top + Int(layout.size.height) + 1, "Artwork stays in measured bounds")
+              }
+            }
+          }
+          if units == .imperial {
+            let attachment = XCTAttachment(data: data, uniformTypeIdentifier: UTType.jpeg.identifier)
+            attachment.name = "photo-\(style.rawValue)-\(alignment.rawValue).jpg"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+          }
+        }
+      }
+    }
+  }
+
+  func testWordmarkIsFixedAcrossFontsAndHasAnOpenVectorBowl() throws {
+    var reference: [UInt8]?
+    for style in RunPhotoFontStyle.allCases {
+      let renderer = ImageRenderer(content: RunPhotoWordmark()
+        .font(Font(style.layout.valueFont)).frame(width: 260, height: 48).background(.black))
+      renderer.scale = 3
+      let pixels = rgba(try XCTUnwrap(renderer.cgImage))
+      if let reference { XCTAssertEqual(reference, pixels) } else { reference = pixels }
+    }
+    let path = RunPhotoRunnerR().path(in: CGRect(x: 0, y: 0, width: 100, height: 100))
+    XCTAssertEqual(path.boundingRect, CGRect(x: 0, y: 0, width: 100, height: 100))
+    let renderer = ImageRenderer(content: RunPhotoRunnerR().fill(.white, style: FillStyle(eoFill: true))
+      .frame(width: 100, height: 100).background(.black))
+    renderer.scale = 1
+    let pixels = rgba(try XCTUnwrap(renderer.cgImage))
+    XCTAssertGreaterThan(pixels[(70 * 100 + 10) * 4], 200, "R has a solid stem")
+    XCTAssertLessThan(pixels[(30 * 100 + 50) * 4], 10, "R has a readable open bowl")
+    XCTAssertGreaterThan(pixels[(95 * 100 + 83) * 4], 200, "R has a forward leg")
+  }
+
+  func testIconBoundsResetAndOverlappingLayerSelection() throws {
+    XCTAssertNotNil(RunPhotoBrandAssets.icon, "The isolated test bundle includes the app icon")
+    var composition = RunPhotoComposition()
+    XCTAssertEqual(composition.alignment, .leading)
+    XCTAssertEqual(composition.fontStyle, .sport)
+    XCTAssertFalse(composition.showsIcon)
+    composition.image = image()
+    composition.fontStyle = .serif
+    composition.alignment = .trailing
+    composition.showsIcon = true
+    composition.showsRoute = true
+    let same = RunPhotoTransform(center: CGPoint(x: 0.5, y: 0.5), scale: 1)
+    composition.stats = same; composition.route = same; composition.icon = same
+    for layer in [RunPhotoLayer.stats, .route, .icon] {
+      composition.selection = layer
+      XCTAssertEqual(composition.layer(at: CGPoint(x: 180, y: 240)), layer)
+    }
+    composition.selection = .photo
+    XCTAssertEqual(composition.layer(at: CGPoint(x: 180, y: 240)), .icon)
+    composition.showsIcon = false
+    XCTAssertEqual(composition.layer(at: CGPoint(x: 180, y: 240)), .stats)
+    XCTAssertEqual(composition.icon, same)
+    composition.showsIcon = true
+    composition.resetLayout()
+    XCTAssertEqual(composition.fontStyle, .serif)
+    XCTAssertEqual(composition.alignment, .trailing)
+    XCTAssertTrue(composition.showsIcon && composition.showsRoute)
+    for format in RunPhotoFormat.allCases {
+      composition.format = format
+      composition.setTransform(RunPhotoTransform(center: CGPoint(x: -4, y: 8), scale: 100), layer: .icon)
+      let value = composition.icon, canvas = composition.canvasSize
+      XCTAssertGreaterThanOrEqual(value.center.x * canvas.width - 32 * value.scale, 0)
+      XCTAssertLessThanOrEqual(value.center.y * canvas.height + 32 * value.scale, canvas.height)
+    }
+  }
+
+  func testIconExportAndAppearanceDoNotChangeOtherLayers() throws {
+    var composition = RunPhotoComposition()
+    composition.image = image()
+    composition.resetLayout()
+    let stats = RunPhotoStats(run: makeRun(), units: .metric), route = RunPhotoRoute(run: makeRun())
+    let plain = try RunPhotoIO.render(composition, stats: stats, route: route)
+    let statsTransform = composition.stats, routeTransform = composition.route
+    composition.showsIcon = true
+    composition.setTransform(RunPhotoTransform(center: CGPoint(x: 0.8, y: 0.2), scale: 1.2), layer: .icon)
+    XCTAssertEqual(statsTransform, composition.stats)
+    XCTAssertEqual(routeTransform, composition.route)
+    for format in RunPhotoFormat.allCases {
+      composition.format = format
+      composition.alignment = .center
+      composition.fontStyle = .rounded
+      composition.constrainOverlays()
+      let data = try RunPhotoIO.render(composition, stats: stats, route: route)
+      XCTAssertNotEqual(plain, data)
+      composition.selection = .icon
+      XCTAssertEqual(data, try RunPhotoIO.render(composition, stats: stats, route: route))
+      let attachment = XCTAttachment(data: data, uniformTypeIdentifier: UTType.jpeg.identifier)
+      attachment.name = "photo-icon-\(format.rawValue).jpg"
+      attachment.lifetime = .keepAlways
+      add(attachment)
+    }
   }
   private func rgba(_ image: CGImage) -> [UInt8] {
     var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)

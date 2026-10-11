@@ -24,6 +24,8 @@ Tap the photo icon in **Latest Run → Run summary**, or open an older run from 
 
 The overlay uses the selected run’s measured distance, average pace, and moving time with the current unit preference. **The Runner** appears in white and sporty yellow. GPS is drawn as solid route segments without map tiles or markers; pauses and missing/invalid GPS remain gaps. Indoor runs and runs without GPS still support photo statistics.
 
+Select **Stats** in **Edit layer** to choose Leading, Center, or Trailing alignment and preview Sport, Clean, Rounded, Mono, or Serif fonts. The wordmark keeps its distinctive yellow R across metric fonts. **Include app icon** adds the blue Runner icon as an independent sticker; select Icon to move or resize it. Changing photos keeps your styling and overlays. Reset restores crop and layer positions/sizes while retaining styling and visible layers.
+
 **Save Photo** requests add-only Photos access; **Share** opens the system share sheet. Editing stays on-device, requires no account, and does not attach images to history or upload them to Runner’s services. Exports are JPEGs with fresh pixels and no source-photo location metadata. Original exports retain the photo’s ratio up to a 2160-pixel long edge; social exports are 1080 pixels wide. Editable compositions last only while the editor is open.
 
 If Photos access is denied, **Share Instead** keeps the current composition available. Share a copy before changing access in Settings: iOS can restart Runner when permissions change, discarding an in-memory edit.

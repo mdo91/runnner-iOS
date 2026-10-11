@@ -56,6 +56,7 @@ enum RunPhotoIO {
   @MainActor static func render(_ composition: RunPhotoComposition, stats: RunPhotoStats,
     route: RunPhotoRoute) throws -> Data {
     guard composition.image != nil else { throw RunPhotoError.renderFailed }
+    guard !composition.showsIcon || RunPhotoBrandAssets.icon != nil else { throw RunPhotoError.renderFailed }
     let size = composition.outputSize
     let renderer = ImageRenderer(content: RunPhotoCompositionView(
       composition: composition, stats: stats, route: route))

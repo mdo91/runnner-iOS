@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreText
 import Foundation
 import RunCore
 import UIKit
@@ -28,8 +29,59 @@ enum RunPhotoFormat: String, CaseIterable, Identifiable {
 }
 
 enum RunPhotoLayer: String, CaseIterable, Identifiable {
-  case stats = "Stats", route = "Route", photo = "Crop"
+  case stats = "Stats", route = "Route", icon = "Icon", photo = "Crop"
   var id: Self { self }
+}
+
+enum RunPhotoAlignment: String, CaseIterable, Identifiable {
+  case leading = "Leading", center = "Center", trailing = "Trailing"
+  var id: Self { self }
+}
+
+enum RunPhotoFontStyle: String, CaseIterable, Identifiable {
+  case sport = "Sport", clean = "Clean", rounded = "Rounded", mono = "Mono", serif = "Serif"
+  var id: Self { self }
+  var layout: RunPhotoTextLayout { Self.layouts[self]! }
+  private static let layouts = Dictionary(uniqueKeysWithValues:
+    allCases.map { ($0, RunPhotoTextLayout(style: $0)) })
+}
+
+/// Cached font metrics define the same content bounds for artwork, handles, and gestures.
+struct RunPhotoTextLayout {
+  let labelFont: UIFont
+  let valueFont: UIFont
+  let labelHeight: CGFloat
+  let valueHeight: CGFloat
+  var size: CGSize {
+    CGSize(width: 260, height: 3 * (labelHeight + valueHeight) + 30 + 48)
+  }
+  init(style: RunPhotoFontStyle) {
+    func font(size: CGFloat, weight: UIFont.Weight, digits: Bool) -> UIFont {
+      let base = style == .sport
+        ? UIFont.systemFont(ofSize: size, weight: weight, width: .condensed)
+        : UIFont.systemFont(ofSize: size, weight: weight)
+      let design: UIFontDescriptor.SystemDesign
+      switch style {
+      case .sport, .clean: design = .default
+      case .rounded: design = .rounded
+      case .mono: design = .monospaced
+      case .serif: design = .serif
+      }
+      var descriptor = (style == .sport || style == .clean) ? base.fontDescriptor
+        : (base.fontDescriptor.withDesign(design) ?? base.fontDescriptor)
+      if digits {
+        descriptor = descriptor.addingAttributes([.featureSettings: [
+          [UIFontDescriptor.FeatureKey.type: kNumberSpacingType,
+            UIFontDescriptor.FeatureKey.selector: kMonospacedNumbersSelector]
+        ]])
+      }
+      return UIFont(descriptor: descriptor, size: size)
+    }
+    labelFont = font(size: 13, weight: .medium, digits: false)
+    valueFont = font(size: 36, weight: .heavy, digits: true)
+    labelHeight = max(18, ceil(labelFont.lineHeight) + 2)
+    valueHeight = max(44, ceil(valueFont.lineHeight) + 2)
+  }
 }
 
 struct RunPhotoStats {
@@ -136,15 +188,20 @@ struct RunPhotoCrop: Equatable {
 }
 
 struct RunPhotoComposition {
-  static let statsSize = CGSize(width: 260, height: 264)
   static let routeSize = CGSize(width: 170, height: 170)
+  static let iconSize = CGSize(width: 64, height: 64)
   var image: UIImage?
   var format: RunPhotoFormat = .original
   var crop = RunPhotoCrop()
   var showsRoute = false
+  var showsIcon = false
+  var alignment: RunPhotoAlignment = .leading
+  var fontStyle: RunPhotoFontStyle = .sport
   var selection: RunPhotoLayer = .stats
   var stats = RunPhotoTransform(center: CGPoint(x: 0.35, y: 0.75), scale: 0.85)
   var route = RunPhotoTransform(center: CGPoint(x: 0.74, y: 0.25), scale: 0.85)
+  var icon = RunPhotoTransform(center: CGPoint(x: 1, y: 1), scale: 1)
+  var statsSize: CGSize { fontStyle.layout.size }
   var imageSize: CGSize { image?.size ?? CGSize(width: 1080, height: 1440) }
   var outputSize: CGSize { format.outputSize(for: imageSize) }
   // A stable coordinate system shared by all display sizes and the export renderer.
@@ -153,17 +210,58 @@ struct RunPhotoComposition {
     return CGSize(width: 360, height: 360 * output.height / output.width)
   }
   mutating func constrainOverlays() {
-    stats = stats.clamped(content: Self.statsSize, canvas: canvasSize)
+    stats = stats.clamped(content: statsSize, canvas: canvasSize)
     route = route.clamped(content: Self.routeSize, canvas: canvasSize)
+    icon = icon.clamped(content: Self.iconSize, canvas: canvasSize)
   }
   mutating func resetLayout() {
     let canvas = canvasSize
-    let statsScale = min(canvas.width * 0.64 / Self.statsSize.width,
-      canvas.height * 0.60 / Self.statsSize.height)
+    let statsScale = min(canvas.width * 0.64 / statsSize.width,
+      canvas.height * 0.60 / statsSize.height)
     stats = RunPhotoTransform(center: CGPoint(x: 0, y: 1), scale: statsScale)
-      .clamped(content: Self.statsSize, canvas: canvas)
+      .clamped(content: statsSize, canvas: canvas)
     route = RunPhotoTransform(center: CGPoint(x: 0.78, y: 0.22), scale: 0.80)
       .clamped(content: Self.routeSize, canvas: canvas)
+    icon = RunPhotoTransform(center: CGPoint(x: 1, y: 1), scale: 1)
+      .clamped(content: Self.iconSize, canvas: canvas)
     crop = RunPhotoCrop()
+  }
+
+  var overlayLayers: [RunPhotoLayer] {
+    (showsRoute ? [.route] : []) + [.stats] + (showsIcon ? [.icon] : [])
+  }
+  func transform(_ layer: RunPhotoLayer) -> RunPhotoTransform {
+    switch layer {
+    case .route: return route
+    case .icon: return icon
+    case .stats, .photo: return stats
+    }
+  }
+  func contentSize(_ layer: RunPhotoLayer) -> CGSize {
+    switch layer {
+    case .route: return Self.routeSize
+    case .icon: return Self.iconSize
+    case .stats, .photo: return statsSize
+    }
+  }
+  mutating func setTransform(_ value: RunPhotoTransform, layer: RunPhotoLayer) {
+    let bounded = value.clamped(content: contentSize(layer), canvas: canvasSize)
+    switch layer {
+    case .stats: stats = bounded
+    case .route: route = bounded
+    case .icon: icon = bounded
+    case .photo: break
+    }
+  }
+  func layer(at point: CGPoint) -> RunPhotoLayer? {
+    let layers = overlayLayers
+    let ordered = (layers.contains(selection) ? [selection] : [])
+      + layers.reversed().filter { $0 != selection }
+    return ordered.first { layer in
+      let transform = transform(layer), content = contentSize(layer)
+      return CGRect(x: transform.center.x * canvasSize.width - content.width * transform.scale / 2,
+        y: transform.center.y * canvasSize.height - content.height * transform.scale / 2,
+        width: content.width * transform.scale, height: content.height * transform.scale).contains(point)
+    }
   }
 }

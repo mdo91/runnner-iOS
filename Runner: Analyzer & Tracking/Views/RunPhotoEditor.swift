@@ -11,6 +11,7 @@ struct RunPhotoSession: Identifiable {
 struct RunPhotoEditor: View {
   @Environment(\.dismiss) private var dismiss
   @Environment(\.openURL) private var openURL
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
   private let stats: RunPhotoStats
   private let route: RunPhotoRoute
   @State private var composition = RunPhotoComposition()
@@ -47,12 +48,12 @@ struct RunPhotoEditor: View {
         if proxy.size.width > proxy.size.height && proxy.size.width > 600 {
           HStack(spacing: 0) {
             preview
-            controls.frame(width: min(360, proxy.size.width * 0.44))
+            controls.frame(width: min(360, proxy.size.width * 0.44)).clipped()
           }
         } else {
           VStack(spacing: 0) {
             preview
-            controls.frame(height: min(340, max(240, proxy.size.height * 0.43)))
+            controls.frame(height: min(340, max(240, proxy.size.height * 0.43))).clipped()
           }
         }
       }
@@ -156,13 +157,16 @@ struct RunPhotoEditor: View {
                 .frame(width: canvas.width * scale, height: canvas.height * scale)
                 .accessibilityLabel("Photo crop").accessibilityIdentifier("photo.cropCanvas")
             } else {
-              if composition.showsRoute { overlayHandle(.route, displayScale: scale) }
-              overlayHandle(.stats, displayScale: scale)
+              ForEach(composition.overlayLayers) { overlayHandle($0, displayScale: scale) }
             }
           }
           .frame(width: canvas.width * scale, height: canvas.height * scale, alignment: .topLeading)
           .coordinateSpace(name: "photo.canvas")
           .contentShape(Rectangle())
+          .onTapGesture(coordinateSpace: .named("photo.canvas")) { point in
+            guard composition.selection != .photo else { return }
+            if let layer = layer(at: point, displayScale: scale) { composition.selection = layer }
+          }
           .highPriorityGesture(canvasDrag(displayScale: scale))
           .simultaneousGesture(canvasMagnification)
           .clipped().allowsHitTesting(!loading && !exporting)
@@ -198,12 +202,14 @@ struct RunPhotoEditor: View {
         Picker("Edit layer", selection: $composition.selection) {
           Text("Stats").tag(RunPhotoLayer.stats)
           if composition.showsRoute { Text("Route").tag(RunPhotoLayer.route) }
+          if composition.showsIcon { Text("Icon").tag(RunPhotoLayer.icon) }
           Text("Crop").tag(RunPhotoLayer.photo)
-        }.pickerStyle(.segmented).accessibilityIdentifier("photo.layer")
+        }.pickerStyle(.menu).accessibilityIdentifier("photo.layer")
         Text(composition.selection == .photo
           ? "Drag to reframe. Pinch to zoom the photo."
           : "Drag to move. Pinch to resize the selected overlay.")
           .font(.caption).foregroundStyle(.secondary)
+        if composition.selection == .stats { textStyleControls }
         VStack(alignment: .leading, spacing: 4) {
           Text(composition.selection == .photo ? "Zoom" : "Size").font(.subheadline.weight(.medium))
           Slider(value: sizeBinding, in: sizeRange)
@@ -226,6 +232,9 @@ struct RunPhotoEditor: View {
           Text("No drawable GPS route is available for this run. You can still share your stats.")
             .font(.caption).foregroundStyle(.secondary)
         }
+        Toggle(isOn: $composition.showsIcon) {
+          Label("Include app icon", systemImage: "app")
+        }.accessibilityIdentifier("photo.iconToggle")
       }.padding(16)
     }
     .accessibilityIdentifier("photo.controls")
@@ -236,20 +245,80 @@ struct RunPhotoEditor: View {
       edited()
     }
     .onChange(of: composition.showsRoute) { _, visible in
-      composition.selection = visible ? .route : .stats
+      if visible { composition.selection = .route }
+      else if composition.selection == .route { composition.selection = .stats }
+      edited()
+    }
+    .onChange(of: composition.showsIcon) { _, visible in
+      if visible { composition.selection = .icon }
+      else if composition.selection == .icon { composition.selection = .stats }
+      edited()
+    }
+    .onChange(of: composition.alignment) { _, _ in edited() }
+    .onChange(of: composition.fontStyle) { _, _ in
+      composition.constrainOverlays()
       edited()
     }
   }
 
+  private var textStyleControls: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("Text alignment").font(.subheadline.weight(.medium))
+      Picker("Text alignment", selection: $composition.alignment) {
+        ForEach(RunPhotoAlignment.allCases) { Text($0.rawValue).tag($0) }
+      }.pickerStyle(.segmented).frame(minHeight: 44)
+        .accessibilityIdentifier("photo.alignment")
+      Text("Font").font(.subheadline.weight(.medium))
+      let columns = dynamicTypeSize.isAccessibilitySize ? 1 : 2
+      Grid(horizontalSpacing: 8, verticalSpacing: 8) {
+        ForEach(0..<((RunPhotoFontStyle.allCases.count + columns - 1) / columns), id: \.self) { row in
+          GridRow {
+            ForEach(0..<columns, id: \.self) { column in
+              let index = row * columns + column
+              if index < RunPhotoFontStyle.allCases.count {
+                fontButton(RunPhotoFontStyle.allCases[index])
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private func fontButton(_ style: RunPhotoFontStyle) -> some View {
+    Button {
+      composition.fontStyle = style
+    } label: {
+      VStack(alignment: .leading, spacing: 4) {
+        HStack {
+          Text(style.rawValue).font(.caption.weight(.medium))
+          Spacer(minLength: 2)
+          if composition.fontStyle == style { Image(systemName: "checkmark").font(.caption.bold()) }
+        }
+        Text(stats.distance).font(Font(style.layout.valueFont.withSize(20)))
+          .lineLimit(1).minimumScaleFactor(0.5)
+      }.padding(10).frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        .foregroundStyle(.white)
+        .background(.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+          RoundedRectangle(cornerRadius: 10)
+            .stroke(composition.fontStyle == style ? RunPhotoWordmark.yellow : .clear, lineWidth: 2)
+        }
+    }.buttonStyle(.plain)
+      .accessibilityLabel("Font, \(style.rawValue)")
+      .accessibilityValue(composition.fontStyle == style ? "Selected" : "")
+      .accessibilityAddTraits(composition.fontStyle == style ? .isSelected : [])
+      .accessibilityIdentifier("photo.font.\(style.rawValue.lowercased())")
+  }
+
   private func transform(_ layer: RunPhotoLayer) -> RunPhotoTransform {
-    layer == .route ? composition.route : composition.stats
+    composition.transform(layer)
   }
   private func contentSize(_ layer: RunPhotoLayer) -> CGSize {
-    layer == .route ? RunPhotoComposition.routeSize : RunPhotoComposition.statsSize
+    composition.contentSize(layer)
   }
   private func setTransform(_ value: RunPhotoTransform, layer: RunPhotoLayer) {
-    let bounded = value.clamped(content: contentSize(layer), canvas: composition.canvasSize)
-    if layer == .route { composition.route = bounded } else { composition.stats = bounded }
+    composition.setTransform(value, layer: layer)
     edited()
   }
   private var sizeRange: ClosedRange<Double> {
@@ -307,7 +376,6 @@ struct RunPhotoEditor: View {
       .contentShape(Rectangle())
       .position(x: value.center.x * canvas.width * displayScale,
         y: value.center.y * canvas.height * displayScale)
-      .onTapGesture { composition.selection = layer }
       .accessibilityElement(children: .ignore)
       .accessibilityLabel("\(layer.rawValue) overlay")
       .accessibilityValue(String(format: "x %.2f y %.2f scale %.2f", value.center.x, value.center.y, value.scale))
@@ -318,19 +386,7 @@ struct RunPhotoEditor: View {
   }
 
   private func layer(at point: CGPoint, displayScale: CGFloat) -> RunPhotoLayer? {
-    let canvas = composition.canvasSize
-    func contains(_ layer: RunPhotoLayer) -> Bool {
-      let value = transform(layer)
-      let size = contentSize(layer)
-      let rect = CGRect(x: (value.center.x * canvas.width - size.width * value.scale / 2) * displayScale,
-        y: (value.center.y * canvas.height - size.height * value.scale / 2) * displayScale,
-        width: size.width * value.scale * displayScale, height: size.height * value.scale * displayScale)
-      return rect.contains(point)
-    }
-    if composition.selection == .route && composition.showsRoute && contains(.route) { return .route }
-    if contains(.stats) { return .stats }
-    if composition.showsRoute && contains(.route) { return .route }
-    return nil
+    composition.layer(at: CGPoint(x: point.x / displayScale, y: point.y / displayScale))
   }
 
   private func canvasDrag(displayScale: CGFloat) -> some Gesture {

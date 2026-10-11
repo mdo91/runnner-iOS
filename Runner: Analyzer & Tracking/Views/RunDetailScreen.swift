@@ -102,6 +102,7 @@ struct RunDetailScreen: View {
     }.background(RunnerStyle.background).refreshable { await health.sync() }
       .fullScreenCover(item: $photoSession) { session in
         RunPhotoEditor(run: session.run, units: session.units)
+          .environment(\.dynamicTypeSize, typeSize)
       }
       .onChange(of: selection) { _, date in
         if let interval = selectedSplit,

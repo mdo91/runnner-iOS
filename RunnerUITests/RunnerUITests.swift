@@ -103,7 +103,7 @@ import XCTest
   private func revealPhotoControl(_ element: XCUIElement, towardTop: Bool = false) {
     let scroll = app.scrollViews["photo.controls"]
     let window = app.windows.firstMatch
-    for _ in 0..<8 {
+    for _ in 0..<16 {
       // The application frame can retain portrait bounds after iPad rotation.
       let windowFrame = window.frame
       let frame = scroll.frame.intersection(windowFrame)
@@ -118,14 +118,28 @@ import XCTest
       let origin = window.coordinate(withNormalizedOffset: .zero)
       let upper = origin.withOffset(CGVector(dx: frame.midX - windowFrame.minX, dy: top + 20 - windowFrame.minY))
       let lower = origin.withOffset(CGVector(dx: frame.midX - windowFrame.minX, dy: bottom - 20 - windowFrame.minY))
-      (towardTop ? upper : lower).press(forDuration: 0.05, thenDragTo: towardTop ? lower : upper)
+      let scrollToBeginning = element.exists ? element.frame.midY < (top + bottom) / 2 : towardTop
+      let step = min(100, (bottom - top) * 0.45)
+      let destination = (scrollToBeginning ? upper : lower).withOffset(
+        CGVector(dx: 0, dy: scrollToBeginning ? step : -step))
+      (scrollToBeginning ? upper : lower).press(forDuration: 0.05, thenDragTo: destination,
+        withVelocity: .slow, thenHoldForDuration: 0.2)
     }
-    XCTAssertTrue(element.exists && element.isHittable, "Could not reveal editor control \(element)")
+    let bounds = scroll.frame.intersection(window.frame)
+    XCTAssertTrue(element.exists && element.isHittable && element.frame.minY >= bounds.minY
+      && element.frame.maxY <= min(bounds.maxY, app.buttons["photo.save"].frame.minY) - 12,
+      "Could not fully reveal editor control \(element)")
   }
   private func photoFormat(_ label: String) {
     let format = app.buttons["photo.format"]
     revealPhotoControl(format, towardTop: true)
     format.tap()
+    app.buttons[label].firstMatch.tap()
+  }
+  private func photoLayer(_ label: String) {
+    let picker = app.buttons["photo.layer"]
+    revealPhotoControl(picker, towardTop: true)
+    picker.tap()
     app.buttons[label].firstMatch.tap()
   }
   func testRunPhotoEditorGesturesRouteCropAndExport() {
@@ -167,7 +181,7 @@ import XCTest
     right.tap()
     XCTAssertNotEqual(route.value as? String, routeBeforeMove)
     photoFormat("Story 9:16")
-    app.segmentedControls["photo.layer"].buttons["Crop"].tap()
+    photoLayer("Crop")
     let zoom = app.sliders["photo.size"]
     revealPhotoControl(zoom)
     zoom.adjust(toNormalizedSliderPosition: 0.4)
@@ -226,24 +240,111 @@ import XCTest
     launch(appearance: "dark", largeText: true)
     openRunPhoto()
     XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    let serif = app.buttons["photo.font.serif"]
+    revealPhotoControl(serif)
+    serif.tap()
+    XCTAssertEqual(app.buttons["photo.font.sport"].frame.minX,
+      app.buttons["photo.font.clean"].frame.minX, accuracy: 1,
+      "Accessibility text sizes use one font-preview column in the full-screen editor")
+    let icon = app.switches["photo.iconToggle"]
+    revealPhotoControl(icon)
+    icon.switches.firstMatch.exists ? icon.switches.firstMatch.tap() : icon.tap()
     XCUIDevice.shared.orientation = .landscapeLeft
     let reset = app.buttons["photo.reset"]
     revealPhotoControl(reset, towardTop: true)
     reset.tap()
+    photoLayer("Stats")
     XCTAssertTrue(app.buttons["photo.save"].isHittable)
     XCTAssertTrue(app.buttons["photo.close"].isHittable)
     XCTAssertTrue(photoArtwork.exists)
     // The artwork intentionally has fixed typography; accessible controls carry the same data.
     waitForUnobscuredScreen()
+    revealPhotoControl(app.buttons["photo.font.mono"])
+    try auditPhotoControls()
+  }
+  private func auditPhotoControls() throws {
+    let artwork = photoArtwork.frame
+    let scroll = app.scrollViews["photo.controls"].frame.intersection(app.windows.firstMatch.frame)
+    let top = max(scroll.minY, app.navigationBars["Run Photo"].frame.maxY)
+    let visible = CGRect(x: scroll.minX, y: top, width: scroll.width,
+      height: max(0, app.buttons["photo.save"].frame.minY - 12 - top))
     try app.performAccessibilityAudit(for: [.contrast, .elementDetection, .hitRegion, .sufficientElementDescription]) { issue in
       // The scalable photo artwork contains user-selected backgrounds, not UI text.
       // Its complete metrics are exposed as one accessibility label; audit all controls.
-      if issue.auditType == .contrast, let element = issue.element,
-        self.photoArtwork.frame.contains(element.frame) { return true }
+      if issue.auditType == .contrast, let element = issue.element {
+        let frame = element.frame
+        if artwork.contains(frame) { return true }
+        // iOS 26 audits offscreen ScrollView descendants beneath the fixed footer.
+        // Hidden content has no visible text contrast; font previews are revealed before auditing.
+        if scroll.intersects(frame) && !visible.contains(frame) { return true }
+      }
       let description = "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
       try? description.write(to: self.evidenceURL("audit.txt"), atomically: true, encoding: .utf8)
       return false
     }
+  }
+  func testRunPhotoAlignmentFontsAndIndependentIcon() {
+    launch()
+    openRunPhoto()
+    let stats = app.buttons["photo.statsOverlay"]
+    let up = app.buttons["photo.arrow.up"]
+    revealPhotoControl(up)
+    for _ in 0..<5 { up.tap() }
+    let position = stats.frame
+    let alignment = app.segmentedControls["photo.alignment"]
+    revealPhotoControl(alignment, towardTop: true)
+    for label in ["Center", "Trailing", "Leading", "Center"] {
+      alignment.buttons[label].tap()
+      XCTAssertEqual(stats.frame.midX, position.midX, accuracy: 1)
+      XCTAssertEqual(stats.frame.midY, position.midY, accuracy: 1)
+    }
+    for style in ["clean", "rounded", "mono", "sport", "serif"] {
+      let button = app.buttons["photo.font.\(style)"]
+      revealPhotoControl(button, towardTop: true)
+      button.tap()
+      XCTAssertEqual(button.value as? String, "Selected")
+      XCTAssertEqual(stats.frame.midX, position.midX, accuracy: 1)
+      XCTAssertEqual(stats.frame.midY, position.midY, accuracy: 1)
+    }
+    let toggle = app.switches["photo.iconToggle"]
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    let icon = app.buttons["photo.iconOverlay"]
+    XCTAssertTrue(icon.waitForExistence(timeout: 5))
+    let statsBefore = stats.value as? String
+    let iconBefore = icon.value as? String
+    icon.pinch(withScale: 0.75, velocity: -1)
+    icon.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: icon.coordinate(withNormalizedOffset: CGVector(dx: -0.3, dy: -0.4)))
+    XCTAssertNotEqual(icon.value as? String, iconBefore)
+    XCTAssertEqual(stats.value as? String, statsBefore)
+    let moved = icon.value as? String
+    let left = app.buttons["photo.arrow.left"]
+    revealPhotoControl(left, towardTop: true)
+    left.tap()
+    XCTAssertNotEqual(icon.value as? String, moved)
+    XCTAssertEqual(stats.value as? String, statsBefore)
+    let retained = icon.value as? String
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    XCTAssertFalse(icon.exists)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    XCTAssertEqual(icon.value as? String, retained)
+    app.buttons["photo.choose"].tap()
+    XCTAssertEqual(icon.value as? String, retained)
+    photoLayer("Stats")
+    XCTAssertEqual(app.buttons["photo.font.serif"].value as? String, "Selected")
+    XCTAssertTrue(alignment.buttons["Center"].isSelected)
+    let reset = app.buttons["photo.reset"]
+    revealPhotoControl(reset, towardTop: true)
+    reset.tap()
+    XCTAssertNotEqual(icon.value as? String, retained)
+    XCTAssertTrue(icon.exists)
+    XCTAssertEqual(app.buttons["photo.font.serif"].value as? String, "Selected")
+    XCTAssertTrue(alignment.buttons["Center"].isSelected)
+    photoFormat("Square 1:1")
+    app.buttons["photo.save"].tap()
+    waitForLabel(app.staticTexts["photo.status"], containing: "1080 × 1080")
   }
   func testNavigationAndActivityCheckpointRegression() {
     launch()

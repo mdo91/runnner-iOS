@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        B26300000000000000000001 /* RunPhotoAssets.xcassets in test Resources */ = {isa = PBXBuildFile; fileRef = B26300000000000000000002 /* RunPhotoAssets.xcassets */; };
         B26200000000000000000005 /* RunPhotoCompositionView.swift in test Sources */ = {isa = PBXBuildFile; fileRef = B26200000000000000000006 /* RunPhotoCompositionView.swift */; };
         B26200000000000000000003 /* RunPhotoIO.swift in test Sources */ = {isa = PBXBuildFile; fileRef = B26200000000000000000004 /* RunPhotoIO.swift */; };
         B26200000000000000000001 /* RunPhotoComposition.swift in test Sources */ = {isa = PBXBuildFile; fileRef = B26200000000000000000002 /* RunPhotoComposition.swift */; };
@@ -48,6 +49,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        B26300000000000000000002 /* RunPhotoAssets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Runner: Analyzer & Tracking/RunPhotoAssets.xcassets"; sourceTree = SOURCE_ROOT; };
         B26200000000000000000006 /* RunPhotoCompositionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Views/Components/RunPhotoCompositionView.swift"; sourceTree = SOURCE_ROOT; };
         B26200000000000000000004 /* RunPhotoIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Managers/RunPhotoIO.swift"; sourceTree = SOURCE_ROOT; };
         B26200000000000000000002 /* RunPhotoComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Runner: Analyzer & Tracking/Models/RunPhotoComposition.swift"; sourceTree = SOURCE_ROOT; };
@@ -120,6 +122,7 @@
                 B26200000000000000000006 /* RunPhotoCompositionView.swift */,
                 B26200000000000000000004 /* RunPhotoIO.swift */,
                 B26200000000000000000002 /* RunPhotoComposition.swift */,
+                B26300000000000000000002 /* RunPhotoAssets.xcassets */,
 			);
 			name = "Shared Test Sources";
 			sourceTree = "<group>";
@@ -304,6 +307,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                B26300000000000000000001 /* RunPhotoAssets.xcassets in test Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
