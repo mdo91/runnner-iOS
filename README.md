@@ -18,6 +18,16 @@ If command-line tools are selected globally, prefix commands with `DEVELOPER_DIR
 
 `RunCore` contains deterministic calculations, wire contracts, route filtering, density, and comparable-history rules. Its tests also run in the RunnerTests target. Debug builds launched with `--runner-fixtures` use a temporary in-memory store of clearly named synthetic Watch workouts, never the user's Health store. This switch is excluded from Release builds.
 
+## Run photos
+
+Tap the photo icon in **Latest Run → Run summary**, or open an older run from History, to create a run photo. Choose a still image, then drag or pinch the statistics block and optional GPS route independently. **Crop** reframes the background; position buttons and the size slider provide alternatives to gestures. Original, Story (9:16), Portrait (4:5), and Square formats are available.
+
+The overlay uses the selected run’s measured distance, average pace, and moving time with the current unit preference. **The Runner** appears in white and sporty yellow. GPS is drawn as solid route segments without map tiles or markers; pauses and missing/invalid GPS remain gaps. Indoor runs and runs without GPS still support photo statistics.
+
+**Save Photo** requests add-only Photos access; **Share** opens the system share sheet. Editing stays on-device, requires no account, and does not attach images to history or upload them to Runner’s services. Exports are JPEGs with fresh pixels and no source-photo location metadata. Original exports retain the photo’s ratio up to a 2160-pixel long edge; social exports are 1080 pixels wide. Editable compositions last only while the editor is open.
+
+If Photos access is denied, **Share Instead** keeps the current composition available. Share a copy before changing access in Settings: iOS can restart Runner when permissions change, discarding an in-memory edit.
+
 ## Activity
 
 The Activity tab defaults to **Current month** with the number of completed runs and daily bars. Switch between **Runs**, **Distance**, **Moving Time**, and **Elevation Gain**, or select **3 Months**, **6 Months**, or **Year** for monthly bars. Multi-month ranges include the current month plus the previous two or five months; Year starts at the beginning of the current calendar year. Custom dates use daily buckets through 31 days, weekly through 180 days, and monthly thereafter. Totals stop at the present time, empty buckets remain visible, and selecting a bucket reveals totals and matching runs. Distance and elevation honor unit preferences, with metric as the default. The monthly calendar provides intensity and day-to-run navigation.

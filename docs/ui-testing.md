@@ -20,11 +20,25 @@ scripts/test-ui.sh 'platform=iOS Simulator,name=iPhone 16,OS=26.0' -only-testing
 
 Set `RUNNER_DERIVED_DATA` to reuse a dependency checkout and `RUNNER_RESULTS_DIR` to choose an artifact directory. Defaults are `/tmp/runner-activity-derived` and `/tmp/runner-ui-results`. Every invocation creates a new `.xcresult`; failures are not automatically retried. Open the bundle in Xcode to inspect screenshots, failures, and test timings.
 
+Set `RUNNER_BUILD_JOBS=1` to limit compilation to one worker when memory is constrained. Simulator destinations remain serial, and disposable simulators are shut down and deleted after each run.
+
 After a successful `xcodebuild`, the runner verifies recorded test counts and failures through the compatible result-object reader and saves a sibling `-summary.json`. Empty/all-skipped results fail validation. This also avoids Xcode 27's newer summary reader returning `unknown` with zero tests for some iOS 26.5 bundles; the recorded action metrics still contain the executed counts and failures.
 
 UI tests also save a direct screenshot and accessibility tree at teardown in the sibling `-screenshots` directory. The runner forwards this location with `TEST_RUNNER_RUNNER_EVIDENCE_DIR`; direct Xcode runs use `/tmp/runner-ui-results/direct-screenshots`. These copies survive disposable-simulator cleanup when a toolchain cannot decode older-runtime attachments. Failed accessibility audits record the detailed issue description. The original `.xcresult` and console log remain the authoritative test outcome; screenshot copies do not change failures or enable retries.
 
 ## Isolation
+
+### Run photo editor
+
+`RunPhotoTests` covers moving-time/unit formatting, segmented GPS projection and longitude wrapping, overlay bounds, crop coverage, image decoding/orientation, export dimensions and colors, metadata, and temporary share-file cleanup. JPEG attachments retain rendered artwork for visual inspection.
+
+The four `testRunPhoto…` UI scenarios cover Latest and History entry points, independent gestures, accessible position/size controls, cropping, export, missing routes, loading retry, save denial, and large-text landscape layouts. Debug fixture mode supplies a deterministic image and renders real JPEGs while substituting Photos writes and share presentation; it never changes the user's photo library. `photo-load-failure` fails the first image attempt, and `photo-save-denied` simulates denied add-only access while still allowing the share fallback. Existing `indoor` and `partial` fixtures cover unavailable data. Release builds ignore all fixture controls.
+
+The editor’s contrast audit covers its controls. It excludes text inside the scalable photo artwork, whose background and scale are user-controlled; the complete metrics are also exposed as one VoiceOver label. Export tests inspect the actual artwork’s colors, dimensions, and orientation independently.
+
+For native-device acceptance, select a local and an iCloud photo, cancel and retry selection, verify add-only permission denial and success, and open/dismiss the native share sheet on iPhone and iPad. Confirm the saved JPEG matches the preview. Native permissions and iCloud download behavior are separate from deterministic fixture coverage.
+
+For manual native Photos checks in a disposable simulator, launch a Debug fixture scenario with `RUNNER_NATIVE_PHOTOS=1`. This uses the real picker, Photos writer, and share sheet while retaining isolated workout data and disabled cloud/Health services. Seed only that simulator’s library with `simctl addmedia`; the normal fixture suite never enables this override.
 
 Debug builds accept `--ui-scenario SCENARIO`. Each test supplies a unique `RUNNER_TEST_ID` for an isolated preferences suite; workout data uses an in-memory SwiftData container. Relaunching with the same ID retains local settings within that test. Fixtures use a fixed October 9, 2026 clock, Gregorian calendar, Istanbul timezone, and Monday-start weeks.
 

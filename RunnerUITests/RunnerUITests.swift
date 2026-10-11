@@ -91,6 +91,160 @@ import XCTest
     connect.tap()
     XCTAssertTrue(app.textFields["dashboard.code"].waitForExistence(timeout: 5))
   }
+  private func openRunPhoto() {
+    let button = app.buttons["run.createPhoto"]
+    reveal(button)
+    button.tap()
+    XCTAssertTrue(app.navigationBars["Run Photo"].waitForExistence(timeout: 5))
+  }
+  private var photoArtwork: XCUIElement {
+    app.descendants(matching: .any)["photo.artwork"].firstMatch
+  }
+  private func revealPhotoControl(_ element: XCUIElement, towardTop: Bool = false) {
+    let scroll = app.scrollViews["photo.controls"]
+    let window = app.windows.firstMatch
+    for _ in 0..<8 {
+      // The application frame can retain portrait bounds after iPad rotation.
+      let windowFrame = window.frame
+      let frame = scroll.frame.intersection(windowFrame)
+      guard !frame.isNull, !frame.isEmpty else {
+        XCTFail("Photo controls have no visible window bounds")
+        return
+      }
+      let top = max(frame.minY, app.navigationBars["Run Photo"].frame.maxY) + 8
+      let bottom = min(frame.maxY, app.buttons["photo.save"].frame.minY) - 12
+      if element.exists && element.isHittable && element.frame.minY >= top
+        && element.frame.maxY <= bottom { return }
+      let origin = window.coordinate(withNormalizedOffset: .zero)
+      let upper = origin.withOffset(CGVector(dx: frame.midX - windowFrame.minX, dy: top + 20 - windowFrame.minY))
+      let lower = origin.withOffset(CGVector(dx: frame.midX - windowFrame.minX, dy: bottom - 20 - windowFrame.minY))
+      (towardTop ? upper : lower).press(forDuration: 0.05, thenDragTo: towardTop ? lower : upper)
+    }
+    XCTAssertTrue(element.exists && element.isHittable, "Could not reveal editor control \(element)")
+  }
+  private func photoFormat(_ label: String) {
+    let format = app.buttons["photo.format"]
+    revealPhotoControl(format, towardTop: true)
+    format.tap()
+    app.buttons[label].firstMatch.tap()
+  }
+  func testRunPhotoEditorGesturesRouteCropAndExport() {
+    launch()
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    XCTAssertTrue(photoArtwork.label.contains("5.00 km"))
+    XCTAssertTrue(photoArtwork.label.contains("25m 00s"))
+    let stats = app.buttons["photo.statsOverlay"]
+    let original = stats.value as? String
+    let originalFrame = stats.frame
+    stats.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: stats.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.15)))
+    XCTAssertNotEqual(stats.value as? String, original)
+    XCTAssertEqual(stats.frame.midX - originalFrame.midX, originalFrame.width * 0.2, accuracy: 8)
+    XCTAssertEqual(stats.frame.midY - originalFrame.midY, -originalFrame.height * 0.35, accuracy: 8)
+    let statsBeforeResize = stats.value as? String
+    stats.pinch(withScale: 0.8, velocity: -1)
+    XCTAssertNotEqual(stats.value as? String, statsBeforeResize)
+    let movedStats = stats.value as? String
+    let toggle = app.switches["photo.routeToggle"]
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    let route = app.buttons["photo.routeOverlay"]
+    XCTAssertTrue(route.waitForExistence(timeout: 5))
+    let before = route.value as? String
+    route.pinch(withScale: 0.7, velocity: -1)
+    XCTAssertNotEqual(route.value as? String, before)
+    XCTAssertEqual(stats.value as? String, movedStats)
+    let routeFrame = route.frame
+    route.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: route.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.7)))
+    XCTAssertEqual(route.frame.midX - routeFrame.midX, -routeFrame.width * 0.2, accuracy: 8)
+    XCTAssertEqual(route.frame.midY - routeFrame.midY, routeFrame.height * 0.2, accuracy: 8)
+    XCTAssertEqual(stats.value as? String, movedStats)
+    let right = app.buttons["photo.arrow.right"]
+    revealPhotoControl(right, towardTop: true)
+    let routeBeforeMove = route.value as? String
+    right.tap()
+    XCTAssertNotEqual(route.value as? String, routeBeforeMove)
+    photoFormat("Story 9:16")
+    app.segmentedControls["photo.layer"].buttons["Crop"].tap()
+    let zoom = app.sliders["photo.size"]
+    revealPhotoControl(zoom)
+    zoom.adjust(toNormalizedSliderPosition: 0.4)
+    let crop = app.descendants(matching: .any)["photo.cropCanvas"].firstMatch
+    crop.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: crop.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.6)))
+    app.buttons["photo.save"].tap()
+    let status = app.staticTexts["photo.status"]
+    waitForLabel(status, containing: "1080 × 1920")
+    app.buttons["photo.share"].tap()
+    waitForLabel(status, containing: "Share image")
+    app.buttons["photo.close"].tap()
+    XCTAssertTrue(app.buttons["run.createPhoto"].waitForExistence(timeout: 5))
+  }
+  func testRunPhotoUsesHistoricalSessionAndMissingGPS() {
+    launch()
+    tab("History")
+    let older = app.buttons["history.run.00000000-0000-0000-0000-000000000002"]
+    reveal(older)
+    older.tap()
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    XCTAssertTrue(photoArtwork.label.contains("25m 30s"))
+    app.terminate()
+    launch("indoor")
+    openRunPhoto()
+    let toggle = app.switches["photo.routeToggle"]
+    revealPhotoControl(toggle)
+    XCTAssertFalse(toggle.isEnabled)
+    XCTAssertTrue(photoArtwork.label.contains("25m 00s"))
+    app.buttons["photo.save"].tap()
+    waitForLabel(app.staticTexts["photo.status"], containing: "Saved image")
+  }
+  func testRunPhotoLoadRetryAndSaveDenialKeepEdits() {
+    launch("photo-load-failure")
+    openRunPhoto()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 5))
+    app.alerts.buttons["Retry"].tap()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    app.terminate()
+    launch("photo-save-denied")
+    openRunPhoto()
+    let up = app.buttons["photo.arrow.up"]
+    revealPhotoControl(up)
+    up.tap()
+    let before = app.buttons["photo.statsOverlay"].value as? String
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.alerts.buttons["Open Settings"].exists)
+    app.alerts.buttons["Share Instead"].tap()
+    XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, before)
+    waitForLabel(app.staticTexts["photo.status"], containing: "Share image")
+    XCTAssertTrue(app.buttons["photo.share"].isEnabled)
+  }
+  func testRunPhotoAccessibilityAndLandscape() throws {
+    launch(appearance: "dark", largeText: true)
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    XCUIDevice.shared.orientation = .landscapeLeft
+    let reset = app.buttons["photo.reset"]
+    revealPhotoControl(reset, towardTop: true)
+    reset.tap()
+    XCTAssertTrue(app.buttons["photo.save"].isHittable)
+    XCTAssertTrue(app.buttons["photo.close"].isHittable)
+    XCTAssertTrue(photoArtwork.exists)
+    // The artwork intentionally has fixed typography; accessible controls carry the same data.
+    waitForUnobscuredScreen()
+    try app.performAccessibilityAudit(for: [.contrast, .elementDetection, .hitRegion, .sufficientElementDescription]) { issue in
+      // The scalable photo artwork contains user-selected backgrounds, not UI text.
+      // Its complete metrics are exposed as one accessibility label; audit all controls.
+      if issue.auditType == .contrast, let element = issue.element,
+        self.photoArtwork.frame.contains(element.frame) { return true }
+      let description = "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
+      try? description.write(to: self.evidenceURL("audit.txt"), atomically: true, encoding: .utf8)
+      return false
+    }
+  }
   func testNavigationAndActivityCheckpointRegression() {
     launch()
     for name in ["History", "Activity", "Trends", "Live", "Latest"] { tab(name) }

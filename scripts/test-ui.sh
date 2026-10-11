@@ -22,7 +22,7 @@ TEST_RUNNER_RUNNER_EVIDENCE_DIR="${RESULT_PATH%.xcresult}-screenshots" \
 xcodebuild test -project 'The Runner.xcodeproj' -scheme 'The Runner' \
   -testPlan Runner -destination "$DESTINATION" -derivedDataPath "$DERIVED_DIR" \
   -resultBundlePath "$RESULT_PATH" -parallel-testing-enabled NO \
-  -maximum-concurrent-test-simulator-destinations 1 -jobs 2 ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+  -maximum-concurrent-test-simulator-destinations 1 -jobs "${RUNNER_BUILD_JOBS:-2}" ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
   COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO "${@:2}" || TEST_STATUS=$?
 SUMMARY_PATH="${RESULT_PATH%.xcresult}-summary.json"
 # Xcode 27's new summary reader can return zero tests for iOS 26.5 bundles.

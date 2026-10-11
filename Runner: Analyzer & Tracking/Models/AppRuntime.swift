@@ -14,6 +14,14 @@ enum AppRuntime {
     return nil
   }
   static var isFixture: Bool { scenario != nil }
+  /// Native photo tools can be checked in a disposable simulator while Health/cloud stay isolated.
+  static var useFixturePhotos: Bool {
+    #if DEBUG
+      return isFixture && ProcessInfo.processInfo.environment["RUNNER_NATIVE_PHOTOS"] != "1"
+    #else
+      return false
+    #endif
+  }
   static var now: Date {
     isFixture ? Date(timeIntervalSince1970: 1_791_540_000) : Date()
   }
