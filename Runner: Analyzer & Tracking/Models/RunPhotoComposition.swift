@@ -63,18 +63,23 @@ enum RunPhotoRouteColor: String, CaseIterable, Identifiable {
 }
 
 enum RunPhotoExportResult {
-  case saved(Data), shared, failed(String)
+  case saved(Data), savedVideo(URL), shared, sharedVideo, failed(String)
+  var videoURL: URL? { if case .savedVideo(let url) = self { return url }; return nil }
   var title: String {
     switch self {
     case .saved: return "Image saved"
+    case .savedVideo: return "Video saved"
     case .shared: return "Image shared"
+    case .sharedVideo: return "Video shared"
     case .failed: return "Couldn’t share"
     }
   }
   var message: String {
     switch self {
     case .saved: return "Your run photo was saved to Photos. You can also share it to another app."
+    case .savedVideo: return "Your run video was saved to Photos. You can also share it to another app."
     case .shared: return "Your run photo was shared using the selected app or service."
+    case .sharedVideo: return "Your run video was shared using the selected app or service."
     case .failed(let message): return message
     }
   }
@@ -233,6 +238,9 @@ struct RunPhotoComposition {
   static let routeSize = CGSize(width: 170, height: 170)
   static let iconSize = CGSize(width: 64, height: 64)
   var image: UIImage?
+  /// The image is a poster frame when editing a video. Keep the full clip on disk.
+  var video: RunVideo?
+  var isVideo: Bool { video != nil }
   var format: RunPhotoFormat = .original
   var crop = RunPhotoCrop()
   var showsRoute = false
@@ -245,8 +253,16 @@ struct RunPhotoComposition {
   var route = RunPhotoTransform(center: CGPoint(x: 0.74, y: 0.25), scale: 0.85)
   var icon = RunPhotoTransform(center: CGPoint(x: 1, y: 1), scale: 1)
   var statsSize: CGSize { fontStyle.layout.size }
-  var imageSize: CGSize { image?.size ?? CGSize(width: 1080, height: 1440) }
-  var outputSize: CGSize { format.outputSize(for: imageSize) }
+  var imageSize: CGSize { video?.size ?? image?.size ?? CGSize(width: 1080, height: 1440) }
+  var outputSize: CGSize {
+    let size = format.outputSize(for: imageSize)
+    // H.264 requires even dimensions, including unusual source aspect ratios.
+    if isVideo {
+      return CGSize(width: max(2, floor(size.width / 2) * 2),
+        height: max(2, floor(size.height / 2) * 2))
+    }
+    return size
+  }
   // A stable coordinate system shared by all display sizes and the export renderer.
   var canvasSize: CGSize {
     let output = outputSize

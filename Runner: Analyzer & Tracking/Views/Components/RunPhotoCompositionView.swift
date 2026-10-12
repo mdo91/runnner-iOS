@@ -5,13 +5,14 @@ struct RunPhotoCompositionView: View {
   let composition: RunPhotoComposition
   let stats: RunPhotoStats
   let route: RunPhotoRoute
+  var includesBackground = true
 
   var body: some View {
     let canvas = composition.canvasSize
     let photo = composition.crop.imageFrame(image: composition.imageSize, canvas: canvas)
     ZStack(alignment: .topLeading) {
-      Color.black
-      if let image = composition.image {
+      if includesBackground { Color.black }
+      if includesBackground, let image = composition.image {
         Image(uiImage: image).resizable()
           .frame(width: photo.width, height: photo.height)
           .position(x: photo.midX, y: photo.midY)
@@ -50,7 +51,7 @@ struct RunPhotoCompositionView: View {
     .environment(\.dynamicTypeSize, .large)
     .environment(\.colorScheme, .dark)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Run photo, Distance \(stats.distance), pace \(stats.pace), Time \(stats.time), The Runner")
+    .accessibilityLabel("Run \(composition.isVideo ? "video" : "photo"), Distance \(stats.distance), pace \(stats.pace), Time \(stats.time), The Runner")
     .accessibilityIdentifier("photo.artwork")
   }
 }
