@@ -237,6 +237,8 @@ struct RunPhotoEditor: View {
         }.accessibilityIdentifier("photo.iconToggle")
       }.padding(16)
     }
+    // This panel is already clipped above a fixed footer; keep its previews readable at the edges.
+    .scrollEdgeEffectHidden(true, for: .all)
     .accessibilityIdentifier("photo.controls")
     .disabled(composition.image == nil || loading || exporting)
     .onChange(of: composition.format) { _, _ in

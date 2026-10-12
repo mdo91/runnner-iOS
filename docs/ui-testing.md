@@ -84,7 +84,7 @@ To review a specific screenshot in a bundle, use Xcode or `xcrun xcresulttool ex
 
 ## Serial matrix runner
 
-The matrix includes the four Xcode Cloud regression scenarios on iPhone SE and iPhone 16 Pro Max / the recent runtime (26.5 by default). To reproduce only either cloud layout:
+The matrix includes eight Xcode Cloud regression scenarios on iPhone SE and iPhone 16 Pro Max / the recent runtime (26.5 by default): calendar/history filters, dashboard approval retry, zone/load visibility, screen accessibility, large-text landscape date selection, photo-editor accessibility, independent icon toggling, and historical/no-GPS photo sessions. To reproduce only either cloud layout:
 
 ```sh
 RUNNER_SKIP_FULL_SUITE=1 RUNNER_MATRIX_FILTER=Runner-Cloud-SE-UI scripts/test-matrix.sh
