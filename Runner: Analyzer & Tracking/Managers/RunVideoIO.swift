@@ -49,7 +49,7 @@ enum RunVideoIO {
   /// Does not take ownership of the file. Callers remove their own temporary copies.
   static func inspect(_ url: URL) async throws -> RunVideo {
     try Task.checkCancellation()
-    let asset = AVURLAsset(url: url)
+    let asset = AVURLAsset(url: url, options: [AVURLAssetPreferPreciseDurationAndTimingKey: true])
     guard let track = try await asset.loadTracks(withMediaType: .video).first else {
       throw RunVideoError.unreadable
     }
@@ -63,7 +63,11 @@ enum RunVideoIO {
     let generator = AVAssetImageGenerator(asset: asset)
     generator.appliesPreferredTrackTransform = true
     generator.maximumSize = CGSize(width: 1920, height: 1920)
-    let frame = try await generator.image(at: .zero)
+    // A track can start with an empty edit even when its timeRange starts at zero.
+    let segments = try await track.load(.segments)
+    let posterTime = segments.first(where: { !$0.isEmpty })?.timeMapping.target.start ?? .zero
+    generator.requestedTimeToleranceBefore = .zero
+    let frame = try await generator.image(at: posterTime)
     try Task.checkCancellation()
     return RunVideo(url: url, size: size, duration: duration,
       poster: UIImage(cgImage: frame.image))
@@ -84,6 +88,7 @@ enum RunVideoIO {
     let natural = try await source.load(.naturalSize)
     let preferred = try await source.load(.preferredTransform)
     let frameDuration = try await source.load(.minFrameDuration)
+    let sourceSegments = try await source.load(.segments)
     try Task.checkCancellation()
 
     let movie = AVMutableComposition()
@@ -122,6 +127,7 @@ enum RunVideoIO {
       .concatenating(transform)
       .concatenating(CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: output.height))
     let instruction = RunVideoInstruction(timeRange: range, trackID: track.trackID,
+      emptyRanges: sourceSegments.filter(\.isEmpty).map { $0.timeMapping.target },
       transform: imageTransform, artwork: artwork)
     // Deliver an SDR movie compatible with Photos and common share destinations.
     let videoComposition = AVVideoComposition(configuration: .init(
@@ -148,14 +154,27 @@ enum RunVideoIO {
     } catch { removeFile(url); throw error }
   }
 
-  static func save(_ url: URL) async throws {
-    let authorization = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
-    guard authorization == .authorized || authorization == .limited else {
+  @MainActor static func save(_ url: URL, onCommit: () -> Void) async throws {
+    try await save(authorization: {
+      await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+    }, onCommit: onCommit) {
+      try await PHPhotoLibrary.shared().performChanges {
+        PHAssetCreationRequest.forAsset().addResource(with: .video, fileURL: url, options: nil)
+      }
+    }
+  }
+
+  /// Cancellation is honored until committing; Photos cannot cancel an accepted transaction.
+  @MainActor static func save(authorization: () async -> PHAuthorizationStatus,
+    onCommit: () -> Void, changes: () async throws -> Void) async throws {
+    try Task.checkCancellation()
+    let status = await authorization()
+    try Task.checkCancellation()
+    guard status == .authorized || status == .limited else {
       throw RunPhotoError.permissionDenied
     }
-    try await PHPhotoLibrary.shared().performChanges {
-      PHAssetCreationRequest.forAsset().addResource(with: .video, fileURL: url, options: nil)
-    }
+    onCommit()
+    try await changes()
   }
 
   static func temporaryFile(named name: String) throws -> URL {
@@ -186,13 +205,15 @@ private final class RunVideoInstruction: NSObject, AVVideoCompositionInstruction
   let passthroughTrackID = kCMPersistentTrackID_Invalid
   let requiredSourceTrackIDs: [NSValue]?
   let trackID: CMPersistentTrackID
+  let emptyRanges: [CMTimeRange]
   let transform: CGAffineTransform
   let artwork: CIImage
 
-  init(timeRange: CMTimeRange, trackID: CMPersistentTrackID,
+  init(timeRange: CMTimeRange, trackID: CMPersistentTrackID, emptyRanges: [CMTimeRange],
     transform: CGAffineTransform, artwork: CGImage) {
     self.timeRange = timeRange
     self.trackID = trackID
+    self.emptyRanges = emptyRanges
     requiredSourceTrackIDs = [NSNumber(value: trackID)]
     self.transform = transform
     self.artwork = CIImage(cgImage: artwork)
@@ -211,7 +232,13 @@ private final class RunVideoCompositor: NSObject, AVVideoCompositing {
   var supportsHDRSourceFrames: Bool { false }
   var supportsWideColorSourceFrames: Bool { false }
   private let context = CIContext(options: [.cacheIntermediates: false])
-  private let space = CGColorSpace(name: CGColorSpace.sRGB)!
+  // Use Core Video's profile for the same Rec. 709 tags declared by the encoder.
+  // Rendering sRGB bytes into that movie would brighten both the clip and artwork.
+  private let space = CVImageBufferCreateColorSpaceFromAttachments([
+    kCVImageBufferColorPrimariesKey: kCVImageBufferColorPrimaries_ITU_R_709_2,
+    kCVImageBufferTransferFunctionKey: kCVImageBufferTransferFunction_ITU_R_709_2,
+    kCVImageBufferYCbCrMatrixKey: kCVImageBufferYCbCrMatrix_ITU_R_709_2,
+  ] as CFDictionary)!.takeRetainedValue()
 
   func renderContextChanged(_ newRenderContext: AVVideoCompositionRenderContext) {}
 
@@ -219,13 +246,23 @@ private final class RunVideoCompositor: NSObject, AVVideoCompositing {
     // Finishing synchronously means there are no queued frames left to cancel.
     autoreleasepool {
       guard let instruction = request.videoCompositionInstruction as? RunVideoInstruction,
-        let source = request.sourceFrame(byTrackID: instruction.trackID),
         let output = request.renderContext.newPixelBuffer() else {
         request.finish(with: RunVideoError.exportFailed)
         return
       }
       let bounds = CGRect(origin: .zero, size: request.renderContext.size)
-      let image = CIImage(cvPixelBuffer: source).transformed(by: instruction.transform)
+      let image: CIImage
+      if let source = request.sourceFrame(byTrackID: instruction.trackID) {
+        image = CIImage(cvPixelBuffer: source).transformed(by: instruction.transform)
+      } else if instruction.emptyRanges.contains(where: {
+        CMTimeRangeContainsTime($0, time: request.compositionTime)
+      }) {
+        // Preserve leading silence/audio and timing when no video sample exists yet.
+        image = CIImage(color: .black).cropped(to: bounds)
+      } else {
+        request.finish(with: RunVideoError.exportFailed)
+        return
+      }
       let composed = instruction.artwork.composited(over: image).cropped(to: bounds)
       context.render(composed, to: output, bounds: bounds, colorSpace: space)
       request.finish(withComposedVideoFrame: output)

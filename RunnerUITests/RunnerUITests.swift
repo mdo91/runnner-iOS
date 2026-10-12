@@ -439,6 +439,35 @@ import XCTest
     XCTAssertTrue(app.alerts["Video shared"].waitForExistence(timeout: 5))
   }
 
+  func testRunVideoSaveCancellationDuringAuthorizationPreservesEdits() {
+    launch("video-save-authorizing")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    let before = app.buttons["photo.statsOverlay"].value as? String
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.staticTexts["Waiting for Photos…"].waitForExistence(timeout: 30))
+    let cancel = app.buttons["Cancel Export"]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 10))
+    cancel.tap()
+    let ready = NSPredicate(format: "enabled == true")
+    expectation(for: ready, evaluatedWith: app.buttons["photo.save"])
+    waitForExpectations(timeout: 15)
+    XCTAssertFalse(app.alerts["Video saved"].exists)
+    XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, before)
+    XCTAssertTrue(app.buttons["video.play"].exists)
+  }
+
+  func testRunVideoSaveHidesCancellationWhilePhotosIsCommitting() {
+    launch("video-save-committing")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.staticTexts["Saving video…"].waitForExistence(timeout: 30))
+    XCTAssertFalse(app.buttons["Cancel Export"].exists)
+    XCTAssertFalse(app.buttons["photo.close"].isEnabled)
+    XCTAssertTrue(app.alerts["Video saved"].waitForExistence(timeout: 15))
+  }
+
   func testRunVideoReplacementPreservesOverlayStyling() {
     launch("video-replacement")
     tab("History")

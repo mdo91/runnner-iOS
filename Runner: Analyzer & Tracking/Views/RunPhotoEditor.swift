@@ -23,6 +23,8 @@ struct RunPhotoEditor: View {
   @State private var loadID = UUID()
   @State private var loading = false
   @State private var exporting = false
+  private enum VideoExportPhase { case preparing, authorizing, saving }
+  @State private var videoExportPhase = VideoExportPhase.preparing
   @State private var started = false
   @State private var errorMessage: String?
   @State private var permissionDenied = false
@@ -198,9 +200,13 @@ struct RunPhotoEditor: View {
         }
         if loading || exporting {
           VStack(spacing: 12) {
-            ProgressView(loading ? "Loading media…" : composition.isVideo ? "Preparing video…" : "Preparing image…")
-            if exporting && composition.isVideo {
-              Button("Cancel Export") { exportTask?.cancel() }
+            ProgressView(loading ? "Loading media…" : videoExportPhase == .saving ? "Saving video…"
+              : videoExportPhase == .authorizing ? "Waiting for Photos…"
+              : composition.isVideo ? "Preparing video…" : "Preparing image…")
+            if exporting && composition.isVideo && videoExportPhase != .saving {
+              Button("Cancel Export") {
+                if videoExportPhase != .saving { exportTask?.cancel() }
+              }
                 .accessibilityIdentifier("video.cancelExport")
             }
           }.padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
@@ -598,7 +604,7 @@ struct RunPhotoEditor: View {
     retryExport = share
     permissionDenied = false
     exportTask = Task { @MainActor in
-      defer { exporting = false }
+      defer { exporting = false; videoExportPhase = .preparing }
       do {
         // Let the busy state render before rasterizing the artwork.
         await Task.yield()
@@ -644,12 +650,22 @@ struct RunPhotoEditor: View {
       retained = true
       shareVisible = true
     } else {
+      videoExportPhase = .authorizing
       #if DEBUG
         if AppRuntime.useFixturePhotos {
-          if AppRuntime.scenario == "video-save-denied" { throw RunPhotoError.permissionDenied }
-        } else { try await RunVideoIO.save(url) }
+          try await RunVideoIO.save(authorization: {
+            if AppRuntime.scenario == "video-save-authorizing" {
+              try? await Task.sleep(for: .seconds(10))
+            }
+            return AppRuntime.scenario == "video-save-denied" ? .denied : .authorized
+          }, onCommit: { videoExportPhase = .saving }) {
+            if AppRuntime.scenario == "video-save-committing" {
+              try? await Task.sleep(for: .seconds(5))
+            }
+          }
+        } else { try await RunVideoIO.save(url, onCommit: { videoExportPhase = .saving }) }
       #else
-        try await RunVideoIO.save(url)
+        try await RunVideoIO.save(url, onCommit: { videoExportPhase = .saving })
       #endif
       retained = true
       finish(.savedVideo(url))

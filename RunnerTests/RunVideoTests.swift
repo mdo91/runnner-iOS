@@ -1,4 +1,5 @@
 import AVFoundation
+import Photos
 import RunCore
 import SwiftUI
 import XCTest
@@ -129,6 +130,145 @@ import XCTest
       "A rotated and panned video frame must agree with the existing image renderer")
     let audio = try await AVURLAsset(url: output).loadTracks(withMediaType: .audio)
     XCTAssertTrue(audio.isEmpty)
+  }
+
+  func testExportPreservesNeutralBackgroundAndColoredArtwork() async throws {
+    let source = try await RunVideoFixture.create(size: CGSize(width: 720, height: 1080), gray: 128)
+    defer { RunVideoIO.removeFile(source) }
+    var edit = try await composition(source)
+    edit.showsRoute = true
+    edit.routeColor = .green
+    edit.route.scale = 1.4
+    edit.constrainOverlays()
+    let stats = RunPhotoStats(run: run, units: .metric)
+    let route = RunPhotoRoute(run: run)
+    let output = try await RunVideoIO.render(edit, stats: stats, route: route)
+    defer { RunVideoIO.removeFile(output) }
+    let sourcePixels = try pixels(await frame(source, at: 0.25))
+    let actual = try pixels(await frame(output, at: 0.25))
+    let renderer = ImageRenderer(content: RunPhotoCompositionView(composition: edit,
+      stats: stats, route: route, includesBackground: false))
+    renderer.scale = edit.outputSize.width / edit.canvasSize.width
+    let artwork = try pixels(XCTUnwrap(renderer.cgImage))
+    let width = Int(edit.outputSize.width)
+    let height = Int(edit.outputSize.height)
+    var backgroundDifferences = [Double](repeating: 0, count: 3)
+    var artworkDifferences = [Double](repeating: 0, count: 3)
+    var backgroundCount = 0
+    var artworkCount = 0
+    let green = [52, 199, 89]
+    for y in 8..<(height - 8) {
+      for x in 8..<(width - 8) {
+        let index = (y * width + x) * 4
+        // Stay away from artwork edges and H.264 chroma subsampling boundaries.
+        if stride(from: -8, through: 8, by: 4).allSatisfy({ dy in
+          stride(from: -8, through: 8, by: 4).allSatisfy { dx in
+            artwork[((y + dy) * width + x + dx) * 4 + 3] == 0
+          }
+        }) {
+          backgroundCount += 1
+          for channel in 0..<3 {
+            backgroundDifferences[channel] += Double(Int(actual[index + channel]) - Int(sourcePixels[index + channel]))
+          }
+        }
+        if (-2...2).allSatisfy({ dy in
+          (-2...2).allSatisfy { dx in
+            let pixel = ((y + dy) * width + x + dx) * 4
+            return artwork[pixel + 3] == 255 && (0..<3).allSatisfy {
+              abs(Int(artwork[pixel + $0]) - green[$0]) <= 2
+            }
+          }
+        }) {
+          artworkCount += 1
+          for channel in 0..<3 {
+            artworkDifferences[channel] += Double(Int(actual[index + channel]) - Int(artwork[index + channel]))
+          }
+        }
+      }
+    }
+    XCTAssertGreaterThan(backgroundCount, 10000)
+    XCTAssertGreaterThan(artworkCount, 30)
+    for channel in 0..<3 {
+      XCTAssertEqual(backgroundDifferences[channel] / Double(max(1, backgroundCount)), 0, accuracy: 3,
+        "Neutral clip values must survive the sRGB/Rec. 709 conversion")
+      XCTAssertEqual(artworkDifferences[channel] / Double(max(1, artworkCount)), 0, accuracy: 6,
+        "Opaque route colors must agree with the preview")
+    }
+  }
+
+  func testDelayedFirstVideoSampleImportsAndExportsWithItsAudio() async throws {
+    let source = try await RunVideoFixture.create(videoStart: 0.5)
+    defer { RunVideoIO.removeFile(source) }
+    let edit = try await composition(source)
+    XCTAssertEqual(edit.video?.duration ?? 0, 2.5, accuracy: 0.01)
+    XCTAssertEqual(edit.image?.size, CGSize(width: 320, height: 480))
+    let output = try await RunVideoIO.render(edit,
+      stats: RunPhotoStats(run: run, units: .metric), route: RunPhotoRoute(run: run))
+    defer { RunVideoIO.removeFile(output) }
+    let asset = AVURLAsset(url: output)
+    let duration = try await asset.load(.duration).seconds
+    XCTAssertEqual(duration, 2.5, accuracy: 0.15)
+    let audio = try await asset.loadTracks(withMediaType: .audio)
+    let audioRange = try await XCTUnwrap(audio.first).load(.timeRange)
+    XCTAssertEqual(audioRange.start.seconds, 0, accuracy: 0.01)
+    XCTAssertEqual(audioRange.duration.seconds, 2.5, accuracy: 0.15)
+    let leading = try pixels(await frame(output, at: 0))
+    let black = stride(from: 0, to: leading.count, by: 4).filter {
+      leading[$0] < 5 && leading[$0 + 1] < 5 && leading[$0 + 2] < 5
+    }.count
+    let white = stride(from: 0, to: leading.count, by: 4).filter {
+      leading[$0] > 240 && leading[$0 + 1] > 240 && leading[$0 + 2] > 240
+    }.count
+    XCTAssertGreaterThan(black, 320 * 480 / 2, "An empty leading interval has a black background")
+    XCTAssertGreaterThan(white, 100, "The overlay is still present before the first video sample")
+    let later = try pixels(await frame(output, at: 0.75))
+    let red = stride(from: 0, to: later.count, by: 4).filter {
+      later[$0] > 180 && later[$0 + 1] < 60 && later[$0 + 2] < 60
+    }.count
+    XCTAssertGreaterThan(red, 10000, "Real source frames resume at the original timestamp")
+  }
+
+  func testCancellationBeforeOrDuringAuthorizationNeverCommitsPhotosChanges() async throws {
+    var authorized = false
+    var committing = false
+    var wrote = false
+    let before = Task {
+      try await RunVideoIO.save(authorization: { authorized = true; return .authorized },
+        onCommit: { committing = true }, changes: { wrote = true })
+    }
+    before.cancel()
+    do { try await before.value; XCTFail("Cancelled saves must stop before authorization") }
+    catch is CancellationError {}
+    XCTAssertFalse(authorized)
+    XCTAssertFalse(committing)
+    XCTAssertFalse(wrote)
+
+    let during = Task {
+      try await RunVideoIO.save(authorization: {
+        authorized = true
+        withUnsafeCurrentTask { $0?.cancel() }
+        return .authorized
+      }, onCommit: { committing = true }, changes: { wrote = true })
+    }
+    do { try await during.value; XCTFail("Cancellation during authorization must stop before saving") }
+    catch is CancellationError {}
+    XCTAssertTrue(authorized)
+    XCTAssertFalse(committing)
+    XCTAssertFalse(wrote)
+  }
+
+  func testAcceptedPhotosTransactionStillReportsSuccessIfTheTaskIsCancelled() async throws {
+    var committing = false
+    var wrote = false
+    let task = Task {
+      try await RunVideoIO.save(authorization: { .authorized }, onCommit: { committing = true }) {
+        XCTAssertTrue(committing, "Hide Cancel Export before submitting the Photos transaction")
+        withUnsafeCurrentTask { $0?.cancel() }
+        wrote = true
+      }
+    }
+    try await task.value
+    XCTAssertTrue(wrote, "A successful Photos commit must produce a saved receipt")
   }
 
   func testUnusualSourceDimensionsAndTemporaryShareOwnership() async throws {

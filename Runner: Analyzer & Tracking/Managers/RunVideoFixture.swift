@@ -4,7 +4,8 @@ import AVFoundation
 /// A real, tiny moving clip keeps simulator tests independent of the user's library.
 enum RunVideoFixture {
   static func create(size: CGSize = CGSize(width: 320, height: 480),
-    transform: CGAffineTransform = .identity, includesAudio: Bool = true) async throws -> URL {
+    transform: CGAffineTransform = .identity, includesAudio: Bool = true,
+    videoStart: Double = 0, gray: UInt8? = nil) async throws -> URL {
     let url = try RunVideoIO.temporaryFile(named: "Fixture.mov")
     do {
       let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
@@ -16,6 +17,11 @@ enum RunVideoFixture {
       let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
         AVVideoCodecKey: AVVideoCodecType.h264,
         AVVideoWidthKey: Int(size.width), AVVideoHeightKey: Int(size.height),
+        AVVideoColorPropertiesKey: [
+          AVVideoColorPrimariesKey: AVVideoColorPrimaries_ITU_R_709_2,
+          AVVideoTransferFunctionKey: AVVideoTransferFunction_ITU_R_709_2,
+          AVVideoYCbCrMatrixKey: AVVideoYCbCrMatrix_ITU_R_709_2,
+        ],
       ])
       input.transform = transform
       let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input,
@@ -39,7 +45,9 @@ enum RunVideoFixture {
           try Task.checkCancellation()
           await Task.yield()
         }
-        guard audio.append(try sound()) else { throw writer.error ?? RunVideoError.exportFailed }
+        guard audio.append(try sound(duration: 2 + videoStart)) else {
+          throw writer.error ?? RunVideoError.exportFailed
+        }
         audio.markAsFinished()
       }
       for frame in 0..<16 {
@@ -67,14 +75,17 @@ enum RunVideoFixture {
             if x >= frame * Int(size.width) / 16 && x < (frame + 1) * Int(size.width) / 16 {
               bytes[index] = 0; bytes[index + 1] = 230; bytes[index + 2] = 0
             }
+            if let gray { bytes[index] = gray; bytes[index + 1] = gray; bytes[index + 2] = gray }
           }
         }
         CVPixelBufferUnlockBaseAddress(buffer, [])
-        guard adaptor.append(buffer, withPresentationTime: CMTime(value: Int64(frame), timescale: 8))
+        let time = CMTimeAdd(CMTime(seconds: videoStart, preferredTimescale: 600),
+          CMTime(value: Int64(frame), timescale: 8))
+        guard adaptor.append(buffer, withPresentationTime: time)
         else { throw writer.error ?? RunVideoError.exportFailed }
       }
       input.markAsFinished()
-      writer.endSession(atSourceTime: CMTime(seconds: 2, preferredTimescale: 8))
+      writer.endSession(atSourceTime: CMTime(seconds: 2 + videoStart, preferredTimescale: 600))
       await writer.finishWriting()
       guard writer.status == .completed else { throw writer.error ?? RunVideoError.exportFailed }
       try Task.checkCancellation()
@@ -82,8 +93,8 @@ enum RunVideoFixture {
     } catch { RunVideoIO.removeFile(url); throw error }
   }
 
-  private static func sound() throws -> CMSampleBuffer {
-    let count = 88200
+  private static func sound(duration: Double) throws -> CMSampleBuffer {
+    let count = Int(duration * 44100)
     var samples = (0..<count).map { Int16(sin(Double($0) * 2 * .pi * 440 / 44100) * 4000) }
     var block: CMBlockBuffer?
     guard CMBlockBufferCreateWithMemoryBlock(allocator: kCFAllocatorDefault, memoryBlock: nil,
