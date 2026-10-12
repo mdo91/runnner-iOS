@@ -32,7 +32,7 @@ struct TrainingCalendar: View {
           Button {
             move(-1)
           } label: {
-            Image(systemName: "chevron.left")
+            Image(systemName: "chevron.left").frame(width: 44, height: 44)
           }.accessibilityLabel("Previous month").accessibilityIdentifier("calendar.previous")
           Spacer()
           Text(interval.start.formatted(dateStyle.month(.wide).year())).font(.headline)
@@ -41,7 +41,7 @@ struct TrainingCalendar: View {
           Button {
             move(1)
           } label: {
-            Image(systemName: "chevron.right")
+            Image(systemName: "chevron.right").frame(width: 44, height: 44)
           }.accessibilityLabel("Next month").accessibilityIdentifier("calendar.next")
             .disabled(interval.end > statistics.now)
         }
@@ -67,12 +67,12 @@ struct TrainingCalendar: View {
                   runIDs: statistics.runIDs(in: window)))
             } label: {
               VStack(spacing: 2) {
-                Text("\(day)").font(.subheadline.monospacedDigit())
-                Circle().fill(summary.runCount > 0 ? RunnerStyle.blue : .clear).frame(
+                Text("\(day)").font(.subheadline.monospacedDigit()).foregroundStyle(RunnerStyle.primary)
+                Circle().fill(summary.runCount > 0 ? RunnerStyle.accent : .clear).frame(
                   width: 5, height: 5)
               }.frame(maxWidth: .infinity, minHeight: 44)
                 .background(
-                  RunnerStyle.blue.opacity(
+                  RunnerStyle.accent.opacity(
                     summary.runCount == 0
                       ? 0.03 : 0.12 + 0.22 * (metric.value(summary, units: units) ?? 0) / maximum),
                   in: RoundedRectangle(cornerRadius: 8))

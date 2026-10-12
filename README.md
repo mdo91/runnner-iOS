@@ -18,13 +18,23 @@ If command-line tools are selected globally, prefix commands with `DEVELOPER_DIR
 
 `RunCore` contains deterministic calculations, wire contracts, route filtering, density, and comparable-history rules. Its tests also run in the RunnerTests target. Debug builds launched with `--runner-fixtures` use a temporary in-memory store of clearly named synthetic Watch workouts, never the user's Health store. This switch is excluded from Release builds.
 
+## Visual theme
+
+Runner uses a dark interface with sporty yellow (`#D7FF00`) highlights, charcoal cards, and condensed metric values. Metric grids adapt to two columns on compact screens, four when their container is at least 720 points wide, and one at accessibility text sizes. Analytics sections use two columns from 840 points of available content width, including iPad split-view reflow. Yellow primary buttons have black labels; warnings and destructive actions retain their semantic colors.
+
+Latest and historical runs share a compact summary with independent metric tiles. Activity and Trends group related analytics into dashboards, and History places its run journal before the density map. The iOS icon and photo sticker use a yellow runner on black; Watch styling remains unchanged. Measurements, unit preferences, missing-data handling, routes, and photo-export typography remain the same.
+
+The visual hierarchy references [Nike Run Club](https://www.nike.com/nrc-app) and [Strava’s Training Log](https://support.strava.com/en-us/articles/15402077-training-log). Contrast, scalable typography, and accessible controls follow [Apple’s accessibility guidance](https://developer.apple.com/documentation/accessibility/testing-system-accessibility-features-in-your-app).
+
+See the [redesign screenshots and export examples](docs/redesign/README.md) and [validation notes](docs/validation.md).
+
 ## Run photos
 
 Tap the photo icon in **Latest Run → Run summary**, or open an older run from History, to create a run photo. Choose a still image, then drag or pinch the statistics block and optional GPS route independently. **Crop** reframes the background; position buttons and the size slider provide alternatives to gestures. Original, Story (9:16), Portrait (4:5), and Square formats are available.
 
 The overlay uses the selected run’s measured distance, average pace, and moving time with the current unit preference. **The Runner** appears in white and sporty yellow. GPS is drawn as solid route segments without map tiles or markers; pauses and missing/invalid GPS remain gaps. Select **Route** in **Edit layer** to choose White, Runner yellow (`#D7FF00`), Orange, Red, Green, Blue, Purple, Pink, or Black. Color choices survive reset, route toggling, and photo replacement. Indoor runs and runs without GPS still support photo statistics.
 
-Select **Stats** in **Edit layer** to choose Leading, Center, or Trailing alignment and preview Sport, Clean, Rounded, Mono, or Serif fonts. The wordmark keeps its distinctive yellow R across metric fonts. **Include app icon** adds the blue Runner icon as an independent sticker; select Icon to move or resize it. Changing photos keeps your styling and overlays. Reset restores crop and layer positions/sizes while retaining styling and visible layers.
+Select **Stats** in **Edit layer** to choose Leading, Center, or Trailing alignment and preview Sport, Clean, Rounded, Mono, or Serif fonts. The wordmark keeps its distinctive yellow R across metric fonts. **Include app icon** adds the yellow-on-black Runner icon as an independent sticker; select Icon to move or resize it. Changing photos keeps your styling and overlays. Reset restores crop and layer positions/sizes while retaining styling and visible layers.
 
 **Save Photo** requests add-only Photos access. Successful saving closes the editor and shows **Image saved**, with **Share Image** to send the exported image onward. **Share to apps** opens the native iOS chooser with a photo payload, allowing compatible installed social apps and other services to appear. Completed sharing closes the editor and shows **Image shared**; cancelling or a sharing error keeps the edit available. App availability and final posting behavior depend on each destination’s share extension. Editing stays on-device, requires no account, and does not attach images to history or upload them to Runner’s services. Exports are JPEGs with fresh pixels and no source-photo location metadata. Original exports retain the photo’s ratio up to a 2160-pixel long edge; social exports are 1080 pixels wide. Editable compositions last only while the editor is open.
 

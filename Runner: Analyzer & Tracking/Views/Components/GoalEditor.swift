@@ -53,7 +53,7 @@ struct GoalEditor: View {
             dismiss()
           } label: {
             Text("Save goal").frame(maxWidth: .infinity, minHeight: 44)
-          }.buttonStyle(.glassProminent).disabled(!valid).accessibilityIdentifier("goal.save")
+          }.buttonStyle(RunnerPrimaryButtonStyle()).disabled(!valid).accessibilityIdentifier("goal.save")
           if let goal {
             Button("Delete goal", role: .destructive) {
               settings.delete(goal: goal)
@@ -61,7 +61,7 @@ struct GoalEditor: View {
             }.accessibilityIdentifier("goal.delete")
           }
         }
-      }.scrollDismissesKeyboard(.interactively)
+      }.scrollContentBackground(.hidden).background(RunnerStyle.background).scrollDismissesKeyboard(.interactively)
         .navigationTitle(goal == nil ? "New goal" : "Edit goal").toolbar {
           ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
           ToolbarItemGroup(placement: .keyboard) {

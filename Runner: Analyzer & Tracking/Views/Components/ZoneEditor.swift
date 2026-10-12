@@ -46,7 +46,7 @@ struct ZoneEditor: View {
           dismiss()
         }
       }
-    }.navigationTitle("Heart-rate zones").scrollDismissesKeyboard(.interactively).toolbar {
+    }.scrollContentBackground(.hidden).background(RunnerStyle.background).navigationTitle("Heart-rate zones").scrollDismissesKeyboard(.interactively).toolbar {
       ToolbarItemGroup(placement: .keyboard) {
         Spacer()
         Button("Done") { editing = false }.accessibilityIdentifier("zones.keyboardDone")

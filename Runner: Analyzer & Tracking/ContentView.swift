@@ -39,12 +39,12 @@ struct ContentView: View {
                     : "Connect Apple Health to see your latest run, explore your routes, and follow your progress."
                 )
                 Button("Connect Apple Health") { Task { await health.requestAccess() } }
-                  .buttonStyle(.borderedProminent).controlSize(.large)
+                  .buttonStyle(RunnerPrimaryButtonStyle()).controlSize(.large)
                 if health.isSyncing { ProgressView() }
               }
             }.refreshable { await health.sync() }
           }
-        }.navigationTitle("Latest Run").toolbar {
+        }.modifier(RunnerTabBarStyle()).navigationTitle("Latest Run").toolbar {
           ToolbarItem(placement: .topBarTrailing) {
             Button {
               settings = true
@@ -56,16 +56,28 @@ struct ContentView: View {
           }
         }
       }.tabItem { Label("Latest", systemImage: "figure.run") }
-      NavigationStack { HistoryScreen(rows: rows, measurements: measurements, units: units) }
+      NavigationStack {
+        HistoryScreen(rows: rows, measurements: measurements, units: units)
+          .modifier(RunnerTabBarStyle())
+      }
         .tabItem { Label("History", systemImage: "clock") }
-      NavigationStack { ActivityScreen(rows: rows, measurements: measurements, units: units) }
+      NavigationStack {
+        ActivityScreen(rows: rows, measurements: measurements, units: units)
+          .modifier(RunnerTabBarStyle())
+      }
         .tabItem { Label("Activity", systemImage: "chart.bar.xaxis") }
-      NavigationStack { TrendsScreen(rows: rows, measurements: measurements, units: units) }.tabItem
+      NavigationStack {
+        TrendsScreen(rows: rows, measurements: measurements, units: units)
+          .modifier(RunnerTabBarStyle())
+      }.tabItem
       { Label("Trends", systemImage: "chart.xyaxis.line") }
-      NavigationStack { LiveScreen(history: analytics.snapshot.runs, units: units) }.tabItem {
+      NavigationStack {
+        LiveScreen(history: analytics.snapshot.runs, units: units)
+          .modifier(RunnerTabBarStyle())
+      }.tabItem {
         Label("Live", systemImage: "waveform.path.ecg")
       }
-    }.tint(RunnerStyle.blue).background(RunnerStyle.background).scrollEdgeEffectStyle(
+    }.tint(RunnerStyle.accent).background(RunnerStyle.background).scrollEdgeEffectStyle(
       .hard, for: .bottom
     )
     .environmentObject(analytics)

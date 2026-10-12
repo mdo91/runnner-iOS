@@ -28,16 +28,16 @@ struct RouteComparisons: View {
               LineMark(
                 x: .value("Date", workout.start),
                 y: .value("Pace", pace * units.metersPerUnit / 1000 / 60)
-              ).foregroundStyle(RunnerStyle.blue)
+              ).foregroundStyle(RunnerStyle.accent)
               PointMark(
                 x: .value("Date", workout.start),
                 y: .value("Pace", pace * units.metersPerUnit / 1000 / 60)
-              ).foregroundStyle(RunnerStyle.blue)
+              ).foregroundStyle(RunnerStyle.accent)
             }
           }.chartYAxisLabel("min/\(units.distanceUnit)").frame(height: 150)
           Button("Compare route runs") {
             drilldown = RunDrilldown(title: "Repeated route", runIDs: matching.map(\.id))
-          }.accessibilityIdentifier("route.runs")
+          }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("route.runs")
           Text(
             "Endpoints within 100 m, distances within 10%, and at least 90% of corresponding route points within 60 m. Weather, stops, and effort affect pace."
           ).font(.caption).foregroundStyle(RunnerStyle.muted)

@@ -60,7 +60,7 @@ struct RunPhotoEditor: View {
           }
         }
       }
-      .background(Color(uiColor: .systemGroupedBackground))
+      .background(RunnerStyle.background)
       .navigationTitle("Run Photo").navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
@@ -81,13 +81,12 @@ struct RunPhotoEditor: View {
           HStack(spacing: 12) {
             Button { choosePhoto() } label: {
               Label(composition.image == nil ? "Choose Photo" : "Change Photo", systemImage: "photo")
-                .padding(.vertical, 12).frame(maxWidth: .infinity, minHeight: 48)
-                .foregroundStyle(.white).background(Color(white: 0.18), in: Capsule())
-            }.buttonStyle(.plain)
+                .frame(maxWidth: .infinity, minHeight: 24)
+            }.buttonStyle(RunnerSecondaryButtonStyle())
               .accessibilityIdentifier("photo.choose")
             Button { export(share: false) } label: {
               Label("Save Photo", systemImage: "square.and.arrow.down").frame(maxWidth: .infinity)
-            }.buttonStyle(.borderedProminent).tint(.white).foregroundStyle(.black)
+            }.buttonStyle(RunnerPrimaryButtonStyle())
               .disabled(composition.image == nil || loading || exporting)
               .accessibilityIdentifier("photo.save")
           }.controlSize(.large).font(.subheadline.weight(.semibold))
@@ -175,7 +174,7 @@ struct RunPhotoEditor: View {
             Image(systemName: "photo.badge.plus").font(.system(size: 36))
             Text("Your run. Your photo.").font(.title3.bold())
             Text("Choose a photo to add your stats and route.")
-              .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+              .font(.subheadline).foregroundStyle(RunnerStyle.muted).multilineTextAlignment(.center)
           }.padding(24)
         }
         if loading || exporting {
@@ -208,7 +207,7 @@ struct RunPhotoEditor: View {
         Text(composition.selection == .photo
           ? "Drag to reframe. Pinch to zoom the photo."
           : "Drag to move. Pinch to resize the selected overlay.")
-          .font(.caption).foregroundStyle(.secondary)
+          .font(.caption).foregroundStyle(RunnerStyle.muted)
         if composition.selection == .stats { textStyleControls }
         if composition.selection == .route { routeColorControls }
         VStack(alignment: .leading, spacing: 4) {
@@ -231,7 +230,7 @@ struct RunPhotoEditor: View {
         }.disabled(route.isEmpty).accessibilityIdentifier("photo.routeToggle")
         if route.isEmpty {
           Text("No drawable GPS route is available for this run. You can still share your stats.")
-            .font(.caption).foregroundStyle(.secondary)
+            .font(.caption).foregroundStyle(RunnerStyle.muted)
         }
         Toggle(isOn: $composition.showsIcon) {
           Label("Include app icon", systemImage: "app")
@@ -301,7 +300,7 @@ struct RunPhotoEditor: View {
           .lineLimit(1).minimumScaleFactor(0.5)
       }.padding(10).frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
         .foregroundStyle(.white)
-        .background(.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+        .background(RunnerStyle.elevated, in: RoundedRectangle(cornerRadius: 10))
         .overlay {
           RoundedRectangle(cornerRadius: 10)
             .stroke(composition.fontStyle == style ? RunPhotoWordmark.yellow : .clear, lineWidth: 2)
@@ -317,7 +316,7 @@ struct RunPhotoEditor: View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Route color").font(.subheadline.weight(.medium))
       Text("Choose a color that stands out against your photo.")
-        .font(.caption).foregroundStyle(.secondary)
+        .font(.caption).foregroundStyle(RunnerStyle.muted)
       let columns = dynamicTypeSize.isAccessibilitySize ? 1 : 2
       Grid(horizontalSpacing: 8, verticalSpacing: 8) {
         ForEach(0..<((RunPhotoRouteColor.allCases.count + columns - 1) / columns), id: \.self) { row in
@@ -346,7 +345,7 @@ struct RunPhotoEditor: View {
         if selected { Image(systemName: "checkmark").font(.caption.bold()) }
       }.padding(10).frame(maxWidth: .infinity, minHeight: 48, alignment: .leading)
         .foregroundStyle(.white)
-        .background(.white.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
+        .background(RunnerStyle.elevated, in: RoundedRectangle(cornerRadius: 10))
         .overlay {
           RoundedRectangle(cornerRadius: 10)
             .stroke(selected ? RunPhotoWordmark.yellow : .clear, lineWidth: 2)
@@ -403,7 +402,7 @@ struct RunPhotoEditor: View {
       }
     } label: {
       Image(systemName: symbol).frame(width: 44, height: 44)
-        .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+        .background(RunnerStyle.elevated, in: RoundedRectangle(cornerRadius: 10))
     }.buttonStyle(.plain)
       .accessibilityLabel(label).accessibilityIdentifier("photo.\(symbol)")
   }

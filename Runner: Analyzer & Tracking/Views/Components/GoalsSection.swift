@@ -29,7 +29,7 @@ struct GoalsSection: View {
                 "\(format(amount, metric: goal.metric)) / \(format(goal.target, metric: goal.metric))"
               ).monospacedDigit().accessibilityIdentifier("goal.progress.\(goal.id.uuidString)")
               if let amount {
-                ProgressView(value: min(1, amount / goal.target)).tint(RunnerStyle.blue)
+                ProgressView(value: min(1, amount / goal.target)).tint(RunnerStyle.accent)
               }
               if goal.metric.missingCount(
                 statistics.summary(in: statistics.period(goal.period.component))) > 0
@@ -43,7 +43,7 @@ struct GoalsSection: View {
         Button("Add goal") {
           editing = nil
           editor = true
-        }.buttonStyle(.glass).accessibilityIdentifier("goal.add")
+        }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("goal.add")
         let days = statistics.buckets(in: statistics.period(.month), component: .day).filter {
           $0.summary.runCount > 0
         }.count

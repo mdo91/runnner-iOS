@@ -12,6 +12,7 @@ import SwiftUI
   @StateObject private var historySync = HistorySyncManager()
   private let container: ModelContainer
   init() {
+    RunnerStyle.configureNativeAppearance()
     if !AppRuntime.isFixture,
       Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil
     {
@@ -64,7 +65,8 @@ import SwiftUI
         .defaultAppStorage(AppRuntime.defaults)
         .environment(\.calendar, AppRuntime.calendar)
         .environment(\.timeZone, AppRuntime.calendar.timeZone)
-        .preferredColorScheme(AppRuntime.appearance)
+        .preferredColorScheme(.dark)
+        .tint(RunnerStyle.accent)
         .modifier(FixtureTextSize())
         .task {
           #if DEBUG

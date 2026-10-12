@@ -32,7 +32,7 @@ UI tests also save a direct screenshot and accessibility tree at teardown in the
 
 `RunPhotoTests` covers moving-time/unit formatting, segmented GPS projection and longitude wrapping, overlay bounds, crop coverage, image decoding/orientation, export dimensions and colors, metadata, and temporary share-file cleanup. JPEG attachments retain rendered artwork for visual inspection.
 
-The five `testRunPhoto…` UI scenarios cover Latest and History entry points, independent gestures, accessible position/size controls, cropping, export, missing routes, loading retry, save denial, and large-text landscape layouts. Alignment/font previews, independently movable icon stickers, visibility restoration, reset, and photo replacement are included. Debug fixture mode supplies a deterministic image and renders real JPEGs while substituting Photos writes and share presentation; it never changes the user's photo library. `photo-load-failure` fails the first image attempt, and `photo-save-denied` simulates denied add-only access while still allowing the share fallback. Existing `indoor` and `partial` fixtures cover unavailable data. Release builds ignore all fixture controls.
+The six `testRunPhoto…` UI scenarios cover Latest and History entry points, independent gestures, accessible position/size controls, cropping, export, missing routes, loading retry, save denial, and large-text landscape layouts. Alignment/font previews, independently movable icon stickers, visibility restoration, reset, and photo replacement are included. Debug fixture mode supplies a deterministic image and renders real JPEGs while substituting Photos writes and share presentation; it never changes the user's photo library. `photo-load-failure` fails the first image attempt, and `photo-save-denied` simulates denied add-only access while still allowing the share fallback. Existing `indoor` and `partial` fixtures cover unavailable data. Release builds ignore all fixture controls.
 
 Rendering tests exercise every font/alignment combination with metric, imperial/hour-long, and missing values. They check measured bounds and label alignment, a fixed vector wordmark, icon asset availability and clamping, overlap selection priority, and exports with the icon in all four formats.
 
@@ -54,13 +54,13 @@ Fixture mode bypasses Firebase setup, Health authorization/imports, cloud sync, 
 
 `testFixtureConsentAnalysisAndCloudDeleteStayIsolated` enables adult/AI consent, confirms the fixture cloud-history action, and requests manual analysis. Analysis and API entry points reject fixture execution before reaching Firebase or the network, even when fixture settings enable consent.
 
-`RUNNER_APPEARANCE=light|dark` and `RUNNER_LARGE_TEXT=1` select deterministic appearance cases. Functional assertions use accessibility identifiers and measured values rather than screenshots. Screenshots remain visual-review evidence.
+`RUNNER_APPEARANCE=light|dark` records the requested fixture appearance; the production dark theme takes precedence. `RUNNER_LARGE_TEXT=1` selects accessibility-sized text. Functional assertions use accessibility identifiers and measured values rather than screenshots. Screenshots remain visual-review evidence.
 
 ## Matrix
 
 Run the full suite on iPhone 16 / iOS 26.0. Run navigation and appearance smoke tests on a recent iOS 26 runtime, iPhone SE, and iPad Air. Use portrait and landscape plus accessibility text sizes. Restore simulator accessibility preferences after Reduce Motion/Transparency checks. Numerical DST, interpolation, coverage, and route-matching edge cases belong in RunCore tests.
 
-The contrast audit excludes content occluded behind the bottom glass tab bar. Fully visible app content remains subject to contrast checks. Simulator Settings automation enables Reduce Motion and Reduce Transparency and restores their initial values after its check.
+The contrast audit excludes content occluded behind the bottom glass tab bar. Fully visible app content remains subject to contrast checks. Simulator Settings automation enables Reduce Motion, Reduce Transparency, and Increase Contrast and restores their initial values after its check.
 
 ## Interactive analytics scenarios
 
@@ -96,3 +96,7 @@ Fixture launches set `TZ=America/Los_Angeles` independently of the Istanbul anal
 Settings uses adaptive readable footer colors, heading rows within opaque cards, persistent wrapping target labels, inline unit choices, and a compact title. Run rows include their empty spacing in their tap area, so their center opens details on wide screens.
 
 `scripts/test-matrix.sh` runs the full iPhone 16 / iOS 26.0 suite and then appearance, accessibility, navigation, goals, and personal-best/route smoke on disposable SE / 26.0, iPad Air / 26.0, and iPhone 17 Pro / 26.5 destinations. Each simulator is deleted before the next starts, including on failure. Set `RUNNER_RECENT_RUNTIME=iOS-26-4` (or another installed iOS 26 runtime) to change the recent runtime. Set `RUNNER_SKIP_FULL_SUITE=1` to run only the matrix after an already completed functional run. Use `RUNNER_MATRIX_FILTER=Runner-SE-UI`, `Runner-iPad-UI`, or `Runner-Recent-UI` to check a single matrix destination after a specific repair. Results use the same unique bundle directory as `test-ui.sh`.
+
+## Yellow dashboard theme
+
+The two `testYellowDashboard…` scenarios check production dark appearance even when a fixture requests light, yellow rendered pixels, metric-grid column placement, large-text reflow, minimum photo-action hit size, History navigation, the native dark tab bar on every tab and after pushing Run Details, and accessibility auditing. On iPad, the appearance scenario rotates to landscape and checks that the summary and route use separate columns. Screenshots of all five tabs are retained alongside the test result. Native-bar pixel checks convert point coordinates using the screenshot/window dimension ratios, since XCTest can return Retina pixels with image scale 1. Scroll gestures use the visible scroll-view bounds rather than a fixed fraction of the screen, including with opaque native bars and the keyboard. The icon rendering test checks opaque 1024-pixel artwork with a yellow runner and black background. Existing scenario coverage continues to exercise filters, chart selections, goals, Settings, units, reduced motion/transparency, and the photo editor.

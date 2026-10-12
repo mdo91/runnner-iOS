@@ -22,7 +22,7 @@ struct CustomDates: View {
         }
         Text("Daily totals through 31 days, weekly through 180 days, monthly for longer ranges.")
           .font(.footnote)
-      }.navigationTitle("Custom dates").toolbar {
+      }.scrollContentBackground(.hidden).background(RunnerStyle.background).navigationTitle("Custom dates").toolbar {
         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
           Button("Apply") {
