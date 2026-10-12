@@ -70,36 +70,54 @@ import XCTest
       "A system notification obscures the accessibility audit")
   }
   private func reveal(_ element: XCUIElement, towardTop: Bool = false, limit: Int = 12) {
-    for _ in 0..<limit {
+    for attempt in 0...limit {
       let window = app.windows.firstMatch
-      let bar = app.tabBars.firstMatch
-      let scroll = app.scrollViews.firstMatch
-      let bounds = scroll.exists && scroll.isHittable
-        ? scroll.frame.intersection(window.frame) : window.frame
-      let navigation = app.navigationBars.firstMatch
-      let top = max(bounds.minY, navigation.exists ? navigation.frame.maxY : bounds.minY) + 8
+      let windowFrame = window.frame
+      let identifier = element.exists ? element.identifier : ""
+      let candidates = identifier.isEmpty ? app.scrollViews.allElementsBoundByIndex
+        : app.scrollViews.containing(.any, identifier: identifier).allElementsBoundByIndex
+      // A pushed screen can leave its predecessor's scroll view in the hierarchy.
+      let scroll = candidates.last { $0.isHittable && $0.frame.intersects(windowFrame) }
+        ?? app.scrollViews.allElementsBoundByIndex.last {
+          $0.isHittable && $0.frame.intersects(windowFrame)
+        }
+      let bounds = scroll?.frame.intersection(windowFrame) ?? windowFrame
+      let navigation = app.navigationBars.allElementsBoundByIndex.last {
+        $0.isHittable && $0.frame.intersects(windowFrame)
+      }
+      let top = max(bounds.minY, navigation?.frame.maxY ?? bounds.minY) + 8
       var bottom = bounds.maxY - 8
-      if bar.exists && bar.isHittable && bar.frame.minY > window.frame.midY {
+      let bar = app.tabBars.firstMatch
+      if bar.exists && bar.isHittable && bar.frame.minY > windowFrame.midY {
         bottom = min(bottom, bar.frame.minY - 8)
       }
       let keyboard = app.keyboards.firstMatch
       if keyboard.exists { bottom = min(bottom, keyboard.frame.minY - 8) }
-      if element.exists && element.isHittable && element.frame.minY >= top
-        && element.frame.maxY <= bottom { return }
+      let frame = element.exists ? element.frame : .zero
+      if !frame.isEmpty && frame.minY >= top && frame.maxY <= bottom && element.isHittable {
+        return
+      }
+      guard attempt < limit else { break }
       guard bottom > top else {
         XCTFail("No visible area available for scrolling")
         return
       }
-      let upwards = element.exists ? element.frame.midY >= (top + bottom) / 2 : !towardTop
-      let edge = min(window.frame.width, window.frame.height) > 600 ? 0.98 : 0.92
+      let upwards = !frame.isEmpty ? frame.maxY > bottom : !towardTop
+      // Stop at the visible boundary instead of overshooting a large-text control
+      // and alternating between two scroll positions in a short landscape viewport.
+      let remaining = frame.isEmpty ? bottom - top
+        : upwards ? frame.maxY - bottom + 16 : top - frame.minY + 16
+      let step = min(max(24, remaining), (bottom - top) * 0.6)
       let start = top + (bottom - top) * (upwards ? 0.8 : 0.2)
-      let end = top + (bottom - top) * (upwards ? 0.2 : 0.8)
+      let end = start + (upwards ? -step : step)
+      let x = bounds.minX + bounds.width * 0.9
       let origin = window.coordinate(withNormalizedOffset: .zero)
-      origin.withOffset(CGVector(dx: window.frame.width * edge, dy: start - window.frame.minY))
+      origin.withOffset(CGVector(dx: x - windowFrame.minX, dy: start - windowFrame.minY))
         .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(
-          dx: window.frame.width * edge, dy: end - window.frame.minY)))
+          dx: x - windowFrame.minX, dy: end - windowFrame.minY)),
+          withVelocity: .slow, thenHoldForDuration: 0.2)
     }
-    XCTAssertTrue(element.exists && element.isHittable, "Could not reveal \(element)")
+    XCTFail("Could not fully reveal \(element)")
   }
   private func openDashboard() {
     tab("Latest")
@@ -161,6 +179,18 @@ import XCTest
         && element.frame.maxY <= min(bounds.maxY, app.buttons["photo.save"].frame.minY) - 12
         && element.isHittable,
       "Could not fully reveal editor control \(element)")
+  }
+  private func setPhotoToggle(_ toggle: XCUIElement, enabled: Bool) {
+    // Toggling a layer changes the controls' height and can move this switch offscreen.
+    revealPhotoControl(toggle)
+    let control = toggle.switches.firstMatch.exists ? toggle.switches.firstMatch : toggle
+    let value = enabled ? "1" : "0"
+    if control.value as? String != value {
+      control.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+    }
+    let changed = XCTNSPredicateExpectation(
+      predicate: NSPredicate(format: "exists == true AND value == %@", value), object: toggle)
+    XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed)
   }
   private func photoFormat(_ label: String) {
     let format = app.buttons["photo.format"]
@@ -331,8 +361,7 @@ import XCTest
     XCTAssertNotEqual(stats.value as? String, statsBeforeResize)
     let movedStats = stats.value as? String
     let toggle = app.switches["photo.routeToggle"]
-    revealPhotoControl(toggle)
-    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    setPhotoToggle(toggle, enabled: true)
     let route = app.buttons["photo.routeOverlay"]
     XCTAssertTrue(route.waitForExistence(timeout: 5))
     let before = route.value as? String
@@ -441,12 +470,9 @@ import XCTest
       app.buttons["photo.font.clean"].frame.minX, accuracy: 1,
       "Accessibility text sizes use one font-preview column in the full-screen editor")
     let icon = app.switches["photo.iconToggle"]
-    revealPhotoControl(icon)
-    icon.switches.firstMatch.exists ? icon.switches.firstMatch.tap() : icon.tap()
+    setPhotoToggle(icon, enabled: true)
     let routeToggle = app.switches["photo.routeToggle"]
-    revealPhotoControl(routeToggle, towardTop: true)
-    routeToggle.switches.firstMatch.exists
-      ? routeToggle.switches.firstMatch.tap() : routeToggle.tap()
+    setPhotoToggle(routeToggle, enabled: true)
     XCUIDevice.shared.orientation = .landscapeLeft
     let reset = app.buttons["photo.reset"]
     revealPhotoControl(reset, towardTop: true)
@@ -515,8 +541,7 @@ import XCTest
       XCTAssertEqual(stats.frame.midY, position.midY, accuracy: 1)
     }
     let toggle = app.switches["photo.iconToggle"]
-    revealPhotoControl(toggle)
-    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    setPhotoToggle(toggle, enabled: true)
     let icon = app.buttons["photo.iconOverlay"]
     XCTAssertTrue(icon.waitForExistence(timeout: 5))
     let statsBefore = stats.value as? String
@@ -534,10 +559,10 @@ import XCTest
     XCTAssertNotEqual(icon.value as? String, moved)
     XCTAssertEqual(stats.value as? String, statsBefore)
     let retained = icon.value as? String
-    revealPhotoControl(toggle)
-    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
-    XCTAssertFalse(icon.exists)
-    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    setPhotoToggle(toggle, enabled: false)
+    XCTAssertTrue(icon.waitForNonExistence(timeout: 5))
+    setPhotoToggle(toggle, enabled: true)
+    XCTAssertTrue(icon.waitForExistence(timeout: 5))
     XCTAssertEqual(icon.value as? String, retained)
     app.buttons["photo.choose"].tap()
     XCTAssertEqual(icon.value as? String, retained)
@@ -561,8 +586,7 @@ import XCTest
     launch()
     openRunPhoto()
     let toggle = app.switches["photo.routeToggle"]
-    revealPhotoControl(toggle)
-    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    setPhotoToggle(toggle, enabled: true)
     let route = app.buttons["photo.routeOverlay"]
     XCTAssertTrue(route.waitForExistence(timeout: 5))
     let before = route.value as? String
@@ -580,10 +604,10 @@ import XCTest
     let yellow = app.buttons["photo.routeColor.runnerYellow"]
     revealPhotoControl(yellow, towardTop: true)
     yellow.tap()
-    revealPhotoControl(toggle)
-    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
-    XCTAssertFalse(route.exists)
-    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    setPhotoToggle(toggle, enabled: false)
+    XCTAssertTrue(route.waitForNonExistence(timeout: 5))
+    setPhotoToggle(toggle, enabled: true)
+    XCTAssertTrue(route.waitForExistence(timeout: 5))
     XCTAssertEqual(route.value as? String, before)
     revealPhotoControl(yellow, towardTop: true)
     XCTAssertEqual(yellow.value as? String, "Selected")

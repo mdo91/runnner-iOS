@@ -28,6 +28,10 @@ for SPEC in \
       -only-testing:RunnerUITests/RunnerUITests/testDashboardApprovalRetry
       -only-testing:RunnerUITests/RunnerUITests/testZonesAndCompleteVersusIncompleteLoad
       -only-testing:RunnerUITests/RunnerUITests/testAppOwnedScreenAccessibility
+      -only-testing:RunnerUITests/RunnerUITests/testAppearanceLargeTextAndLandscape
+      -only-testing:RunnerUITests/RunnerUITests/testRunPhotoAccessibilityAndLandscape
+      -only-testing:RunnerUITests/RunnerUITests/testRunPhotoAlignmentFontsAndIndependentIcon
+      -only-testing:RunnerUITests/RunnerUITests/testRunPhotoUsesHistoricalSessionAndMissingGPS
     )
   else
     TESTS=(
