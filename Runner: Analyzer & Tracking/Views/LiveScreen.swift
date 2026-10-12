@@ -8,33 +8,28 @@ struct LiveScreen: View {
   var units: UnitSystem
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 22) {
+      VStack(alignment: .leading, spacing: 16) {
         if let snapshot = live.snapshot {
           TimelineView(.periodic(from: .now, by: 1)) { timeline in
             let fresh = timeline.date.timeIntervalSince(snapshot.timestamp) < 20 && live.connected
-            VStack(alignment: .leading, spacing: 22) {
+            VStack(alignment: .leading, spacing: 16) {
               Label(
                 fresh
                   ? (snapshot.paused ? "PAUSED" : "LIVE FROM APPLE WATCH") : "WATCH DISCONNECTED",
                 systemImage: fresh ? "applewatch.radiowaves.left.and.right" : "wifi.slash"
-              ).font(.caption.bold()).foregroundStyle(fresh ? RunnerStyle.blue : .orange)
+              ).font(.caption.bold()).foregroundStyle(fresh ? RunnerStyle.accent : .orange)
               Text(UnitSystem.duration(snapshot.elapsed)).font(
-                .system(size: 48, weight: .semibold, design: .rounded)
-              ).minimumScaleFactor(0.5).monospacedDigit()
-              Surface {
-                MetricPair {
-                  Stat(
-                    title: "Distance", value: units.distance(snapshot.distance),
-                    unit: units.distanceUnit, symbol: "figure.run")
-                  Stat(
-                    title: "Heart rate",
-                    value: fresh
-                      ? snapshot.heartRate.map { String(Int($0.rounded())) } ?? "—" : "—",
-                    unit: "bpm", symbol: "heart")
-                }
-              }
-              Surface {
-                Stat(
+                RunnerStyle.metricFont(.largeTitle)
+              ).minimumScaleFactor(0.5).monospacedDigit().foregroundStyle(RunnerStyle.accent)
+              MetricGrid {
+                MetricTile(
+                  title: "Distance", value: units.distance(snapshot.distance),
+                  unit: units.distanceUnit, symbol: "figure.run")
+                MetricTile(
+                  title: "Heart rate",
+                  value: fresh ? snapshot.heartRate.map { String(Int($0.rounded())) } ?? "—" : "—",
+                  unit: "bpm", symbol: "heart")
+                MetricTile(
                   title: "Average pace",
                   value: units.pace(
                     snapshot.distance > 0 ? snapshot.elapsed / snapshot.distance * 1000 : nil),
@@ -61,7 +56,7 @@ struct LiveScreen: View {
                 }
               }
               Button(snapshot.paused ? "Resume run" : "Pause run") { live.pauseOrResume() }
-                .buttonStyle(.glassProminent).controlSize(.large).disabled(!fresh)
+                .buttonStyle(RunnerPrimaryButtonStyle()).controlSize(.large).disabled(!fresh)
               Text(
                 "End and save your run on Apple Watch. Recording and local coaching continue if your phone disconnects."
               ).font(.footnote).foregroundStyle(RunnerStyle.muted)
@@ -77,12 +72,12 @@ struct LiveScreen: View {
             Task { await live.startWatch() }
           } label: {
             Label("Open Runner on Watch", systemImage: "applewatch").frame(maxWidth: .infinity)
-          }.buttonStyle(.glassProminent).controlSize(.large)
+          }.buttonStyle(RunnerPrimaryButtonStyle()).controlSize(.large)
         }
         if let message = live.message {
           Text(message).font(.footnote).foregroundStyle(RunnerStyle.muted)
         }
-      }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
+      }.padding(20).frame(maxWidth: 1200).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).navigationTitle("Live")
 
   }

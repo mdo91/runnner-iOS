@@ -36,12 +36,12 @@ struct DashboardConnectScreen: View {
             )
             .font(.footnote)
             Button("Approve this browser") { Task { await connection.approve() } }
-              .disabled(connection.isWorking).buttonStyle(.glassProminent).accessibilityIdentifier("dashboard.approve")
+              .disabled(connection.isWorking).buttonStyle(RunnerPrimaryButtonStyle()).accessibilityIdentifier("dashboard.approve")
           }
         }
         if connection.isWorking { ProgressView().accessibilityLabel("Connecting dashboard") }
         if let message = connection.message { Text(message).foregroundStyle(.orange).accessibilityIdentifier("dashboard.message") }
-      }.navigationTitle("Connect dashboard").toolbar {
+      }.scrollContentBackground(.hidden).background(RunnerStyle.background).navigationTitle("Connect dashboard").toolbar {
         ToolbarItem(placement: .topBarTrailing) { Button("Done") { dismiss() } }
       }
     }

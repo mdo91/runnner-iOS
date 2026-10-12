@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 
 @MainActor final class RunnerUITests: XCTestCase {
@@ -19,8 +20,9 @@ import XCTest
     XCUIDevice.shared.orientation = .portrait
   }
   private func evidenceURL(_ suffix: String) -> URL {
-    let directory = URL(fileURLWithPath:
-      ProcessInfo.processInfo.environment["RUNNER_EVIDENCE_DIR"]
+    let directory = URL(
+      fileURLWithPath:
+        ProcessInfo.processInfo.environment["RUNNER_EVIDENCE_DIR"]
         ?? "/tmp/runner-ui-results/direct-screenshots", isDirectory: true)
     try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let filename = name.map { $0.isLetter || $0.isNumber ? $0 : "_" }
@@ -42,7 +44,8 @@ import XCTest
     let ready = XCTNSPredicateExpectation(
       predicate: NSPredicate(format: "exists == true AND value == %@", "Fixtures ready"),
       object: app.buttons["navigation.settings"])
-    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed,
+    XCTAssertEqual(
+      XCTWaiter.wait(for: [ready], timeout: 30), .completed,
       "Fixture analytics did not finish loading")
     return app
   }
@@ -54,32 +57,47 @@ import XCTest
   private func waitForLabel(_ element: XCUIElement, containing text: String) {
     let predicate = NSPredicate(format: "exists == true AND label CONTAINS %@", text)
     let ready = XCTNSPredicateExpectation(predicate: predicate, object: element)
-    XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 10), .completed,
+    XCTAssertEqual(
+      XCTWaiter.wait(for: [ready], timeout: 10), .completed,
       "Expected \(element) to contain \(text)")
   }
   private func waitForUnobscuredScreen() {
     let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
     let banner = springboard.descendants(matching: .any)
       .matching(identifier: "NotificationShortLookView").firstMatch
-    XCTAssertTrue(banner.waitForNonExistence(timeout: 15),
+    XCTAssertTrue(
+      banner.waitForNonExistence(timeout: 15),
       "A system notification obscures the accessibility audit")
   }
   private func reveal(_ element: XCUIElement, towardTop: Bool = false, limit: Int = 12) {
     for _ in 0..<limit {
+      let window = app.windows.firstMatch
       let bar = app.tabBars.firstMatch
-      let bottom = bar.exists && bar.isHittable && bar.frame.minY > app.frame.midY
-        ? bar.frame.minY : app.frame.maxY
-      if element.exists && element.isHittable && element.frame.maxY <= bottom { return }
-      let upwards = !towardTop && (!element.exists || element.frame.midY >= app.frame.midY)
-      let edge = min(app.frame.width, app.frame.height) > 600 ? 0.98 : 0.92
-      app.coordinate(
-        withNormalizedOffset: CGVector(
-          dx: edge, dy: upwards ? (app.keyboards.firstMatch.exists ? 0.55 : 0.8) : 0.3)
-      ).press(
-        forDuration: 0.05,
-        thenDragTo: app.coordinate(
-          withNormalizedOffset: CGVector(
-            dx: edge, dy: upwards ? 0.3 : (app.keyboards.firstMatch.exists ? 0.55 : 0.8))))
+      let scroll = app.scrollViews.firstMatch
+      let bounds = scroll.exists && scroll.isHittable
+        ? scroll.frame.intersection(window.frame) : window.frame
+      let navigation = app.navigationBars.firstMatch
+      let top = max(bounds.minY, navigation.exists ? navigation.frame.maxY : bounds.minY) + 8
+      var bottom = bounds.maxY - 8
+      if bar.exists && bar.isHittable && bar.frame.minY > window.frame.midY {
+        bottom = min(bottom, bar.frame.minY - 8)
+      }
+      let keyboard = app.keyboards.firstMatch
+      if keyboard.exists { bottom = min(bottom, keyboard.frame.minY - 8) }
+      if element.exists && element.isHittable && element.frame.minY >= top
+        && element.frame.maxY <= bottom { return }
+      guard bottom > top else {
+        XCTFail("No visible area available for scrolling")
+        return
+      }
+      let upwards = element.exists ? element.frame.midY >= (top + bottom) / 2 : !towardTop
+      let edge = min(window.frame.width, window.frame.height) > 600 ? 0.98 : 0.92
+      let start = top + (bottom - top) * (upwards ? 0.8 : 0.2)
+      let end = top + (bottom - top) * (upwards ? 0.2 : 0.8)
+      let origin = window.coordinate(withNormalizedOffset: .zero)
+      origin.withOffset(CGVector(dx: window.frame.width * edge, dy: start - window.frame.minY))
+        .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(
+          dx: window.frame.width * edge, dy: end - window.frame.minY)))
     }
     XCTAssertTrue(element.exists && element.isHittable, "Could not reveal \(element)")
   }
@@ -114,7 +132,10 @@ import XCTest
       let top = max(frame.minY, app.navigationBars["Run Photo"].frame.maxY) + 8
       let bottom = min(frame.maxY, app.buttons["photo.save"].frame.minY) - 12
       if element.exists && element.frame.minY >= top && element.frame.maxY <= bottom
-        && element.isHittable { return }
+        && element.isHittable
+      {
+        return
+      }
       let origin = window.coordinate(withNormalizedOffset: .zero)
       let scrollToBeginning = element.exists ? element.frame.midY < (top + bottom) / 2 : towardTop
       var startY = scrollToBeginning ? top + 20 : bottom - 20
@@ -123,18 +144,22 @@ import XCTest
         // Start on the Size/Zoom label above the slider, which otherwise consumes the drag.
         startY = max(top + 8, slider.frame.minY - 24)
       }
-      let start = origin.withOffset(CGVector(dx: frame.midX - windowFrame.minX,
-        dy: startY - windowFrame.minY))
+      let start = origin.withOffset(
+        CGVector(
+          dx: frame.midX - windowFrame.minX,
+          dy: startY - windowFrame.minY))
       let step = min(100, (bottom - top) * 0.45)
       let destination = start.withOffset(
         CGVector(dx: 0, dy: scrollToBeginning ? step : -step))
-      start.press(forDuration: 0.05, thenDragTo: destination,
+      start.press(
+        forDuration: 0.05, thenDragTo: destination,
         withVelocity: .slow, thenHoldForDuration: 0.2)
     }
     let bounds = scroll.frame.intersection(window.frame)
-    XCTAssertTrue(element.exists && element.frame.minY >= bounds.minY
-      && element.frame.maxY <= min(bounds.maxY, app.buttons["photo.save"].frame.minY) - 12
-      && element.isHittable,
+    XCTAssertTrue(
+      element.exists && element.frame.minY >= bounds.minY
+        && element.frame.maxY <= min(bounds.maxY, app.buttons["photo.save"].frame.minY) - 12
+        && element.isHittable,
       "Could not fully reveal editor control \(element)")
   }
   private func photoFormat(_ label: String) {
@@ -149,6 +174,143 @@ import XCTest
     picker.tap()
     app.buttons[label].firstMatch.tap()
   }
+  func testYellowDashboardAppearanceAndMetricLayout() throws {
+    launch(appearance: "light")
+    let summary = app.descendants(matching: .any)["run.summary"].firstMatch
+    let time = app.descendants(matching: .any)["run.movingTime"].firstMatch
+    let pace = app.descendants(matching: .any)["run.averagePace"].firstMatch
+    let heart = app.descendants(matching: .any)["run.heartRate"].firstMatch
+    XCTAssertTrue(time.waitForExistence(timeout: 5))
+    XCTAssertEqual(time.frame.minY, pace.frame.minY, accuracy: 1)
+    XCTAssertGreaterThan(pace.frame.minX, time.frame.minX)
+    if summary.frame.width - 32 >= 720 {
+      XCTAssertEqual(time.frame.minY, heart.frame.minY, accuracy: 1)
+    } else {
+      XCTAssertGreaterThan(heart.frame.minY, time.frame.minY)
+    }
+    let colors = try dashboardColors()
+    XCTAssertGreaterThan(
+      colors.darkFraction, 0.5, "The production dark theme overrides a light fixture request")
+    XCTAssertGreaterThan(colors.yellowPixels, 100, "The visible dashboard uses sporty yellow")
+    let photo = app.buttons["run.createPhoto"]
+    XCTAssertGreaterThanOrEqual(photo.frame.width, 44)
+    XCTAssertGreaterThanOrEqual(photo.frame.height, 44)
+    assertDarkTabBar()
+    captureDashboard("latest")
+    for (name, label) in [("Activity", "Every run adds up"), ("Trends", "Built one run at a time"),
+      ("Live", "Open Runner on Watch")]
+    {
+      tab(name)
+      XCTAssertTrue(app.descendants(matching: .any)[label].firstMatch.waitForExistence(timeout: 5))
+      assertDarkTabBar()
+      captureDashboard(name.lowercased())
+    }
+    tab("History")
+    let journal = app.staticTexts["Run journal"]
+    XCTAssertTrue(journal.waitForExistence(timeout: 5))
+    assertDarkTabBar()
+    captureDashboard("history")
+    let run = app.buttons["history.run.00000000-0000-0000-0000-000000000001"]
+    reveal(run)
+    run.tap()
+    XCTAssertTrue(app.navigationBars["Run Details"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.buttons["run.createPhoto"].exists)
+    assertDarkTabBar()
+    if app.windows.firstMatch.frame.width >= 700 {
+      XCUIDevice.shared.orientation = .landscapeLeft
+      let wide = NSPredicate { _, _ in
+        self.app.windows.firstMatch.frame.width > self.app.windows.firstMatch.frame.height
+      }
+      XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: wide, object: app)],
+        timeout: 5), .completed)
+      XCTAssertGreaterThan(app.staticTexts["Your route"].frame.minX, summary.frame.maxX)
+      XCTAssertEqual(time.frame.minY, pace.frame.minY, accuracy: 1)
+      XCTAssertGreaterThan(heart.frame.minY, time.frame.minY)
+      captureDashboard("landscape")
+    }
+  }
+
+  private func assertDarkTabBar() {
+    // Native dark glass can be lighter than the app's solid charcoal surfaces.
+    // Keep it below mid-gray; the former light bar was above 200 per channel.
+    let darkBar = NSPredicate { _, _ in
+      let bar = self.app.tabBars.firstMatch
+      let bounds: CGRect
+      if bar.exists {
+        bounds = bar.frame
+      } else {
+        // iPad exposes its top tabs as buttons rather than a TabBar element.
+        let tabs = ["Latest", "History", "Activity", "Trends", "Live"].map {
+          self.app.buttons[$0].firstMatch
+        }
+        guard tabs.allSatisfy({ $0.exists }) else { return false }
+        bounds = tabs.reduce(CGRect.null) { $0.union($1.frame) }.insetBy(dx: -4, dy: -4)
+      }
+      return ((try? self.dashboardColors(in: bounds, darkLimit: 128).darkFraction) ?? 0) > 0.5
+    }
+    XCTAssertEqual(
+      XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: darkBar, object: app)], timeout: 5),
+      .completed, "The tab bar stays dark after the navigation transition")
+  }
+
+  private func captureDashboard(_ name: String) {
+    let screenshot = XCUIScreen.main.screenshot()
+    let attachment = XCTAttachment(screenshot: screenshot)
+    attachment.name = "Yellow dashboard - \(name)"
+    attachment.lifetime = .keepAlways
+    add(attachment)
+    try? screenshot.pngRepresentation.write(to: evidenceURL("\(name).png"))
+  }
+
+  func testYellowDashboardLargeTextReflowsAndStaysAccessible() throws {
+    launch(appearance: "light", largeText: true)
+    let time = app.descendants(matching: .any)["run.movingTime"].firstMatch
+    let pace = app.descendants(matching: .any)["run.averagePace"].firstMatch
+    XCTAssertTrue(time.waitForExistence(timeout: 5))
+    XCTAssertEqual(time.frame.minX, pace.frame.minX, accuracy: 1)
+    XCTAssertGreaterThan(pace.frame.minY, time.frame.maxY)
+    waitForUnobscuredScreen()
+    try app.performAccessibilityAudit(for: [.contrast, .textClipped, .sufficientElementDescription])
+    { issue in
+      guard issue.auditType == .contrast, let element = issue.element else { return false }
+      let bar = self.app.tabBars.firstMatch
+      return bar.exists && element.frame.maxY > bar.frame.minY
+    }
+    XCUIDevice.shared.orientation = .landscapeLeft
+    XCTAssertTrue(app.buttons["run.createPhoto"].waitForExistence(timeout: 5))
+    XCTAssertEqual(time.frame.minX, pace.frame.minX, accuracy: 1)
+    XCTAssertGreaterThan(pace.frame.minY, time.frame.maxY)
+  }
+
+  private func dashboardColors(in rect: CGRect? = nil, darkLimit: UInt8 = 80) throws -> (darkFraction: Double, yellowPixels: Int) {
+    let screenshot = XCUIScreen.main.screenshot().image
+    var image = try XCTUnwrap(screenshot.cgImage)
+    if let rect {
+      // XCTest screenshots may expose scale == 1 despite containing Retina pixels.
+      let window = app.windows.firstMatch.frame
+      image = try XCTUnwrap(image.cropping(to: rect.applying(CGAffineTransform(
+        scaleX: CGFloat(image.width) / window.width,
+        y: CGFloat(image.height) / window.height))))
+    }
+    let width = image.width
+    let height = image.height
+    var pixels = [UInt8](repeating: 0, count: width * height * 4)
+    let space = try XCTUnwrap(CGColorSpace(name: CGColorSpace.sRGB))
+    try pixels.withUnsafeMutableBytes { buffer in
+      let context = try XCTUnwrap(CGContext(data: buffer.baseAddress, width: width, height: height,
+        bitsPerComponent: 8, bytesPerRow: width * 4, space: space,
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+      context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+    }
+    var dark = 0
+    var yellow = 0
+    for index in stride(from: 0, to: pixels.count, by: 4) {
+      if max(pixels[index], pixels[index + 1], pixels[index + 2]) < darkLimit { dark += 1 }
+      if pixels[index] > 160 && pixels[index + 1] > 220 && pixels[index + 2] < 60 { yellow += 1 }
+    }
+    return (Double(dark) / Double(width * height), yellow)
+  }
+
   func testRunPhotoEditorGesturesRouteCropAndExport() {
     launch()
     openRunPhoto()
@@ -158,7 +320,8 @@ import XCTest
     let stats = app.buttons["photo.statsOverlay"]
     let original = stats.value as? String
     let originalFrame = stats.frame
-    stats.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+    stats.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+      forDuration: 0.05,
       thenDragTo: stats.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.15)))
     XCTAssertNotEqual(stats.value as? String, original)
     XCTAssertEqual(stats.frame.midX - originalFrame.midX, originalFrame.width * 0.2, accuracy: 8)
@@ -177,7 +340,8 @@ import XCTest
     XCTAssertNotEqual(route.value as? String, before)
     XCTAssertEqual(stats.value as? String, movedStats)
     let routeFrame = route.frame
-    route.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+    route.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+      forDuration: 0.05,
       thenDragTo: route.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.7)))
     XCTAssertEqual(route.frame.midX - routeFrame.midX, -routeFrame.width * 0.2, accuracy: 8)
     XCTAssertEqual(route.frame.midY - routeFrame.midY, routeFrame.height * 0.2, accuracy: 8)
@@ -193,11 +357,13 @@ import XCTest
     revealPhotoControl(zoom)
     zoom.adjust(toNormalizedSliderPosition: 0.4)
     let crop = app.descendants(matching: .any)["photo.cropCanvas"].firstMatch
-    crop.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+    crop.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+      forDuration: 0.05,
       thenDragTo: crop.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.6)))
     app.buttons["photo.save"].tap()
     XCTAssertTrue(app.alerts["Image saved"].waitForExistence(timeout: 10))
-    XCTAssertFalse(app.buttons["photo.save"].exists, "Save closes the editor before showing its receipt")
+    XCTAssertFalse(
+      app.buttons["photo.save"].exists, "Save closes the editor before showing its receipt")
     app.alerts.buttons["Share Image"].tap()
     let complete = app.buttons["photo.fixtureShare.complete"]
     XCTAssertTrue(complete.waitForExistence(timeout: 5))
@@ -249,7 +415,8 @@ import XCTest
     cancel.tap()
     XCTAssertTrue(app.buttons["photo.share"].waitForExistence(timeout: 5))
     XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, before)
-    XCTAssertFalse(app.alerts["Image shared"].exists, "Cancellation must not claim a completed share")
+    XCTAssertFalse(
+      app.alerts["Image shared"].exists, "Cancellation must not claim a completed share")
     XCTAssertTrue(app.buttons["photo.share"].isEnabled)
     app.buttons["photo.share"].tap()
     XCTAssertTrue(app.buttons["photo.fixtureShare.complete"].waitForExistence(timeout: 5))
@@ -269,7 +436,8 @@ import XCTest
     let serif = app.buttons["photo.font.serif"]
     revealPhotoControl(serif)
     serif.tap()
-    XCTAssertEqual(app.buttons["photo.font.sport"].frame.minX,
+    XCTAssertEqual(
+      app.buttons["photo.font.sport"].frame.minX,
       app.buttons["photo.font.clean"].frame.minX, accuracy: 1,
       "Accessibility text sizes use one font-preview column in the full-screen editor")
     let icon = app.switches["photo.iconToggle"]
@@ -277,7 +445,8 @@ import XCTest
     icon.switches.firstMatch.exists ? icon.switches.firstMatch.tap() : icon.tap()
     let routeToggle = app.switches["photo.routeToggle"]
     revealPhotoControl(routeToggle, towardTop: true)
-    routeToggle.switches.firstMatch.exists ? routeToggle.switches.firstMatch.tap() : routeToggle.tap()
+    routeToggle.switches.firstMatch.exists
+      ? routeToggle.switches.firstMatch.tap() : routeToggle.tap()
     XCUIDevice.shared.orientation = .landscapeLeft
     let reset = app.buttons["photo.reset"]
     revealPhotoControl(reset, towardTop: true)
@@ -301,9 +470,12 @@ import XCTest
     let artwork = photoArtwork.frame
     let scroll = app.scrollViews["photo.controls"].frame.intersection(app.windows.firstMatch.frame)
     let top = max(scroll.minY, app.navigationBars["Run Photo"].frame.maxY)
-    let visible = CGRect(x: scroll.minX, y: top, width: scroll.width,
+    let visible = CGRect(
+      x: scroll.minX, y: top, width: scroll.width,
       height: max(0, app.buttons["photo.save"].frame.minY - 12 - top))
-    try app.performAccessibilityAudit(for: [.contrast, .elementDetection, .hitRegion, .sufficientElementDescription]) { issue in
+    try app.performAccessibilityAudit(for: [
+      .contrast, .elementDetection, .hitRegion, .sufficientElementDescription,
+    ]) { issue in
       // The scalable photo artwork contains user-selected backgrounds, not UI text.
       // Its complete metrics are exposed as one accessibility label; audit all controls.
       if issue.auditType == .contrast, let element = issue.element {
@@ -313,7 +485,8 @@ import XCTest
         // Hidden content has no visible text contrast; font previews are revealed before auditing.
         if scroll.intersects(frame) && !visible.contains(frame) { return true }
       }
-      let description = "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
+      let description =
+        "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
       try? description.write(to: self.evidenceURL("audit.txt"), atomically: true, encoding: .utf8)
       return false
     }
@@ -349,7 +522,8 @@ import XCTest
     let statsBefore = stats.value as? String
     let iconBefore = icon.value as? String
     icon.pinch(withScale: 0.75, velocity: -1)
-    icon.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+    icon.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(
+      forDuration: 0.05,
       thenDragTo: icon.coordinate(withNormalizedOffset: CGVector(dx: -0.3, dy: -0.4)))
     XCTAssertNotEqual(icon.value as? String, iconBefore)
     XCTAssertEqual(stats.value as? String, statsBefore)
@@ -393,7 +567,9 @@ import XCTest
     XCTAssertTrue(route.waitForExistence(timeout: 5))
     let before = route.value as? String
     let statsBefore = app.buttons["photo.statsOverlay"].value as? String
-    for name in ["white", "runnerYellow", "orange", "red", "green", "blue", "purple", "pink", "black"] {
+    for name in [
+      "white", "runnerYellow", "orange", "red", "green", "blue", "purple", "pink", "black",
+    ] {
       let color = app.buttons["photo.routeColor.\(name)"]
       revealPhotoControl(color, towardTop: name == "white")
       color.tap()
@@ -470,6 +646,7 @@ import XCTest
     waitForExpectations(timeout: 5)
     tab("Latest")
     tab("Activity")
+    assertDarkTabBar()
   }
   func testDashboardReviewAndApproval() {
     launch()
@@ -755,7 +932,8 @@ import XCTest
     XCTAssertTrue(app.buttons["settings.done"].isHittable)
     try app.performAccessibilityAudit(for: [.contrast, .textClipped, .sufficientElementDescription])
     { issue in
-      let description = "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
+      let description =
+        "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
       try? description.write(to: self.evidenceURL("audit.txt"), atomically: true, encoding: .utf8)
       return false
     }
@@ -835,6 +1013,15 @@ import XCTest
       if control.value as? String != originalTransparency { control.tap() }
     }
     if originalTransparency == "0" { transparency.tap() }
+    let contrast = settings.switches["Increase Contrast"].firstMatch
+    XCTAssertTrue(contrast.waitForExistence(timeout: 5))
+    let originalContrast = contrast.value as? String ?? "0"
+    defer {
+      _ = navigate("Display & Text Size", toggle: "Reduce Transparency")
+      let control = settings.switches["Increase Contrast"].firstMatch
+      if control.value as? String != originalContrast { control.tap() }
+    }
+    if originalContrast == "0" { contrast.tap() }
     launch()
     tab("Activity")
     XCTAssertEqual(app.staticTexts["activity.total"].label, "3 runs")

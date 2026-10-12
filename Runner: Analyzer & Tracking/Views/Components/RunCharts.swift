@@ -66,12 +66,12 @@ struct RunCharts: View {
                 x: .value(distanceAxis ? units.distanceUnit : "Elapsed minutes", x(point)),
                 y: .value(metric.title, y(point)),
                 series: .value("Recording segment", point.segment)
-              ).foregroundStyle(RunnerStyle.blue)
+              ).foregroundStyle(RunnerStyle.accent)
             }
             if let selection, let point = nearest(to: selection, in: current) {
               RuleMark(x: .value("Selection", x(point))).foregroundStyle(RunnerStyle.muted)
               PointMark(x: .value("Selected", x(point)), y: .value(metric.title, y(point)))
-                .foregroundStyle(RunnerStyle.blue)
+                .foregroundStyle(RunnerStyle.accent)
             }
           }.chartXSelection(value: $selectedX).chartYAxisLabel(unit).chartXAxisLabel(
             distanceAxis ? units.distanceUnit : "Elapsed minutes"
@@ -85,12 +85,13 @@ struct RunCharts: View {
             )
             .font(.subheadline.monospacedDigit()).accessibilityIdentifier("run.selection")
           }
-          Button("Explore samples") { explore = true }.accessibilityIdentifier("run.samples")
+          Button("Explore samples") { explore = true }
+            .buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("run.samples")
           if selection != nil {
             Button("Clear selection") {
               selection = nil
               selectedX = nil
-            }.accessibilityIdentifier("run.clearSelection")
+            }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("run.clearSelection")
           }
         } else {
           Text("No recorded \(metric.title.lowercased()) available.").accessibilityIdentifier(

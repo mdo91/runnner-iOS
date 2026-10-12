@@ -20,8 +20,7 @@ struct HistoryScreen: View {
   }
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 22) {
-        DensityMap(runs: selection)
+      VStack(alignment: .leading, spacing: 12) {
         SectionTitle(title: "Run journal", subtitle: "\(selection.count) matching runs")
         Text("\(selection.count) runs").accessibilityIdentifier("history.count")
         Picker("History range", selection: $days) {
@@ -70,7 +69,7 @@ struct HistoryScreen: View {
                 filter = HistoryFilter()
                 days = 30
               }.accessibilityIdentifier("history.reset")
-            }.buttonStyle(.bordered)
+            }.buttonStyle(RunnerSecondaryButtonStyle())
             if let interval = filter.interval {
               Text(
                 "\(interval.start.formatted(date: .abbreviated, time: .omitted)) – \(interval.end.addingTimeInterval(-1).formatted(date: .abbreviated, time: .omitted))"
@@ -90,14 +89,14 @@ struct HistoryScreen: View {
             } label: {
               RunListRow(run: run, units: units)
             }.buttonStyle(.plain).accessibilityIdentifier("history.run.\(run.id.uuidString)")
-            Divider()
           }
         }
+        DensityMap(runs: selection)
         if health.isSyncing || analytics.loading { ProgressView("Importing history…") }
         if analytics.unreadableCount > 0 {
           Text("\(analytics.unreadableCount) stored runs could not be read.")
         }
-      }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
+      }.padding(20).frame(maxWidth: 1200).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).navigationTitle("History").refreshable {
       await health.sync()
     }

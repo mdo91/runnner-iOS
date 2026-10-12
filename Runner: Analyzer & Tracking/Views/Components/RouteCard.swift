@@ -74,7 +74,7 @@ struct RouteCard: View {
                   chunk.points.contains {
                     $0.timestamp >= interval.start && $0.timestamp <= interval.end
                   }
-                } == true ? RunnerStyle.blue : color(chunk.value, range: range),
+                } == true ? RunnerStyle.accent : color(chunk.value, range: range),
                 style: StrokeStyle(
                   lineWidth: selectedInterval == nil ? 5 : 7, lineCap: .round, lineJoin: .round))
             }
@@ -113,7 +113,7 @@ struct RouteCard: View {
                   latitude: point.latitude, longitude: point.longitude)
               ) {
                 Circle().fill(.white).frame(width: 14, height: 14).overlay(
-                  Circle().stroke(RunnerStyle.blue, lineWidth: 3))
+                  Circle().stroke(RunnerStyle.accent, lineWidth: 3))
               }
             }
           }.mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll)).mapControls {
@@ -129,7 +129,7 @@ struct RouteCard: View {
                 }?.timestamp
             }
           }
-        }.frame(height: 280).clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityLabel(
+        }.frame(height: 250).clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityLabel(
           "Route map colored by \(mode.lowercased()), with start and finish markers")
         if values.isEmpty {
           Text("No synchronized \(mode.lowercased()) measurements.").font(.caption).foregroundStyle(
@@ -183,7 +183,7 @@ struct DensityMap: View {
                 center: CLLocationCoordinate2D(latitude: cell.latitude, longitude: cell.longitude),
                 radius: 45
               ).foregroundStyle(
-                RunnerStyle.blue.opacity(
+                RunnerStyle.accent.opacity(
                   min(0.85, 0.15 + Double(cell.runs) / Double(cells.first?.runs ?? 1) * 0.65)))
             }
           }.mapStyle(.standard(pointsOfInterest: .excludingAll)).frame(height: 250).clipShape(

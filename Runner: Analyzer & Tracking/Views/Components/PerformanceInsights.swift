@@ -16,7 +16,7 @@ struct PerformanceInsights: View {
   @State private var weekly = false
   private var completed: [RunData] { snapshot.runs.filter { $0.end <= AppRuntime.now } }
   var body: some View {
-    VStack(alignment: .leading, spacing: 22) {
+    VStack(alignment: .leading, spacing: 12) {
       bests
       Surface {
         VStack(alignment: .leading, spacing: 14) {
@@ -47,7 +47,7 @@ struct PerformanceInsights: View {
               BarMark(
                 x: .value("Date", period.interval.start),
                 y: .value("Observed effort", bucket.observedEffort)
-              ).foregroundStyle(bucket.incompleteCount > 0 ? .gray : RunnerStyle.blue)
+              ).foregroundStyle(bucket.incompleteCount > 0 ? .gray : RunnerStyle.accent)
             }.chartYAxisLabel("Observed effort").frame(height: 160)
             ForEach([7, 28], id: \.self) { days in
               let start = calendar.date(
@@ -135,10 +135,10 @@ struct PerformanceInsights: View {
           Chart(ranked.sorted { $0.start < $1.start }) { effort in
             LineMark(
               x: .value("Date", effort.start), y: .value("Elapsed minutes", effort.seconds / 60)
-            ).foregroundStyle(RunnerStyle.blue)
+            ).foregroundStyle(RunnerStyle.accent)
             PointMark(
               x: .value("Date", effort.start), y: .value("Elapsed minutes", effort.seconds / 60)
-            ).foregroundStyle(RunnerStyle.blue)
+            ).foregroundStyle(RunnerStyle.accent)
           }.chartYAxisLabel("Elapsed minutes").frame(height: 150)
         }
         DisclosureGroup("Effort history") {

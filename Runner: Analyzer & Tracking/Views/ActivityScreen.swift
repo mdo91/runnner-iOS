@@ -35,7 +35,7 @@ private struct ActivityContent: View {
         runs: snapshot.runs, now: AppRuntime.isFixture ? AppRuntime.now : timeline.date,
         calendar: AppRuntime.calendar, metrics: snapshot.metrics)
       ScrollView {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 16) {
           SectionTitle(
             title: "Every run adds up",
             subtitle: "Your running volume and progress over time.")
@@ -45,24 +45,26 @@ private struct ActivityContent: View {
           SectionTitle(
             title: "Performance",
             subtitle: "Current periods are totals so far. Previous periods show their full totals.")
-          Surface {
-            VStack(alignment: .leading, spacing: 18) {
-              compactPerformance(
-                "Current month", interval: statistics.period(.month), statistics: statistics)
-              Divider()
-              compactPerformance(
-                "Last month", interval: statistics.period(.month, previous: true),
-                statistics: statistics)
+          DashboardGrid {
+            Surface {
+              VStack(alignment: .leading, spacing: 18) {
+                compactPerformance(
+                  "Current month", interval: statistics.period(.month), statistics: statistics)
+                Divider()
+                compactPerformance(
+                  "Last month", interval: statistics.period(.month, previous: true),
+                  statistics: statistics)
+              }
             }
-          }
-          Surface {
-            VStack(alignment: .leading, spacing: 18) {
-              compactPerformance(
-                "Current week", interval: statistics.period(.weekOfYear), statistics: statistics)
-              Divider()
-              compactPerformance(
-                "Last week", interval: statistics.period(.weekOfYear, previous: true),
-                statistics: statistics)
+            Surface {
+              VStack(alignment: .leading, spacing: 18) {
+                compactPerformance(
+                  "Current week", interval: statistics.period(.weekOfYear), statistics: statistics)
+                Divider()
+                compactPerformance(
+                  "Last week", interval: statistics.period(.weekOfYear, previous: true),
+                  statistics: statistics)
+              }
             }
           }
           SectionTitle(
@@ -70,14 +72,16 @@ private struct ActivityContent: View {
             subtitle:
               "Compare the same elapsed portion of each period. Shorter months cap both comparison windows."
           )
-          comparisonCard("Monthly progress", comparison: statistics.comparison(.month))
-          comparisonCard("Weekly progress", comparison: statistics.comparison(.weekOfYear))
+          DashboardGrid {
+            comparisonCard("Monthly progress", comparison: statistics.comparison(.month))
+            comparisonCard("Weekly progress", comparison: statistics.comparison(.weekOfYear))
+          }
           Text(
             "Based on imported, completed runs and their start dates. Weeks follow your calendar settings. Distance follows your unit preference; average pace uses total moving time divided by measured distance. Different routes and effort can affect pace."
           )
           .font(.footnote).foregroundStyle(RunnerStyle.muted)
-        }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
-      }.scrollEdgeEffectHidden(true, for: .bottom)
+        }.padding(20).frame(maxWidth: 1200).frame(maxWidth: .infinity)
+      }
     }
     .background(RunnerStyle.background).navigationTitle("Activity")
     .sheet(isPresented: $dates) {
@@ -144,13 +148,14 @@ private struct ActivityContent: View {
               selectedDate = nil
             }
           }
-        }.buttonStyle(.bordered)
+        }.buttonStyle(RunnerSecondaryButtonStyle())
         VStack(alignment: .leading, spacing: 6) {
           Text(customInterval == nil ? rangeTitle : "Custom dates").font(.headline).foregroundStyle(
             RunnerStyle.muted)
           Text(metric.formatted(total, units: units))
             .accessibilityIdentifier("activity.total")
-            .font(.system(.largeTitle, design: .rounded, weight: .semibold)).monospacedDigit()
+            .font(RunnerStyle.metricFont(.largeTitle)).monospacedDigit().foregroundStyle(
+              RunnerStyle.accent)
           Text(
             dateRange(interval, throughNow: interval.end == statistics.now)
           )
@@ -166,7 +171,7 @@ private struct ActivityContent: View {
                   x: .value("Date", bucket.interval.start, unit: component),
                   y: .value(metric.rawValue, value)
                 )
-                .foregroundStyle(RunnerStyle.blue.gradient).cornerRadius(4)
+                .foregroundStyle(RunnerStyle.accent).cornerRadius(4)
                 .opacity(selected == nil || selected?.id == bucket.id ? 1 : 0.35)
                 .accessibilityLabel(bucketLabel(bucket))
                 .accessibilityValue(
@@ -223,7 +228,7 @@ private struct ActivityContent: View {
           Button("View runs") {
             drilldown = RunDrilldown(
               title: bucketLabel(selected), runIDs: statistics.runIDs(in: selected.interval))
-          }.accessibilityIdentifier("activity.viewRuns")
+          }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("activity.viewRuns")
         } else if total.runCount > 0 {
           Text(
             "Select a chart bucket to explore its totals and runs."
@@ -242,7 +247,8 @@ private struct ActivityContent: View {
           ).font(.footnote).foregroundStyle(RunnerStyle.muted)
         }
         if total.runCount > 0 {
-          Button("Explore chart data") { bucketList = true }.accessibilityIdentifier(
+          Button("Explore chart data") { bucketList = true }
+            .buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier(
             "activity.chartData")
         }
       }
@@ -271,20 +277,16 @@ private struct ActivityContent: View {
     return VStack(alignment: .leading, spacing: 12) {
       SectionTitle(
         title: title, subtitle: dateRange(interval, throughNow: interval.end == statistics.now))
-      LazyVGrid(
-        columns: [
-          GridItem(
-            .adaptive(minimum: typeSize.isAccessibilitySize ? 220 : 140), alignment: .leading)
-        ], alignment: .leading, spacing: 16
-      ) {
-        Stat(title: "Runs", value: "\(summary.runCount)", unit: "completed", symbol: "figure.run")
-        Stat(
+      MetricGrid {
+        MetricTile(
+          title: "Runs", value: "\(summary.runCount)", unit: "completed", symbol: "figure.run")
+        MetricTile(
           title: "Distance", value: distance(summary), unit: units.distanceUnit,
           symbol: "point.topleft.down.to.point.bottomright.curvepath")
-        Stat(
+        MetricTile(
           title: "Moving time", value: summary.movingTimeSeconds.map(UnitSystem.duration) ?? "—",
           unit: "h:mm:ss / m:ss", symbol: "stopwatch")
-        Stat(
+        MetricTile(
           title: "Average pace", value: units.pace(summary.averagePaceSecondsPerKm),
           unit: "min/\(units.distanceUnit)", symbol: "speedometer")
       }
