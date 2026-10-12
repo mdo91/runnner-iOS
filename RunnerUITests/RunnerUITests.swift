@@ -113,7 +113,7 @@ import XCTest
     let button = app.buttons["run.createPhoto"]
     reveal(button)
     button.tap()
-    XCTAssertTrue(app.navigationBars["Run Photo"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.buttons["photo.choose"].waitForExistence(timeout: 5))
   }
   private var photoArtwork: XCUIElement {
     app.descendants(matching: .any)["photo.artwork"].firstMatch
@@ -129,7 +129,7 @@ import XCTest
         XCTFail("Photo controls have no visible window bounds")
         return
       }
-      let top = max(frame.minY, app.navigationBars["Run Photo"].frame.maxY) + 8
+      let top = max(frame.minY, app.navigationBars.firstMatch.frame.maxY) + 8
       let bottom = min(frame.maxY, app.buttons["photo.save"].frame.minY) - 12
       if element.exists && element.frame.minY >= top && element.frame.maxY <= bottom
         && element.isHittable
@@ -373,6 +373,98 @@ import XCTest
     app.alerts.buttons["OK"].tap()
     XCTAssertTrue(app.buttons["run.createPhoto"].waitForExistence(timeout: 5))
   }
+  func testRunVideoPlaybackCropSaveAndShare() {
+    launch("video-populated")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    XCTAssertTrue(photoArtwork.label.contains("Run video"))
+    XCTAssertEqual(app.buttons["photo.save"].label, "Save Video")
+    let play = app.buttons["video.play"]
+    revealPhotoControl(play, towardTop: true)
+    play.tap()
+    XCTAssertEqual(play.label, "Pause video")
+    let position = app.sliders["video.position"]
+    position.adjust(toNormalizedSliderPosition: 0.5)
+    XCTAssertEqual(play.label, "Play video")
+    let route = app.switches["photo.routeToggle"]
+    revealPhotoControl(route)
+    route.switches.firstMatch.exists ? route.switches.firstMatch.tap() : route.tap()
+    photoFormat("Story 9:16")
+    photoLayer("Crop")
+    let zoom = app.sliders["photo.size"]
+    revealPhotoControl(zoom)
+    zoom.adjust(toNormalizedSliderPosition: 0.2)
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Video saved"].waitForExistence(timeout: 30))
+    XCTAssertFalse(app.buttons["photo.save"].exists)
+    app.alerts.buttons["Share Video"].tap()
+    let complete = app.buttons["photo.fixtureShare.complete"]
+    XCTAssertTrue(complete.waitForExistence(timeout: 5))
+    complete.tap()
+    XCTAssertTrue(app.alerts["Video shared"].waitForExistence(timeout: 5))
+  }
+
+  func testRunVideoLoadingSaveDenialAndShareRecovery() {
+    launch("video-load-failure")
+    openRunPhoto()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 10))
+    app.alerts.buttons["Retry"].tap()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    app.terminate()
+    launch("video-save-denied")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    let up = app.buttons["photo.arrow.up"]
+    revealPhotoControl(up)
+    up.tap()
+    let before = app.buttons["photo.statsOverlay"].value as? String
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 30))
+    app.alerts.buttons["Share Instead"].tap()
+    let cancel = app.buttons["photo.fixtureShare.cancel"]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 30))
+    cancel.tap()
+    XCTAssertTrue(app.buttons["photo.share"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, before)
+    XCTAssertFalse(app.alerts["Video shared"].exists)
+    app.buttons["photo.share"].tap()
+    let fail = app.buttons["photo.fixtureShare.fail"]
+    XCTAssertTrue(fail.waitForExistence(timeout: 30))
+    fail.tap()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 5))
+    app.alerts.buttons["Retry"].tap()
+    let complete = app.buttons["photo.fixtureShare.complete"]
+    XCTAssertTrue(complete.waitForExistence(timeout: 30))
+    complete.tap()
+    XCTAssertTrue(app.alerts["Video shared"].waitForExistence(timeout: 5))
+  }
+
+  func testRunVideoReplacementPreservesOverlayStyling() {
+    launch("video-replacement")
+    tab("History")
+    let older = app.buttons["history.run.00000000-0000-0000-0000-000000000002"]
+    reveal(older)
+    older.tap()
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    XCTAssertTrue(photoArtwork.label.contains("25m 30s"))
+    // Use one canvas ratio for both media types so bounds clamping is not required.
+    photoFormat("Story 9:16")
+    let font = app.buttons["photo.font.mono"]
+    revealPhotoControl(font)
+    font.tap()
+    let stats = app.buttons["photo.statsOverlay"]
+    let before = stats.value as? String
+    app.buttons["photo.choose"].tap()
+    XCTAssertEqual(app.buttons["photo.save"].label, "Save Photo")
+    XCTAssertEqual(stats.value as? String, before)
+    XCTAssertFalse(app.buttons["video.play"].exists)
+    revealPhotoControl(font)
+    XCTAssertEqual(font.value as? String, "Selected")
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Image saved"].waitForExistence(timeout: 10))
+  }
+
   func testRunPhotoUsesHistoricalSessionAndMissingGPS() {
     launch()
     tab("History")
@@ -469,7 +561,7 @@ import XCTest
   private func auditPhotoControls() throws {
     let artwork = photoArtwork.frame
     let scroll = app.scrollViews["photo.controls"].frame.intersection(app.windows.firstMatch.frame)
-    let top = max(scroll.minY, app.navigationBars["Run Photo"].frame.maxY)
+    let top = max(scroll.minY, app.navigationBars.firstMatch.frame.maxY)
     let visible = CGRect(
       x: scroll.minX, y: top, width: scroll.width,
       height: max(0, app.buttons["photo.save"].frame.minY - 12 - top))
@@ -537,6 +629,8 @@ import XCTest
     revealPhotoControl(toggle)
     toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
     XCTAssertFalse(icon.exists)
+    // Hiding the icon reveals Stats controls, which can move this switch offscreen.
+    revealPhotoControl(toggle)
     toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
     XCTAssertEqual(icon.value as? String, retained)
     app.buttons["photo.choose"].tap()

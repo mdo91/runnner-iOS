@@ -19,6 +19,7 @@ struct RunPhotoEditor: View {
   @State private var pickerVisible = false
   @State private var pickerItem: PhotosPickerItem?
   @State private var loadTask: Task<Void, Never>?
+  @State private var exportTask: Task<Void, Never>?
   @State private var loadID = UUID()
   @State private var loading = false
   @State private var exporting = false
@@ -38,6 +39,7 @@ struct RunPhotoEditor: View {
   @State private var cropStart: RunPhotoCrop?
   @State private var cropPinchStart: CGFloat?
   @State private var fixtureAttempts = 0
+  @StateObject private var playback = RunVideoPlayback()
 
   init(run: RunData, units: UnitSystem, onExport: @escaping (RunPhotoExportResult) -> Void) {
     stats = RunPhotoStats(run: run, units: units)
@@ -61,7 +63,8 @@ struct RunPhotoEditor: View {
         }
       }
       .background(RunnerStyle.background)
-      .navigationTitle("Run Photo").navigationBarTitleDisplayMode(.inline)
+      .navigationTitle(composition.isVideo ? "Run Video" : "Run Photo & Video")
+      .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Close") {
@@ -80,12 +83,13 @@ struct RunPhotoEditor: View {
         VStack(spacing: 8) {
           HStack(spacing: 12) {
             Button { choosePhoto() } label: {
-              Label(composition.image == nil ? "Choose Photo" : "Change Photo", systemImage: "photo")
+              Label(composition.image == nil ? "Choose Media" : "Change Media", systemImage: "photo.on.rectangle")
                 .frame(maxWidth: .infinity, minHeight: 24)
             }.buttonStyle(RunnerSecondaryButtonStyle())
               .accessibilityIdentifier("photo.choose")
             Button { export(share: false) } label: {
-              Label("Save Photo", systemImage: "square.and.arrow.down").frame(maxWidth: .infinity)
+              Label(composition.isVideo ? "Save Video" : "Save Photo", systemImage: "square.and.arrow.down")
+                .frame(maxWidth: .infinity)
             }.buttonStyle(RunnerPrimaryButtonStyle())
               .disabled(composition.image == nil || loading || exporting)
               .accessibilityIdentifier("photo.save")
@@ -93,7 +97,8 @@ struct RunPhotoEditor: View {
             .disabled(exporting)
         }.padding(12).background(.bar)
       }
-      .photosPicker(isPresented: $pickerVisible, selection: $pickerItem, matching: .images)
+      .photosPicker(isPresented: $pickerVisible, selection: $pickerItem,
+        matching: .any(of: [.images, .videos]), preferredItemEncoding: .current)
       .onChange(of: pickerItem) { _, item in if let item { loadPhoto(item) } }
       .sheet(isPresented: $shareVisible, onDismiss: shareDismissed) {
         if let shareURL {
@@ -120,7 +125,7 @@ struct RunPhotoEditor: View {
         }
         Button("OK", role: .cancel) {}
       } message: { Text(errorMessage ?? "") }
-      .confirmationDialog("Discard this photo edit?", isPresented: $discardPrompt,
+      .confirmationDialog("Discard this media edit?", isPresented: $discardPrompt,
         titleVisibility: .visible) {
         Button("Discard edits", role: .destructive) { dismiss() }
       }
@@ -132,7 +137,10 @@ struct RunPhotoEditor: View {
       }
       .onDisappear {
         loadTask?.cancel()
+        exportTask?.cancel()
         loadID = UUID()
+        playback.stop()
+        cleanSourceVideo()
         if !shareVisible { cleanShareFile() }
       }
     }.preferredColorScheme(.dark)
@@ -147,14 +155,25 @@ struct RunPhotoEditor: View {
         Color.black.opacity(0.35)
         if composition.image != nil {
           ZStack(alignment: .topLeading) {
-            RunPhotoCompositionView(composition: composition, stats: stats, route: route)
+            ZStack(alignment: .topLeading) {
+              if composition.isVideo, let player = playback.player {
+                let frame = composition.crop.imageFrame(image: composition.imageSize, canvas: canvas)
+                Color.black
+                RunVideoPreview(player: player)
+                  .frame(width: frame.width, height: frame.height)
+                  .position(x: frame.midX, y: frame.midY)
+              }
+              RunPhotoCompositionView(composition: composition, stats: stats, route: route,
+                includesBackground: !composition.isVideo)
+            }.frame(width: canvas.width, height: canvas.height).clipped()
               .scaleEffect(scale, anchor: .topLeading)
               .frame(width: canvas.width * scale, height: canvas.height * scale, alignment: .topLeading)
               .allowsHitTesting(false)
             if composition.selection == .photo {
               Rectangle().fill(.clear).contentShape(Rectangle())
                 .frame(width: canvas.width * scale, height: canvas.height * scale)
-                .accessibilityLabel("Photo crop").accessibilityIdentifier("photo.cropCanvas")
+                .accessibilityLabel(composition.isVideo ? "Video crop" : "Photo crop")
+                .accessibilityIdentifier("photo.cropCanvas")
             } else {
               ForEach(composition.overlayLayers) { overlayHandle($0, displayScale: scale) }
             }
@@ -172,14 +191,19 @@ struct RunPhotoEditor: View {
         } else {
           VStack(spacing: 12) {
             Image(systemName: "photo.badge.plus").font(.system(size: 36))
-            Text("Your run. Your photo.").font(.title3.bold())
-            Text("Choose a photo to add your stats and route.")
+            Text("Your run. Your moment.").font(.title3.bold())
+            Text("Choose a photo or video to add your stats and route.")
               .font(.subheadline).foregroundStyle(RunnerStyle.muted).multilineTextAlignment(.center)
           }.padding(24)
         }
         if loading || exporting {
-          ProgressView(loading ? "Loading photo…" : "Preparing image…")
-            .padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+          VStack(spacing: 12) {
+            ProgressView(loading ? "Loading media…" : composition.isVideo ? "Preparing video…" : "Preparing image…")
+            if exporting && composition.isVideo {
+              Button("Cancel Export") { exportTask?.cancel() }
+                .accessibilityIdentifier("video.cancelExport")
+            }
+          }.padding(20).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
         }
       }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -188,8 +212,24 @@ struct RunPhotoEditor: View {
   private var controls: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
+        if let video = composition.video {
+          HStack(spacing: 12) {
+            Button { playback.toggle() } label: {
+              Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill")
+                .frame(width: 44, height: 44)
+            }.buttonStyle(.plain)
+              .accessibilityLabel(playback.isPlaying ? "Pause video" : "Play video")
+              .accessibilityIdentifier("video.play")
+            Slider(value: Binding(get: { playback.time }, set: { playback.seek(to: $0) }),
+              in: 0...video.duration, onEditingChanged: { if $0 { playback.pause() } })
+              .accessibilityLabel("Video position")
+              .accessibilityIdentifier("video.position")
+            Text("\(RunPhotoStats.duration(playback.time)) / \(RunPhotoStats.duration(video.duration))")
+              .font(.caption.monospacedDigit())
+          }
+        }
         HStack {
-          Picker("Image format", selection: $composition.format) {
+          Picker("Media format", selection: $composition.format) {
             ForEach(RunPhotoFormat.allCases) { format in Text(format.label).tag(format) }
           }.accessibilityIdentifier("photo.format")
           Spacer()
@@ -205,7 +245,7 @@ struct RunPhotoEditor: View {
           Text("Crop").tag(RunPhotoLayer.photo)
         }.pickerStyle(.menu).accessibilityIdentifier("photo.layer")
         Text(composition.selection == .photo
-          ? "Drag to reframe. Pinch to zoom the photo."
+          ? "Drag to reframe. Pinch to zoom the background."
           : "Drag to move. Pinch to resize the selected overlay.")
           .font(.caption).foregroundStyle(RunnerStyle.muted)
         if composition.selection == .stats { textStyleControls }
@@ -213,7 +253,7 @@ struct RunPhotoEditor: View {
         VStack(alignment: .leading, spacing: 4) {
           Text(composition.selection == .photo ? "Zoom" : "Size").font(.subheadline.weight(.medium))
           Slider(value: sizeBinding, in: sizeRange)
-            .accessibilityLabel(composition.selection == .photo ? "Photo zoom" : "Overlay size")
+            .accessibilityLabel(composition.selection == .photo ? "Background zoom" : "Overlay size")
             .accessibilityIdentifier("photo.size")
         }
         VStack(alignment: .leading, spacing: 4) {
@@ -315,7 +355,7 @@ struct RunPhotoEditor: View {
   private var routeColorControls: some View {
     VStack(alignment: .leading, spacing: 8) {
       Text("Route color").font(.subheadline.weight(.medium))
-      Text("Choose a color that stands out against your photo.")
+      Text("Choose a color that stands out against your background.")
         .font(.caption).foregroundStyle(RunnerStyle.muted)
       let columns = dynamicTypeSize.isAccessibilitySize ? 1 : 2
       Grid(horizontalSpacing: 8, verticalSpacing: 8) {
@@ -482,10 +522,17 @@ struct RunPhotoEditor: View {
 
   private func edited() { hasUnexportedChanges = true }
   private func choosePhoto() {
+    playback.pause()
     permissionDenied = false
     retryExport = nil
     #if DEBUG
-      if AppRuntime.useFixturePhotos { loadFixture(); return }
+      if AppRuntime.useFixturePhotos {
+        if AppRuntime.scenario?.hasPrefix("video-") == true
+          && !(AppRuntime.scenario == "video-replacement" && fixtureAttempts > 0) {
+          loadVideoFixture()
+        } else { loadFixture() }
+        return
+      }
     #endif
     // Clearing selection permits retrying the same asset after cancellation or failure.
     pickerItem = nil
@@ -500,10 +547,19 @@ struct RunPhotoEditor: View {
     retryExport = nil
     loadTask = Task {
       do {
-        let image = try await RunPhotoIO.load(item)
-        try Task.checkCancellation()
-        guard loadID == request else { return }
-        acceptImage(image)
+        if item.supportedContentTypes.contains(where: { $0.conforms(to: .movie) }) {
+          let video = try await RunVideoIO.load(item)
+          guard loadID == request, !Task.isCancelled else {
+            RunVideoIO.removeFile(video.url)
+            return
+          }
+          acceptVideo(video)
+        } else {
+          let image = try await RunPhotoIO.load(item)
+          try Task.checkCancellation()
+          guard loadID == request else { return }
+          acceptImage(image)
+        }
         loading = false
       } catch {
         guard loadID == request, !Task.isCancelled else { return }
@@ -514,20 +570,42 @@ struct RunPhotoEditor: View {
   }
   private func acceptImage(_ image: UIImage) {
     let first = composition.image == nil
+    playback.stop()
+    cleanSourceVideo()
     composition.image = image
     composition.crop = RunPhotoCrop()
     if first { composition.resetLayout() } else { composition.constrainOverlays() }
     edited()
   }
+  private func acceptVideo(_ video: RunVideo) {
+    let first = composition.image == nil
+    playback.stop()
+    cleanSourceVideo()
+    composition.video = video
+    composition.image = video.poster
+    composition.crop = RunPhotoCrop()
+    if first { composition.resetLayout() } else { composition.constrainOverlays() }
+    playback.replace(with: video)
+    edited()
+  }
+  private func cleanSourceVideo() {
+    if let video = composition.video { RunVideoIO.removeFile(video.url) }
+    composition.video = nil
+  }
   private func export(share: Bool) {
+    playback.pause()
     exporting = true
     retryExport = share
     permissionDenied = false
-    Task { @MainActor in
+    exportTask = Task { @MainActor in
       defer { exporting = false }
       do {
         // Let the busy state render before rasterizing the artwork.
         await Task.yield()
+        if composition.isVideo {
+          try await exportVideo(share: share)
+          return
+        }
         let data = try RunPhotoIO.render(composition, stats: stats, route: route)
         #if DEBUG
           if AppRuntime.useFixturePhotos {
@@ -545,11 +623,36 @@ struct RunPhotoEditor: View {
           try await RunPhotoIO.save(data)
           finish(.saved(data))
         }
+      } catch is CancellationError {
+        // Cancellation keeps the composition and removes the unfinished movie.
       } catch {
         retryExport = share
         permissionDenied = (error as? RunPhotoError) == .permissionDenied
         errorMessage = error.localizedDescription
       }
+    }
+  }
+  @MainActor private func exportVideo(share: Bool) async throws {
+    let url = try await RunVideoIO.render(composition, stats: stats, route: route)
+    var retained = false
+    defer { if !retained { RunVideoIO.removeFile(url) } }
+    if share {
+      cleanShareFile()
+      shareCompleted = false
+      shareError = nil
+      shareURL = url
+      retained = true
+      shareVisible = true
+    } else {
+      #if DEBUG
+        if AppRuntime.useFixturePhotos {
+          if AppRuntime.scenario == "video-save-denied" { throw RunPhotoError.permissionDenied }
+        } else { try await RunVideoIO.save(url) }
+      #else
+        try await RunVideoIO.save(url)
+      #endif
+      retained = true
+      finish(.savedVideo(url))
     }
   }
   private func finish(_ result: RunPhotoExportResult) {
@@ -558,8 +661,9 @@ struct RunPhotoEditor: View {
     dismiss()
   }
   private func shareDismissed() {
+    let video = shareURL?.pathExtension.lowercased() == "mp4"
     cleanShareFile()
-    if shareCompleted { finish(.shared) }
+    if shareCompleted { finish(video ? .sharedVideo : .shared) }
     else if let shareError { errorMessage = shareError }
     shareCompleted = false
     shareError = nil
@@ -570,6 +674,34 @@ struct RunPhotoEditor: View {
   }
 
   #if DEBUG
+    private func loadVideoFixture() {
+      loadTask?.cancel()
+      fixtureAttempts += 1
+      let request = UUID()
+      loadID = request
+      loading = true
+      loadTask = Task {
+        do {
+          if AppRuntime.scenario == "video-load-failure" && fixtureAttempts == 1 {
+            throw RunVideoError.unreadable
+          }
+          let url = try await RunVideoFixture.create()
+          let video: RunVideo
+          do { video = try await RunVideoIO.inspect(url) }
+          catch { RunVideoIO.removeFile(url); throw error }
+          guard loadID == request, !Task.isCancelled else {
+            RunVideoIO.removeFile(url)
+            return
+          }
+          acceptVideo(video)
+          loading = false
+        } catch {
+          guard loadID == request, !Task.isCancelled else { return }
+          loading = false
+          errorMessage = error.localizedDescription
+        }
+      }
+    }
     private func loadFixture() {
       fixtureAttempts += 1
       if AppRuntime.scenario == "photo-load-failure" && fixtureAttempts == 1 {
@@ -609,7 +741,7 @@ struct RunPhotoSharePresentation: View {
               .accessibilityIdentifier("photo.fixtureShare.cancel")
             Button("Fail sharing") { completion(false, RunPhotoError.sharingFailed) }
               .accessibilityIdentifier("photo.fixtureShare.fail")
-          }.navigationTitle("Share Image")
+          }.navigationTitle(url.pathExtension.lowercased() == "mp4" ? "Share Video" : "Share Image")
         }
       } else { RunPhotoShareSheet(url: url, completion: completion) }
     #else
@@ -631,6 +763,8 @@ struct RunPhotoExportFeedback: ViewModifier {
         get: { result != nil }, set: { if !$0 { result = nil } })) {
         if case .saved(let data) = result {
           Button("Share Image") { share(data) }
+        } else if case .savedVideo(let url) = result {
+          Button("Share Video") { shareVideo(url) }
         }
         Button("OK", role: .cancel) { result = nil }
       } message: { Text(result?.message ?? "") }
@@ -638,12 +772,20 @@ struct RunPhotoExportFeedback: ViewModifier {
         if let shareURL {
           RunPhotoSharePresentation(url: shareURL) { completed, error in
             if let error { pendingResult = .failed(error.localizedDescription) }
-            else if completed { pendingResult = .shared }
+            else if completed {
+              pendingResult = shareURL.pathExtension.lowercased() == "mp4" ? .sharedVideo : .shared
+            }
             shareVisible = false
           }
         }
       }
-      .onDisappear { if !shareVisible { cleanShareFile() } }
+      .onChange(of: result?.videoURL) { old, _ in
+        if let old { RunVideoIO.removeFile(old) }
+      }
+      .onDisappear {
+        if !shareVisible { cleanShareFile() }
+        if let url = result?.videoURL { RunVideoIO.removeFile(url) }
+      }
   }
 
   private func share(_ data: Data) {
@@ -651,6 +793,14 @@ struct RunPhotoExportFeedback: ViewModifier {
     pendingResult = nil
     do {
       shareURL = try RunPhotoIO.shareFile(data)
+      shareVisible = true
+    } catch { result = .failed(error.localizedDescription) }
+  }
+  private func shareVideo(_ url: URL) {
+    pendingResult = nil
+    do {
+      shareURL = try RunVideoIO.shareFile(url)
+      result = nil
       shareVisible = true
     } catch { result = .failed(error.localizedDescription) }
   }

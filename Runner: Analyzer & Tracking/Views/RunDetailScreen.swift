@@ -95,8 +95,9 @@ struct RunDetailScreen: View {
           Button {
             photoSession = RunPhotoSession(run: run, units: units)
           } label: {
-            Image(systemName: "photo").frame(width: 20, height: 20)
-          }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityLabel("Create run photo")
+            Image(systemName: "photo.on.rectangle").frame(width: 20, height: 20)
+          }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityLabel("Create run photo or video")
+            .accessibilityHint("Add your run stats and route to media from your device")
             .accessibilityIdentifier("run.createPhoto")
         }
         Text(run.start.formatted(.dateTime.weekday(.wide).hour().minute()))
