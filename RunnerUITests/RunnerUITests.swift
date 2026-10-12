@@ -91,6 +91,340 @@ import XCTest
     connect.tap()
     XCTAssertTrue(app.textFields["dashboard.code"].waitForExistence(timeout: 5))
   }
+  private func openRunPhoto() {
+    let button = app.buttons["run.createPhoto"]
+    reveal(button)
+    button.tap()
+    XCTAssertTrue(app.navigationBars["Run Photo"].waitForExistence(timeout: 5))
+  }
+  private var photoArtwork: XCUIElement {
+    app.descendants(matching: .any)["photo.artwork"].firstMatch
+  }
+  private func revealPhotoControl(_ element: XCUIElement, towardTop: Bool = false) {
+    let scroll = app.scrollViews["photo.controls"]
+    let window = app.windows.firstMatch
+    for _ in 0..<16 {
+      // The application frame can retain portrait bounds after iPad rotation.
+      let windowFrame = window.frame
+      let frame = scroll.frame.intersection(windowFrame)
+      guard !frame.isNull, !frame.isEmpty else {
+        XCTFail("Photo controls have no visible window bounds")
+        return
+      }
+      let top = max(frame.minY, app.navigationBars["Run Photo"].frame.maxY) + 8
+      let bottom = min(frame.maxY, app.buttons["photo.save"].frame.minY) - 12
+      if element.exists && element.frame.minY >= top && element.frame.maxY <= bottom
+        && element.isHittable { return }
+      let origin = window.coordinate(withNormalizedOffset: .zero)
+      let scrollToBeginning = element.exists ? element.frame.midY < (top + bottom) / 2 : towardTop
+      var startY = scrollToBeginning ? top + 20 : bottom - 20
+      let slider = app.sliders["photo.size"]
+      if slider.exists && slider.frame.contains(CGPoint(x: frame.midX, y: startY)) {
+        // Start on the Size/Zoom label above the slider, which otherwise consumes the drag.
+        startY = max(top + 8, slider.frame.minY - 24)
+      }
+      let start = origin.withOffset(CGVector(dx: frame.midX - windowFrame.minX,
+        dy: startY - windowFrame.minY))
+      let step = min(100, (bottom - top) * 0.45)
+      let destination = start.withOffset(
+        CGVector(dx: 0, dy: scrollToBeginning ? step : -step))
+      start.press(forDuration: 0.05, thenDragTo: destination,
+        withVelocity: .slow, thenHoldForDuration: 0.2)
+    }
+    let bounds = scroll.frame.intersection(window.frame)
+    XCTAssertTrue(element.exists && element.frame.minY >= bounds.minY
+      && element.frame.maxY <= min(bounds.maxY, app.buttons["photo.save"].frame.minY) - 12
+      && element.isHittable,
+      "Could not fully reveal editor control \(element)")
+  }
+  private func photoFormat(_ label: String) {
+    let format = app.buttons["photo.format"]
+    revealPhotoControl(format, towardTop: true)
+    format.tap()
+    app.buttons[label].firstMatch.tap()
+  }
+  private func photoLayer(_ label: String) {
+    let picker = app.buttons["photo.layer"]
+    revealPhotoControl(picker, towardTop: true)
+    picker.tap()
+    app.buttons[label].firstMatch.tap()
+  }
+  func testRunPhotoEditorGesturesRouteCropAndExport() {
+    launch()
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    XCTAssertTrue(photoArtwork.label.contains("5.00 km"))
+    XCTAssertTrue(photoArtwork.label.contains("25m 00s"))
+    let stats = app.buttons["photo.statsOverlay"]
+    let original = stats.value as? String
+    let originalFrame = stats.frame
+    stats.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: stats.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.15)))
+    XCTAssertNotEqual(stats.value as? String, original)
+    XCTAssertEqual(stats.frame.midX - originalFrame.midX, originalFrame.width * 0.2, accuracy: 8)
+    XCTAssertEqual(stats.frame.midY - originalFrame.midY, -originalFrame.height * 0.35, accuracy: 8)
+    let statsBeforeResize = stats.value as? String
+    stats.pinch(withScale: 0.8, velocity: -1)
+    XCTAssertNotEqual(stats.value as? String, statsBeforeResize)
+    let movedStats = stats.value as? String
+    let toggle = app.switches["photo.routeToggle"]
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    let route = app.buttons["photo.routeOverlay"]
+    XCTAssertTrue(route.waitForExistence(timeout: 5))
+    let before = route.value as? String
+    route.pinch(withScale: 0.7, velocity: -1)
+    XCTAssertNotEqual(route.value as? String, before)
+    XCTAssertEqual(stats.value as? String, movedStats)
+    let routeFrame = route.frame
+    route.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: route.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.7)))
+    XCTAssertEqual(route.frame.midX - routeFrame.midX, -routeFrame.width * 0.2, accuracy: 8)
+    XCTAssertEqual(route.frame.midY - routeFrame.midY, routeFrame.height * 0.2, accuracy: 8)
+    XCTAssertEqual(stats.value as? String, movedStats)
+    let right = app.buttons["photo.arrow.right"]
+    revealPhotoControl(right, towardTop: true)
+    let routeBeforeMove = route.value as? String
+    right.tap()
+    XCTAssertNotEqual(route.value as? String, routeBeforeMove)
+    photoFormat("Story 9:16")
+    photoLayer("Crop")
+    let zoom = app.sliders["photo.size"]
+    revealPhotoControl(zoom)
+    zoom.adjust(toNormalizedSliderPosition: 0.4)
+    let crop = app.descendants(matching: .any)["photo.cropCanvas"].firstMatch
+    crop.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: crop.coordinate(withNormalizedOffset: CGVector(dx: 0.6, dy: 0.6)))
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Image saved"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.buttons["photo.save"].exists, "Save closes the editor before showing its receipt")
+    app.alerts.buttons["Share Image"].tap()
+    let complete = app.buttons["photo.fixtureShare.complete"]
+    XCTAssertTrue(complete.waitForExistence(timeout: 5))
+    XCTAssertFalse(app.alerts["Image shared"].exists)
+    complete.tap()
+    XCTAssertTrue(app.alerts["Image shared"].waitForExistence(timeout: 5))
+    app.alerts.buttons["OK"].tap()
+    XCTAssertTrue(app.buttons["run.createPhoto"].waitForExistence(timeout: 5))
+  }
+  func testRunPhotoUsesHistoricalSessionAndMissingGPS() {
+    launch()
+    tab("History")
+    let older = app.buttons["history.run.00000000-0000-0000-0000-000000000002"]
+    reveal(older)
+    older.tap()
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    XCTAssertTrue(photoArtwork.label.contains("25m 30s"))
+    app.terminate()
+    launch("indoor")
+    openRunPhoto()
+    let toggle = app.switches["photo.routeToggle"]
+    revealPhotoControl(toggle)
+    XCTAssertFalse(toggle.isEnabled)
+    XCTAssertTrue(photoArtwork.label.contains("25m 00s"))
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Image saved"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.buttons["photo.save"].exists)
+  }
+  func testRunPhotoLoadRetryAndSaveDenialKeepEdits() {
+    launch("photo-load-failure")
+    openRunPhoto()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 5))
+    app.alerts.buttons["Retry"].tap()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    app.terminate()
+    launch("photo-save-denied")
+    openRunPhoto()
+    let up = app.buttons["photo.arrow.up"]
+    revealPhotoControl(up)
+    up.tap()
+    let before = app.buttons["photo.statsOverlay"].value as? String
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 10))
+    XCTAssertTrue(app.alerts.buttons["Open Settings"].exists)
+    app.alerts.buttons["Share Instead"].tap()
+    let cancel = app.buttons["photo.fixtureShare.cancel"]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+    cancel.tap()
+    XCTAssertTrue(app.buttons["photo.share"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, before)
+    XCTAssertFalse(app.alerts["Image shared"].exists, "Cancellation must not claim a completed share")
+    XCTAssertTrue(app.buttons["photo.share"].isEnabled)
+    app.buttons["photo.share"].tap()
+    XCTAssertTrue(app.buttons["photo.fixtureShare.complete"].waitForExistence(timeout: 5))
+    app.buttons["photo.fixtureShare.fail"].tap()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.alerts["Image shared"].exists)
+    app.alerts.buttons["Retry"].tap()
+    XCTAssertTrue(app.buttons["photo.fixtureShare.complete"].waitForExistence(timeout: 5))
+    app.buttons["photo.fixtureShare.complete"].tap()
+    XCTAssertTrue(app.alerts["Image shared"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.buttons["photo.save"].exists)
+  }
+  func testRunPhotoAccessibilityAndLandscape() throws {
+    launch(appearance: "dark", largeText: true)
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 5))
+    let serif = app.buttons["photo.font.serif"]
+    revealPhotoControl(serif)
+    serif.tap()
+    XCTAssertEqual(app.buttons["photo.font.sport"].frame.minX,
+      app.buttons["photo.font.clean"].frame.minX, accuracy: 1,
+      "Accessibility text sizes use one font-preview column in the full-screen editor")
+    let icon = app.switches["photo.iconToggle"]
+    revealPhotoControl(icon)
+    icon.switches.firstMatch.exists ? icon.switches.firstMatch.tap() : icon.tap()
+    let routeToggle = app.switches["photo.routeToggle"]
+    revealPhotoControl(routeToggle, towardTop: true)
+    routeToggle.switches.firstMatch.exists ? routeToggle.switches.firstMatch.tap() : routeToggle.tap()
+    XCUIDevice.shared.orientation = .landscapeLeft
+    let reset = app.buttons["photo.reset"]
+    revealPhotoControl(reset, towardTop: true)
+    reset.tap()
+    photoLayer("Stats")
+    XCTAssertTrue(app.buttons["photo.save"].isHittable)
+    XCTAssertTrue(app.buttons["photo.close"].isHittable)
+    XCTAssertTrue(photoArtwork.exists)
+    // The artwork intentionally has fixed typography; accessible controls carry the same data.
+    waitForUnobscuredScreen()
+    revealPhotoControl(app.buttons["photo.font.mono"])
+    try auditPhotoControls()
+    photoLayer("Route")
+    let yellow = app.buttons["photo.routeColor.runnerYellow"]
+    revealPhotoControl(yellow, towardTop: true)
+    XCTAssertEqual(app.buttons["photo.routeColor.white"].frame.minX, yellow.frame.minX, accuracy: 1)
+    yellow.tap()
+    try auditPhotoControls()
+  }
+  private func auditPhotoControls() throws {
+    let artwork = photoArtwork.frame
+    let scroll = app.scrollViews["photo.controls"].frame.intersection(app.windows.firstMatch.frame)
+    let top = max(scroll.minY, app.navigationBars["Run Photo"].frame.maxY)
+    let visible = CGRect(x: scroll.minX, y: top, width: scroll.width,
+      height: max(0, app.buttons["photo.save"].frame.minY - 12 - top))
+    try app.performAccessibilityAudit(for: [.contrast, .elementDetection, .hitRegion, .sufficientElementDescription]) { issue in
+      // The scalable photo artwork contains user-selected backgrounds, not UI text.
+      // Its complete metrics are exposed as one accessibility label; audit all controls.
+      if issue.auditType == .contrast, let element = issue.element {
+        let frame = element.frame
+        if artwork.contains(frame) { return true }
+        // iOS 26 audits offscreen ScrollView descendants beneath the fixed footer.
+        // Hidden content has no visible text contrast; font previews are revealed before auditing.
+        if scroll.intersects(frame) && !visible.contains(frame) { return true }
+      }
+      let description = "\(issue.detailedDescription)\n\(issue.element?.debugDescription ?? "Unknown element")"
+      try? description.write(to: self.evidenceURL("audit.txt"), atomically: true, encoding: .utf8)
+      return false
+    }
+  }
+  func testRunPhotoAlignmentFontsAndIndependentIcon() {
+    launch()
+    openRunPhoto()
+    let stats = app.buttons["photo.statsOverlay"]
+    let up = app.buttons["photo.arrow.up"]
+    revealPhotoControl(up)
+    for _ in 0..<5 { up.tap() }
+    let position = stats.frame
+    let alignment = app.segmentedControls["photo.alignment"]
+    revealPhotoControl(alignment, towardTop: true)
+    for label in ["Center", "Trailing", "Leading", "Center"] {
+      alignment.buttons[label].tap()
+      XCTAssertEqual(stats.frame.midX, position.midX, accuracy: 1)
+      XCTAssertEqual(stats.frame.midY, position.midY, accuracy: 1)
+    }
+    for style in ["clean", "rounded", "mono", "sport", "serif"] {
+      let button = app.buttons["photo.font.\(style)"]
+      revealPhotoControl(button, towardTop: true)
+      button.tap()
+      XCTAssertEqual(button.value as? String, "Selected")
+      XCTAssertEqual(stats.frame.midX, position.midX, accuracy: 1)
+      XCTAssertEqual(stats.frame.midY, position.midY, accuracy: 1)
+    }
+    let toggle = app.switches["photo.iconToggle"]
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    let icon = app.buttons["photo.iconOverlay"]
+    XCTAssertTrue(icon.waitForExistence(timeout: 5))
+    let statsBefore = stats.value as? String
+    let iconBefore = icon.value as? String
+    icon.pinch(withScale: 0.75, velocity: -1)
+    icon.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).press(forDuration: 0.05,
+      thenDragTo: icon.coordinate(withNormalizedOffset: CGVector(dx: -0.3, dy: -0.4)))
+    XCTAssertNotEqual(icon.value as? String, iconBefore)
+    XCTAssertEqual(stats.value as? String, statsBefore)
+    let moved = icon.value as? String
+    let left = app.buttons["photo.arrow.left"]
+    revealPhotoControl(left, towardTop: true)
+    left.tap()
+    XCTAssertNotEqual(icon.value as? String, moved)
+    XCTAssertEqual(stats.value as? String, statsBefore)
+    let retained = icon.value as? String
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    XCTAssertFalse(icon.exists)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    XCTAssertEqual(icon.value as? String, retained)
+    app.buttons["photo.choose"].tap()
+    XCTAssertEqual(icon.value as? String, retained)
+    photoLayer("Stats")
+    XCTAssertEqual(app.buttons["photo.font.serif"].value as? String, "Selected")
+    XCTAssertTrue(alignment.buttons["Center"].isSelected)
+    let reset = app.buttons["photo.reset"]
+    revealPhotoControl(reset, towardTop: true)
+    reset.tap()
+    XCTAssertNotEqual(icon.value as? String, retained)
+    XCTAssertTrue(icon.exists)
+    XCTAssertEqual(app.buttons["photo.font.serif"].value as? String, "Selected")
+    XCTAssertTrue(alignment.buttons["Center"].isSelected)
+    photoFormat("Square 1:1")
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Image saved"].waitForExistence(timeout: 10))
+    XCTAssertFalse(app.buttons["photo.save"].exists)
+  }
+
+  func testRunPhotoRouteColorsPersistWithoutMovingLayers() {
+    launch()
+    openRunPhoto()
+    let toggle = app.switches["photo.routeToggle"]
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    let route = app.buttons["photo.routeOverlay"]
+    XCTAssertTrue(route.waitForExistence(timeout: 5))
+    let before = route.value as? String
+    let statsBefore = app.buttons["photo.statsOverlay"].value as? String
+    for name in ["white", "runnerYellow", "orange", "red", "green", "blue", "purple", "pink", "black"] {
+      let color = app.buttons["photo.routeColor.\(name)"]
+      revealPhotoControl(color, towardTop: name == "white")
+      color.tap()
+      XCTAssertEqual(color.value as? String, "Selected")
+      XCTAssertEqual(route.value as? String, before)
+      XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, statsBefore)
+    }
+    let yellow = app.buttons["photo.routeColor.runnerYellow"]
+    revealPhotoControl(yellow, towardTop: true)
+    yellow.tap()
+    revealPhotoControl(toggle)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    XCTAssertFalse(route.exists)
+    toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
+    XCTAssertEqual(route.value as? String, before)
+    revealPhotoControl(yellow, towardTop: true)
+    XCTAssertEqual(yellow.value as? String, "Selected")
+    app.buttons["photo.choose"].tap()
+    XCTAssertEqual(yellow.value as? String, "Selected")
+    let reset = app.buttons["photo.reset"]
+    revealPhotoControl(reset, towardTop: true)
+    reset.tap()
+    XCTAssertEqual(yellow.value as? String, "Selected")
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Image saved"].waitForExistence(timeout: 10))
+    app.alerts.buttons["Share Image"].tap()
+    XCTAssertTrue(app.buttons["photo.fixtureShare.cancel"].waitForExistence(timeout: 5))
+    app.buttons["photo.fixtureShare.cancel"].tap()
+    XCTAssertTrue(app.buttons["run.createPhoto"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.alerts["Image shared"].exists)
+  }
   func testNavigationAndActivityCheckpointRegression() {
     launch()
     for name in ["History", "Activity", "Trends", "Live", "Latest"] { tab(name) }

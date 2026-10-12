@@ -19,6 +19,9 @@ struct RunDetailScreen: View {
   @EnvironmentObject private var analytics: AnalyticsStore
   @State private var selection: Date?
   @State private var selectedSplit: DateInterval?
+  @State private var photoSession: RunPhotoSession?
+  @State private var pendingPhotoResult: RunPhotoExportResult?
+  @State private var photoResult: RunPhotoExportResult?
   @ScaledMetric(relativeTo: .largeTitle) private var heroSize = 52.0
   var body: some View {
     let metrics = analytics.snapshot.metrics[run.id] ?? RunCalculator.metrics(run)
@@ -45,6 +48,16 @@ struct RunDetailScreen: View {
         }
         Surface {
           VStack(spacing: 24) {
+            HStack {
+              Text("Run summary").font(.headline)
+              Spacer()
+              Button {
+                photoSession = RunPhotoSession(run: run, units: units)
+              } label: {
+                Image(systemName: "photo").frame(width: 44, height: 44)
+              }.buttonStyle(.bordered).accessibilityLabel("Create run photo")
+                .accessibilityIdentifier("run.createPhoto")
+            }
             MetricPair {
               Stat(
                 title: "Moving time", value: UnitSystem.duration(metrics.movingSeconds),
@@ -89,6 +102,14 @@ struct RunDetailScreen: View {
         if let status = health.status { Text(status).font(.footnote).foregroundStyle(.orange) }
       }.padding(20).frame(maxWidth: 960).frame(maxWidth: .infinity)
     }.background(RunnerStyle.background).refreshable { await health.sync() }
+      .fullScreenCover(item: $photoSession, onDismiss: {
+        photoResult = pendingPhotoResult
+        pendingPhotoResult = nil
+      }) { session in
+        RunPhotoEditor(run: session.run, units: session.units) { pendingPhotoResult = $0 }
+          .environment(\.dynamicTypeSize, typeSize)
+      }
+      .modifier(RunPhotoExportFeedback(result: $photoResult))
       .onChange(of: selection) { _, date in
         if let interval = selectedSplit,
           date.map({ $0 < interval.start || $0 > interval.end }) ?? true
