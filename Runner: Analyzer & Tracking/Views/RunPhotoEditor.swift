@@ -459,17 +459,22 @@ struct RunPhotoEditor: View {
     let value = transform(layer)
     let content = contentSize(layer)
     let canvas = composition.canvasSize
+    let hitFrame = composition.hitFrame(for: layer, minimumSize: 44 / displayScale)
     return Rectangle().fill(.clear)
-      .overlay {
+      .frame(width: hitFrame.width * displayScale, height: hitFrame.height * displayScale)
+      .overlay(alignment: .topLeading) {
         if composition.selection == layer {
           Rectangle().stroke(.white.opacity(0.8), style: StrokeStyle(lineWidth: 1, dash: [4]))
+            .frame(width: content.width * value.scale * displayScale,
+              height: content.height * value.scale * displayScale)
+            .offset(
+              x: (value.center.x * canvas.width - content.width * value.scale / 2 - hitFrame.minX) * displayScale,
+              y: (value.center.y * canvas.height - content.height * value.scale / 2 - hitFrame.minY) * displayScale)
+            .allowsHitTesting(false)
         }
       }
-      .frame(width: content.width * value.scale * displayScale,
-        height: content.height * value.scale * displayScale)
       .contentShape(Rectangle())
-      .position(x: value.center.x * canvas.width * displayScale,
-        y: value.center.y * canvas.height * displayScale)
+      .position(x: hitFrame.midX * displayScale, y: hitFrame.midY * displayScale)
       .accessibilityElement(children: .ignore)
       .accessibilityLabel("RunPhotoEditor.Format.overlay.text".localized(String(describing: layer.title)))
       .accessibilityValue(String(format: "x %.2f y %.2f scale %.2f", value.center.x, value.center.y, value.scale))
@@ -480,7 +485,8 @@ struct RunPhotoEditor: View {
   }
 
   private func layer(at point: CGPoint, displayScale: CGFloat) -> RunPhotoLayer? {
-    composition.layer(at: CGPoint(x: point.x / displayScale, y: point.y / displayScale))
+    composition.layer(at: CGPoint(x: point.x / displayScale, y: point.y / displayScale),
+      minimumHitSize: 44 / displayScale)
   }
 
   private func canvasDrag(displayScale: CGFloat) -> some Gesture {

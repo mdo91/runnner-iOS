@@ -324,15 +324,23 @@ struct RunPhotoComposition {
     case .photo: break
     }
   }
-  func layer(at point: CGPoint) -> RunPhotoLayer? {
+  /// Expand editor targets in canvas coordinates without changing exported artwork.
+  /// Keep the expansion inside the canvas so edge targets are not clipped.
+  func hitFrame(for layer: RunPhotoLayer, minimumSize: CGFloat = 0) -> CGRect {
+    let value = transform(layer), content = contentSize(layer), canvas = canvasSize
+    let width = min(canvas.width, max(minimumSize, content.width * value.scale))
+    let height = min(canvas.height, max(minimumSize, content.height * value.scale))
+    return CGRect(
+      x: min(canvas.width - width, max(0, value.center.x * canvas.width - width / 2)),
+      y: min(canvas.height - height, max(0, value.center.y * canvas.height - height / 2)),
+      width: width, height: height)
+  }
+  func layer(at point: CGPoint, minimumHitSize: CGFloat = 0) -> RunPhotoLayer? {
     let layers = overlayLayers
     let ordered = (layers.contains(selection) ? [selection] : [])
       + layers.reversed().filter { $0 != selection }
     return ordered.first { layer in
-      let transform = transform(layer), content = contentSize(layer)
-      return CGRect(x: transform.center.x * canvasSize.width - content.width * transform.scale / 2,
-        y: transform.center.y * canvasSize.height - content.height * transform.scale / 2,
-        width: content.width * transform.scale, height: content.height * transform.scale).contains(point)
+      hitFrame(for: layer, minimumSize: minimumHitSize).contains(point)
     }
   }
 }

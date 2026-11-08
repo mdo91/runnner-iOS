@@ -399,6 +399,32 @@ import XCTest
     }
   }
 
+  func testSmallOverlayTargetsRemainTappableAtCanvasEdges() {
+    var composition = RunPhotoComposition()
+    composition.showsIcon = true
+    composition.selection = .icon
+    // A compact landscape preview displays a 64-point icon at only 17 points.
+    let displayScale: CGFloat = 17 / 64
+    let minimumSize = 44 / displayScale
+    for format in RunPhotoFormat.allCases {
+      composition.format = format
+      for corner in [CGPoint.zero, CGPoint(x: 1, y: 0), CGPoint(x: 0, y: 1), CGPoint(x: 1, y: 1)] {
+        composition.setTransform(RunPhotoTransform(center: corner, scale: 1), layer: .icon)
+        let original = composition.icon
+        let target = composition.hitFrame(for: .icon, minimumSize: minimumSize)
+        XCTAssertEqual(target.width * displayScale, 44, accuracy: 0.001)
+        XCTAssertEqual(target.height * displayScale, 44, accuracy: 0.001)
+        XCTAssertTrue(CGRect(origin: .zero, size: composition.canvasSize).contains(target))
+        let expandedPoint = CGPoint(x: target.midX, y: target.midY)
+        XCTAssertFalse(composition.hitFrame(for: .icon).contains(expandedPoint))
+        XCTAssertEqual(composition.layer(at: expandedPoint, minimumHitSize: minimumSize), .icon)
+        XCTAssertEqual(composition.icon, original, "Touch padding must not move or resize artwork")
+      }
+    }
+    composition.showsIcon = false
+    XCTAssertNotEqual(composition.layer(at: CGPoint(x: 350, y: 350), minimumHitSize: minimumSize), .icon)
+  }
+
   func testIconExportAndAppearanceDoNotChangeOtherLayers() throws {
     var composition = RunPhotoComposition()
     composition.image = image()
