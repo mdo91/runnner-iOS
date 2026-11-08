@@ -63,3 +63,18 @@ Use case: photorealistic-natural. Asset type: privacy-safe synthetic editorial s
 - Required medium Dynamic Island slot: `screenshots-medium/{en,de}`, 1206 × 2622, generated with `--display medium`.
 
 App Store Connect accepted both sets on November 8, 2026. Each locale has eight screenshots in each slot and no video previews. Layouts use a shared design coordinate system with uniform scaling; the actual app captures are not stretched or fabricated.
+
+## Product-page header and search results
+
+Added November 8, 2026. The shared text-free header is `creative-assets/header.png` (3840 × 1646). Localized search-result layouts are `creative-assets/search-en.png` and `creative-assets/search-de.png` (1920 × 1280). These are opaque RGB PNGs, separate from screenshots and video previews, for the creative placements on iOS 27 and later.
+
+The header was generated using the built-in `image_gen` tool, with the existing welcome runner as a style reference; no CLI/API fallback was used. Its original 1832 × 858 output is preserved as `creative-assets/header-source.png`. The export fits the complete original illustration proportionally inside Apple's required dimensions. The search layouts reuse the original onboarding artwork and unchanged genuine synthetic-data captures from the passing screenshot run `20261108-162338-25472.xcresult`; copies are preserved in `creative-assets/sources`.
+
+`scripts/render-store-creative.swift` reproducibly composes the layouts and verifies exact dimensions and absence of alpha. It does not invent or retouch the app interface. English copy is “Every run. Understood.” / “Pace. Heart rate. Progress.” German is “Jeder Lauf. Im Blick.” / “Tempo. Puls. Fortschritt.”
+
+### Header prompt
+
+Use case: ads-marketing. Asset type: App Store product-page header artwork for Runner, a running analytics and photo/video sharing app. Generate one finished premium editorial illustration, opaque, wide cinematic 21:9 landscape, target 3840 × 1646 pixels. Existing Runner onboarding illustration is a style reference only. Match its expressive adult runner, bold uneven ink outlines, electric yellow #D7FF00, cream #F5F2E8, near-black #0B0B0B, warm natural skin, restrained hand-drawn grain. One joyful athletic adult woman mid-stride, full body visible, black/yellow running outfit and cream chunky shoes. Center the complete runner within the middle 45 percent, broad quiet near-black margins and safe cropping room. A cream/yellow running-track ribbon becomes one expressive pace-chart line and a small looping route motif, with a small yellow heart. Sparse illustrative symbols; no interface panels or phone mockup. One clear focal point, energetic and confident, polished flat illustration, strong contrast, subtle charcoal track arcs. No gradients, photorealism, 3D, words, letters, numbers, logos, watermarks, copyright marks, prices, awards, badges, Apple branding, or medical promise. Text-free for both English and German.
+
+Specifications: https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications
+Best practices: https://developer.apple.com/app-store/asset-best-practices/
