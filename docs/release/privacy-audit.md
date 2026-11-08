@@ -1,6 +1,6 @@
 # Runner release privacy evidence
 
-Reviewed November 8, 2026. This is an implementation/disclosure audit, not a claim that all provider processing is controlled by Runner. No services, account data, or SDK settings were changed, and no credential values or user logs were read.
+Reviewed November 8, 2026. This is an implementation/disclosure audit, not a claim that all provider processing is controlled by Runner. The initial audit was read-only. Subsequent release configuration and verification are recorded below; no credential values or user logs were printed.
 
 ## Result and proposed App Store mapping
 
@@ -57,7 +57,7 @@ Google's abuse-monitoring documentation specifies **55-day** retention of prompt
 ## Remaining focused verification
 
 - Inspect the final signed archive's aggregated privacy report and embedded SDK bundles. The simulator app was subsequently inspected as recorded below; it is not a signed distribution archive.
-- Verified on 2026-11-08: deployed Secret Manager version1 matches the API key named Runner Gemini backend in billed project runner-mdo-production. Only the boolean comparison was printed; no secret was logged. Confirm AI Studio Generate Content project logging and optional dataset sharing are disabled; source code cannot prove console settings. Generate Content logs require opt-in; enabled logs have separate retention, and saved datasets do not expire automatically. [Gemini logs and datasets](https://ai.google.dev/gemini-api/docs/logs-datasets)
+- Verified on 2026-11-08: deployed Secret Manager version1 matches the API key named Runner Gemini backend in billed project runner-mdo-production. Only the boolean comparison was printed; no secret was logged. AI Studio subsequently showed optional GenerateContent request storage enabled for Runner. Disabled it on November 8 and verified the switch remains off. The page showed no logs and no named datasets; no contributed logs were present. The unused Interactions API setting was left unchanged. Provider abuse-monitoring retention remains separate. [Gemini logs and datasets](https://ai.google.dev/gemini-api/docs/logs-datasets)
 - Verify Firebase/Apple claim presence using a disposable test account, and confirm no extra organization-level logging sink retains Runner request logs beyond the verified project bucket. Current evidence does not establish an across-all-providers maximum deletion period.
 
 ## Built simulator bundle verification
@@ -67,3 +67,8 @@ Later on November 8, inspected `/tmp/runner-release-derived/Build/Products/Debug
 The app contains **15 privacy manifests**: its own; Firebase Auth, Core, CoreExtension and CoreInternal; GTMSessionFetcherCore; GoogleUtilities AppDelegateSwizzler, Environment, Logger, NSData, Network, Reachability and UserDefaults; and FBLPromises and Promises. All declare tracking false. The SDK manifests add only **Other Diagnostic Data (unlinked, Analytics)** and **User ID (linked, App Functionality)** to the app's four declarations. No embedded manifest declares Device ID, Other Data, Crash Data, or Performance Data. No Firebase Analytics, GoogleDataTransport, FirebaseInstallations, advertising, Crashlytics, or Performance privacy bundle was present.
 
 This confirms the diagnostic-disclosure finding. It does **not** by itself establish retained server IP handling: the recommended Device ID mapping above comes from the verified security/logging behavior and remains explicitly an interpretation of Apple's categories, not a claim that an SDK manifest declares it. The App Store privacy answers must account for both the app bundle and backend/provider processing. A final distribution-archive check remains necessary after the selected build is created.
+
+## Release verification update
+
+- A live synthetic-only provider smoke test returned a valid German summary, insight, and next-run text using the configured Gemini model. No real workout or account data was sent.
+- Project-level logging sinks are the standard `_Required` and `_Default` sinks only. Organization-level sinks remain outside this evidence.

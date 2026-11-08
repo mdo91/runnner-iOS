@@ -153,7 +153,14 @@ func render(_ screen: Screen, locale: String, copy: Localization, input: URL, wi
   let transform=NSAffineTransform();transform.translateX(by:0,yBy:CGFloat(height));transform.scaleX(by:1,yBy:-1);transform.concat()
   let flipped=NSGraphicsContext(cgContext:context.cgContext,flipped:true);NSGraphicsContext.current=flipped
   black.setFill();CGRect(x:0,y:0,width:width,height:height).fill()
-  trackPattern(CGFloat(width),CGFloat(height),seed:index)
+  // Keep one design coordinate system across Apple's large and medium slots.
+  // Uniform scaling avoids stretching either the artwork or genuine app captures.
+  let designScale = min(CGFloat(width) / 1320, CGFloat(height) / 2868)
+  let designTransform = NSAffineTransform()
+  designTransform.translateX(by:(CGFloat(width) - 1320 * designScale) / 2,
+    yBy:(CGFloat(height) - 2868 * designScale) / 2)
+  designTransform.scale(by:designScale);designTransform.concat()
+  trackPattern(1320,2868,seed:index)
   try text(copy.brand,rect:CGRect(x:76,y:58,width:700,height:60),size:43,weight:.black,color:yellow,tracking:5)
   try text(String(format:"%02d / 08",index),rect:CGRect(x:1080,y:69,width:170,height:40),size:25,weight:.semibold,color:gray,tracking:2)
   try text(screen.eyebrow,rect:CGRect(x:78,y:160,width:1160,height:48),size:25,weight:.bold,color:yellow,tracking:2,minimum:21)
@@ -163,7 +170,7 @@ func render(_ screen: Screen, locale: String, copy: Localization, input: URL, wi
   if captures.count == 1 {
     let h:CGFloat=2060
     let w=min(960,h*CGFloat(captures[0].width)/CGFloat(captures[0].height))
-    let rect=drawCapture(captures[0],x:(CGFloat(width)-w)/2,y:654,width:w)
+    let rect=drawCapture(captures[0],x:(1320-w)/2,y:654,width:w)
     arrow(x:51,y:802,right:true)
     // A small illustration stays beyond the capture and never obscures app content.
     artwork(screen.artwork,rect:CGRect(x:1160,y:2470,width:145,height:145))
@@ -208,6 +215,10 @@ do {
   let input=URL(fileURLWithPath:inputPath,isDirectory:true)
   let copy=try JSONDecoder().decode(Copy.self,from:Data(contentsOf:copyURL))
   guard copy.schemaVersion == 1, copy.width == 1320, copy.height == 2868 else {try fail("Unsupported output specification")}
+  let display = option("--display", default:"large")!
+  guard ["large","medium"].contains(display) else {try fail("Display must be large or medium")}
+  let exportWidth = display == "medium" ? 1206 : copy.width
+  let exportHeight = display == "medium" ? 2622 : copy.height
   let languages=option("--language").map{[$0]} ?? ["en","de"]
   var missing:[String]=[]
   for language in languages {
@@ -232,7 +243,7 @@ do {
   for language in languages {
     let localized=copy.localizations[language]!
     for (index,screen) in localized.screens.enumerated() where option("--only") == nil || screen.id == option("--only") {
-      try render(screen,locale:language,copy:localized,input:input,width:copy.width,height:copy.height,index:index+1)
+      try render(screen,locale:language,copy:localized,input:input,width:exportWidth,height:exportHeight,index:index+1)
     }
   }
 } catch {fputs("\(error)\n",stderr);exit(1)}
