@@ -69,6 +69,8 @@ struct OnboardingView: View {
         .accessibilityAddTraits(.isHeader).accessibilityIdentifier("onboarding.title")
       Text("\(key).body.text".localized).font(.body)
         .foregroundStyle(RunnerStyle.muted).fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityIdentifier("onboarding.body")
       if page == pages.count - 1 {
         Link("Common.Link.privacy.text".localized, destination: ReleaseLinks.privacy)
         Link("Common.Link.terms.text".localized, destination: ReleaseLinks.terms)

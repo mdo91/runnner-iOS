@@ -365,7 +365,7 @@
 "OnboardingView.HealthPage.title.text" = "Deine Läufe. An einem Ort.";
 "OnboardingView.InsightsPage.body.text" = "Erkunde Tempo, Herzfrequenz, Zwischenzeiten und aufgezeichnete Routen. Erkenne, was gemessen wurde und wo Daten fehlen.";
 "OnboardingView.InsightsPage.title.text" = "Sieh mehr als die Zielzeit.";
-"OnboardingView.PrivacyPage.body.text" = "Verbinde Apple Health, wenn du bereit bist. KI-Analyse, Cloud-Verlauf und GPS-Freigabe sind separate Optionen in den Einstellungen und anfangs ausgeschaltet.";
+"OnboardingView.PrivacyPage.body.text" = "Verbinde Apple Health, wenn du bereit bist. KI, Cloud und GPS bleiben aus. Du schaltest jede Option später einzeln ein.";
 "OnboardingView.PrivacyPage.title.text" = "Deine Daten. Deine Wahl.";
 "OnboardingView.Progress.accessibility.text" = "Seite %1$ld von %2$ld";
 "OnboardingView.ProgressPage.body.text" = "Entwickle mit Zielen und Trends deine Laufroutine. Auf Wunsch erklärt KI deine aufgezeichneten Läufe – erst nach Anmeldung und Einwilligung.";

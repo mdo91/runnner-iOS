@@ -7340,7 +7340,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Verbinde Apple Health, wenn du bereit bist. KI-Analyse, Cloud-Verlauf und GPS-Freigabe sind separate Optionen in den Einstellungen und anfangs ausgeschaltet."
+            "value": "Verbinde Apple Health, wenn du bereit bist. KI, Cloud und GPS bleiben aus. Du schaltest jede Option später einzeln ein."
           }
         }
       }
