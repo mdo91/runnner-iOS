@@ -178,6 +178,19 @@ import XCTest
       "A system notification obscures the accessibility audit")
   }
   private func reveal(_ element: XCUIElement, towardTop: Bool = false, limit: Int = 12) {
+    // During a navigation push, XCTest can still expose the outgoing scroll view
+    // with a negative x origin. Wait for the destination before measuring its bounds.
+    let settled = NSPredicate { _, _ in
+      let window = self.app.windows.firstMatch.frame
+      let scroll = self.app.scrollViews.firstMatch
+      guard scroll.exists else { return !window.isEmpty }
+      let frame = scroll.frame
+      return !frame.isEmpty && frame.minX >= window.minX - 1
+        && frame.maxX <= window.maxX + 1
+    }
+    XCTAssertEqual(
+      XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: app)],
+        timeout: 10), .completed, "Navigation did not settle before scrolling")
     for _ in 0..<limit {
       let window = app.windows.firstMatch
       let bar = app.tabBars.firstMatch
