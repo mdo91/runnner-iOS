@@ -1,2 +1,3 @@
 "NSHealthShareUsageDescription" = "Runner liest deine Läufe, Routen, Herzfrequenz und Ausdauerwerte, um deine Leistung anzuzeigen. Das Hochladen von Verlauf und GPS erfordert jeweils eine separate Einwilligung in den Einstellungen.";
 "NSPhotoLibraryAddUsageDescription" = "Runner speichert deine fertigen Lauffotos und Laufvideos in deiner Fotomediathek.";
+"NSHealthUpdateUsageDescription" = "Runner nutzt Apple Health, um deine aufgezeichneten Läufe zu analysieren. Diese Version fügt keine Health-Daten hinzu und ändert sie nicht.";
