@@ -17,6 +17,7 @@ DERIVED_DIR="${RUNNER_DERIVED_DATA:-/tmp/runner-activity-derived}"
 mkdir -p "$RESULT_DIR"
 RESULT_PATH="$RESULT_DIR/$(date +%Y%m%d-%H%M%S)-$RANDOM.xcresult"
 cd "$ROOT_DIR"
+python3 scripts/compile-localizations.py --check
 TEST_STATUS=0
 TEST_RUNNER_RUNNER_EVIDENCE_DIR="${RESULT_PATH%.xcresult}-screenshots" \
 xcodebuild test -project 'The Runner.xcodeproj' -scheme 'The Runner' \

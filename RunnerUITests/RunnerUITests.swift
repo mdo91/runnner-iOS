@@ -82,7 +82,19 @@ import XCTest
     XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Verstehe jeden Lauf.")
     for _ in 0..<5 { app.buttons["onboarding.next"].tap() }
     XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Deine Daten. Deine Wahl.")
+    // Audit both scrollable regions, including the full privacy explanation.
+    reveal(app.staticTexts["onboarding.body"], verticalInset: 64)
     try app.performAccessibilityAudit(for: [.textClipped, .sufficientElementDescription])
+    let explanation = XCTAttachment(screenshot: app.screenshot())
+    explanation.name = "German privacy explanation at accessibility text size"
+    explanation.lifetime = .keepAlways
+    add(explanation)
+    reveal(app.buttons["onboarding.connectHealth"], verticalInset: 64)
+    try app.performAccessibilityAudit(for: [.textClipped, .sufficientElementDescription])
+    let controls = XCTAttachment(screenshot: app.screenshot())
+    controls.name = "German Health controls at accessibility text size"
+    controls.lifetime = .keepAlways
+    add(controls)
     app.buttons["onboarding.notNow"].tap()
     XCTAssertTrue(app.buttons["Aktivität"].firstMatch.waitForExistence(timeout: 15))
     XCTAssertFalse(app.buttons["Live"].exists)
@@ -177,7 +189,10 @@ import XCTest
       banner.waitForNonExistence(timeout: 15),
       "A system notification obscures the accessibility audit")
   }
-  private func reveal(_ element: XCUIElement, towardTop: Bool = false, limit: Int = 12) {
+  private func reveal(
+    _ element: XCUIElement, towardTop: Bool = false, limit: Int = 12,
+    verticalInset: CGFloat = 8
+  ) {
     // During a navigation push, XCTest can still expose the outgoing scroll view
     // with a negative x origin. Wait for the destination before measuring its bounds.
     let settled = NSPredicate { _, _ in
@@ -198,8 +213,8 @@ import XCTest
       let bounds = scroll.exists && scroll.isHittable
         ? scroll.frame.intersection(window.frame) : window.frame
       let navigation = app.navigationBars.firstMatch
-      let top = max(bounds.minY, navigation.exists ? navigation.frame.maxY : bounds.minY) + 8
-      var bottom = bounds.maxY - 8
+      let top = max(bounds.minY, navigation.exists ? navigation.frame.maxY : bounds.minY) + verticalInset
+      var bottom = bounds.maxY - verticalInset
       if bar.exists && bar.isHittable && bar.frame.minY > window.frame.midY {
         bottom = min(bottom, bar.frame.minY - 8)
       }
@@ -214,11 +229,19 @@ import XCTest
       let upwards = element.exists ? element.frame.midY >= (top + bottom) / 2 : !towardTop
       let edge = min(window.frame.width, window.frame.height) > 600 ? 0.98 : 0.92
       let start = top + (bottom - top) * (upwards ? 0.8 : 0.2)
-      let end = top + (bottom - top) * (upwards ? 0.2 : 0.8)
+      var travel = (bottom - top) * 0.6
+      if element.exists {
+        let outside = upwards ? element.frame.maxY - bottom : top - element.frame.minY
+        if outside > 0 { travel = min(travel, max(24, outside + 12)) }
+      }
+      let end = start + (upwards ? -travel : travel)
       let origin = window.coordinate(withNormalizedOffset: .zero)
+      // A fling can jump past a nearby control in a short landscape viewport,
+      // making repeated gestures oscillate above and below it. Hold before release.
       origin.withOffset(CGVector(dx: window.frame.width * edge, dy: start - window.frame.minY))
         .press(forDuration: 0.05, thenDragTo: origin.withOffset(CGVector(
-          dx: window.frame.width * edge, dy: end - window.frame.minY)))
+          dx: window.frame.width * edge, dy: end - window.frame.minY)),
+          withVelocity: .slow, thenHoldForDuration: 0.2)
     }
     XCTAssertTrue(element.exists && element.isHittable, "Could not reveal \(element)")
   }
