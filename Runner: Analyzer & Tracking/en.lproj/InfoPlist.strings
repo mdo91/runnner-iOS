@@ -1,2 +1,3 @@
 "NSHealthShareUsageDescription" = "Runner reads your runs, routes, heart rate, and endurance measurements to show your performance. History and GPS uploads require separate consent in Settings.";
 "NSPhotoLibraryAddUsageDescription" = "Runner saves your finished run photos and videos to your photo library.";
+"NSHealthUpdateUsageDescription" = "Runner uses Apple Health to analyze your recorded runs. This version does not add or change Health data.";
