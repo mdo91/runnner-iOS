@@ -29,18 +29,23 @@ import XCTest
     return directory.appendingPathComponent("\(String(filename)).\(testID).\(suffix)")
   }
   @discardableResult private func launch(
-    _ scenario: String = "populated", appearance: String = "light", largeText: Bool = false
+    _ scenario: String = "populated", appearance: String = "light", largeText: Bool = false,
+    language: String = "en"
   ) -> XCUIApplication {
     app = XCUIApplication()
     app.launchArguments = [
-      "--ui-scenario", scenario, "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+      "--ui-scenario", scenario, "-AppleLanguages", "(\(language))", "-AppleLocale", language == "de" ? "de_DE" : "en_US",
     ]
     app.launchEnvironment = [
       "RUNNER_TEST_ID": testID, "RUNNER_APPEARANCE": appearance,
       "RUNNER_LARGE_TEXT": largeText ? "1" : "0", "TZ": "America/Los_Angeles",
     ]
     app.launch()
-    XCTAssertTrue(app.buttons["Activity"].firstMatch.waitForExistence(timeout: 15))
+    if scenario == "onboarding" {
+      XCTAssertTrue(app.staticTexts["onboarding.title"].waitForExistence(timeout: 15))
+      return app
+    }
+    XCTAssertTrue(app.buttons[language == "de" ? "Aktivität" : "Activity"].firstMatch.waitForExistence(timeout: 15))
     let ready = XCTNSPredicateExpectation(
       predicate: NSPredicate(format: "exists == true AND value == %@", "Fixtures ready"),
       object: app.buttons["navigation.settings"])
@@ -48,6 +53,101 @@ import XCTest
       XCTWaiter.wait(for: [ready], timeout: 30), .completed,
       "Fixture analytics did not finish loading")
     return app
+  }
+
+  func testOnboardingEnglishCompletionAndReplay() {
+    launch("onboarding")
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Understand every run.")
+    app.buttons["onboarding.next"].tap()
+    app.buttons["onboarding.back"].tap()
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Understand every run.")
+    for _ in 0..<5 { app.buttons["onboarding.next"].tap() }
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Your data. Your choice.")
+    app.buttons["onboarding.notNow"].tap()
+    XCTAssertTrue(app.buttons["Activity"].firstMatch.waitForExistence(timeout: 15))
+    XCTAssertFalse(app.buttons["Live"].exists)
+    app.terminate(); app.launch()
+    XCTAssertTrue(app.buttons["Activity"].firstMatch.waitForExistence(timeout: 15))
+    XCTAssertFalse(app.buttons["onboarding.next"].exists)
+    app.buttons["navigation.settings"].tap()
+    reveal(app.buttons["settings.onboarding"])
+    app.buttons["settings.onboarding"].tap()
+    XCTAssertTrue(app.buttons["onboarding.skip"].waitForExistence(timeout: 5))
+    app.buttons["onboarding.skip"].tap()
+    XCTAssertTrue(app.buttons["settings.done"].waitForExistence(timeout: 5))
+  }
+
+  func testOnboardingGermanAndLargeText() throws {
+    launch("onboarding", largeText: true, language: "de")
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Verstehe jeden Lauf.")
+    for _ in 0..<5 { app.buttons["onboarding.next"].tap() }
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Deine Daten. Deine Wahl.")
+    try app.performAccessibilityAudit(for: [.textClipped, .sufficientElementDescription])
+    app.buttons["onboarding.notNow"].tap()
+    XCTAssertTrue(app.buttons["Aktivität"].firstMatch.waitForExistence(timeout: 15))
+    XCTAssertFalse(app.buttons["Live"].exists)
+    app.buttons["Verlauf"].firstMatch.tap()
+    XCTAssertTrue(app.staticTexts["Lauftagebuch"].waitForExistence(timeout: 5))
+  }
+
+  func testOnboardingHealthActionDoesNotEnableCloudConsent() {
+    launch("onboarding")
+    for _ in 0..<5 { app.buttons["onboarding.next"].tap() }
+    app.buttons["onboarding.connectHealth"].tap()
+    XCTAssertTrue(app.buttons["navigation.settings"].waitForExistence(timeout: 15))
+    app.buttons["navigation.settings"].tap()
+    reveal(app.switches["settings.aiConsent"])
+    XCTAssertEqual(app.switches["settings.aiConsent"].value as? String, "0")
+  }
+  // Opt-in captures use the real interface and synthetic records; never run in cloud CI.
+  func testCaptureEnglishStoreScreens() throws {
+    try XCTSkipUnless(ProcessInfo.processInfo.environment["RUNNER_CAPTURE_STORE"] == "1")
+    try captureStore(language: "en")
+  }
+  func testCaptureGermanStoreScreens() throws {
+    try XCTSkipUnless(ProcessInfo.processInfo.environment["RUNNER_CAPTURE_STORE"] == "1")
+    try captureStore(language: "de")
+  }
+  private func captureStore(language: String) throws {
+    let de = language == "de"
+    launch("store", appearance: "dark", language: language)
+    func capture(_ key: String) throws {
+      let screenshot = XCUIScreen.main.screenshot()
+      let attachment = XCTAttachment(screenshot: screenshot)
+      attachment.name = "\(language)-\(key)"; attachment.lifetime = .keepAlways; add(attachment)
+      let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["RUNNER_EVIDENCE_DIR"] ?? "/tmp/runner-store-captures")
+      try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+      try screenshot.pngRepresentation.write(to: root.appendingPathComponent("\(language)-\(key).png"))
+    }
+    try capture("01-overview")
+    reveal(app.buttons["run.metric"])
+    try capture("03-route")
+    reveal(app.buttons["run.split.1"])
+    try capture("02-charts")
+    reveal(app.buttons["run.split.5"])
+    try capture("03-splits")
+    reveal(app.staticTexts["run.analysisEndurance"])
+    try capture("06-analysis")
+    tab(de ? "Verlauf" : "History")
+    try capture("04-history")
+    tab(de ? "Aktivität" : "Activity")
+    try capture("05-activity")
+    reveal(app.buttons["goal.add"])
+    try capture("05-goals")
+    tab("Trends")
+    try capture("06-trends")
+    tab(de ? "Aktuell" : "Latest")
+    reveal(app.buttons["run.createPhoto"], towardTop: true)
+    openRunPhoto()
+    app.buttons["photo.choose"].tap()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 10))
+    try capture("07-photo")
+    app.terminate()
+    launch("video-store", appearance: "dark", language: language)
+    openRunPhoto()
+    app.buttons["photo.choose"].tap()
+    XCTAssertTrue(app.buttons["video.play"].waitForExistence(timeout: 20))
+    try capture("08-video")
   }
   private func tab(_ name: String) {
     let button = app.buttons[name].firstMatch
@@ -197,8 +297,7 @@ import XCTest
     XCTAssertGreaterThanOrEqual(photo.frame.height, 44)
     assertDarkTabBar()
     captureDashboard("latest")
-    for (name, label) in [("Activity", "Every run adds up"), ("Trends", "Built one run at a time"),
-      ("Live", "Open Runner on Watch")]
+    for (name, label) in [("Activity", "Every run adds up"), ("Trends", "Built one run at a time")]
     {
       tab(name)
       XCTAssertTrue(app.descendants(matching: .any)[label].firstMatch.waitForExistence(timeout: 5))
@@ -240,7 +339,7 @@ import XCTest
         bounds = bar.frame
       } else {
         // iPad exposes its top tabs as buttons rather than a TabBar element.
-        let tabs = ["Latest", "History", "Activity", "Trends", "Live"].map {
+        let tabs = ["Latest", "History", "Activity", "Trends"].map {
           self.app.buttons[$0].firstMatch
         }
         guard tabs.allSatisfy({ $0.exists }) else { return false }
@@ -726,7 +825,7 @@ import XCTest
   }
   func testNavigationAndActivityCheckpointRegression() {
     launch()
-    for name in ["History", "Activity", "Trends", "Live", "Latest"] { tab(name) }
+    for name in ["History", "Activity", "Trends", "Latest"] { tab(name) }
     for _ in 0..<3 {
       tab("Activity")
       XCTAssertEqual(app.staticTexts["activity.total"].label, "3 runs")
@@ -1032,7 +1131,7 @@ import XCTest
   }
   func testAppOwnedScreenAccessibility() throws {
     launch("empty")
-    for name in ["Latest", "History", "Trends", "Live"] {
+    for name in ["Latest", "History", "Trends"] {
       tab(name)
       waitForUnobscuredScreen()
       try app.performAccessibilityAudit(for: [
@@ -1069,7 +1168,9 @@ import XCTest
       "Vertical oscillation",
     ] {
       app.buttons["run.metric"].tap()
-      app.collectionViews.buttons[metric].firstMatch.tap()
+      let option = app.buttons.matching(identifier: metric).firstMatch
+      XCTAssertTrue(option.waitForExistence(timeout: 5), "Missing metric option: \(metric)")
+      option.tap()
       XCTAssertFalse(app.staticTexts["run.unavailable"].exists)
       app.buttons["Distance"].tap()
       reveal(app.buttons["run.samples"])

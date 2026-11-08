@@ -107,7 +107,7 @@ public enum UnitSystem: String, Codable, CaseIterable, Sendable {
   public var distanceUnit: String { self == .metric ? "km" : "mi" }
   public var metersPerUnit: Double { self == .metric ? 1000 : 1609.344 }
   public func distance(_ meters: Double?) -> String {
-    meters.map { String(format: "%.2f", $0 / metersPerUnit) } ?? "—"
+    meters.map { String(format: "%.2f", locale: Locale.current, $0 / metersPerUnit) } ?? "—"
   }
   public func pace(_ secondsPerKm: Double?) -> String {
     guard let pace = secondsPerKm, pace.isFinite, pace > 0 else { return "—" }

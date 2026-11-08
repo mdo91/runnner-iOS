@@ -25,8 +25,8 @@ struct RunCharts: View {
   }
   private var unit: String {
     switch metric {
-    case .pace: return "min/\(units.distanceUnit)"
-    case .heartRate: return "bpm"
+    case .pace: return "RunCharts.Format.min.text".localized(String(describing: units.distanceUnit))
+    case .heartRate: return "Common.Copy.bpm.text".localized
     case .elevation: return units.elevationUnit
     case .power: return "W"
     case .stride: return "m"
@@ -39,62 +39,62 @@ struct RunCharts: View {
       metric == .pace
       ? units.pace(point.value)
       : y(point).formatted(.number.precision(.fractionLength(metric == .stride ? 2 : 1)))
-    return "\(UnitSystem.duration(point.elapsedSeconds)) elapsed · \(value) \(unit)"
+    return "RunCharts.Format.elapsed.text".localized(String(describing: UnitSystem.duration(point.elapsedSeconds)), String(describing: value), String(describing: unit))
   }
   var body: some View {
     Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Explore your run",
-          subtitle: "Chart points, splits, and route markers share the same selection.")
-        Picker("Measurement", selection: $metric) {
+          title: "Common.Copy.exploreYourRun.text".localized,
+          subtitle: "RunCharts.Copy.chartPointsSplitsAndRouteMarkersShareTheSame.text".localized)
+        Picker("Common.Copy.measurement.text".localized, selection: $metric) {
           ForEach(RunSeriesMetric.allCases, id: \.self) { Text($0.title).tag($0) }
         }.accessibilityIdentifier("run.metric")
         if let current, !current.points.isEmpty {
           if current.supportsDistanceAxis {
-            Picker("Chart axis", selection: $distanceAxis) {
-              Text("Elapsed time").tag(false)
-              Text("Distance").tag(true)
+            Picker("Common.Copy.chartAxis.text".localized, selection: $distanceAxis) {
+              Text("Common.Copy.elapsedTime.text".localized).tag(false)
+              Text("Common.Copy.distance.text".localized).tag(true)
             }.pickerStyle(.segmented)
           } else {
-            Text("Distance axis unavailable without validated distance intervals.").font(.caption)
+            Text("RunCharts.Copy.distanceAxisUnavailableWithoutValidatedDistanceIntervals.text".localized).font(.caption)
               .foregroundStyle(RunnerStyle.muted)
           }
           Chart {
             ForEach(current.points) { point in
               LineMark(
-                x: .value(distanceAxis ? units.distanceUnit : "Elapsed minutes", x(point)),
+                x: .value(distanceAxis ? units.distanceUnit : "Common.Copy.elapsedMinutes.text".localized, x(point)),
                 y: .value(metric.title, y(point)),
-                series: .value("Recording segment", point.segment)
+                series: .value("Common.Copy.recordingSegment.text".localized, point.segment)
               ).foregroundStyle(RunnerStyle.accent)
             }
             if let selection, let point = nearest(to: selection, in: current) {
-              RuleMark(x: .value("Selection", x(point))).foregroundStyle(RunnerStyle.muted)
-              PointMark(x: .value("Selected", x(point)), y: .value(metric.title, y(point)))
+              RuleMark(x: .value("Common.Copy.selection.text".localized, x(point))).foregroundStyle(RunnerStyle.muted)
+              PointMark(x: .value("Common.Copy.selected.text".localized, x(point)), y: .value(metric.title, y(point)))
                 .foregroundStyle(RunnerStyle.accent)
             }
           }.chartXSelection(value: $selectedX).chartYAxisLabel(unit).chartXAxisLabel(
-            distanceAxis ? units.distanceUnit : "Elapsed minutes"
+            distanceAxis ? units.distanceUnit : "Common.Copy.elapsedMinutes.text".localized
           )
           .chartYScale(domain: .automatic(reversed: metric == .pace)).frame(height: 190)
           Text(current.source).font(.caption).foregroundStyle(RunnerStyle.muted)
           if let selection {
             Text(
               nearest(to: selection, in: current).map(summary)
-                ?? "No measurement at this time (pause or recording gap)."
+                ?? "RunCharts.Copy.noMeasurementAtThisTimePauseOrRecordingGap.text".localized
             )
             .font(.subheadline.monospacedDigit()).accessibilityIdentifier("run.selection")
           }
-          Button("Explore samples") { explore = true }
+          Button("Common.Copy.exploreSamples.text".localized) { explore = true }
             .buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("run.samples")
           if selection != nil {
-            Button("Clear selection") {
+            Button("Common.Copy.clearSelection.text".localized) {
               selection = nil
               selectedX = nil
             }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("run.clearSelection")
           }
         } else {
-          Text("No recorded \(metric.title.lowercased()) available.").accessibilityIdentifier(
+          Text("RunCharts.Format.noRecordedAvailable.text".localized(String(describing: metric.title.lowercased()))).accessibilityIdentifier(
             "run.unavailable"
           ).foregroundStyle(RunnerStyle.muted)
         }
@@ -120,7 +120,7 @@ struct RunCharts: View {
               explore = false
             }.accessibilityIdentifier("run.sample.\(point.id)")
           }.navigationTitle(metric.title).toolbar {
-            ToolbarItem(placement: .confirmationAction) { Button("Done") { explore = false } }
+            ToolbarItem(placement: .confirmationAction) { Button("Common.Copy.done.text".localized) { explore = false } }
           }
         }
       }

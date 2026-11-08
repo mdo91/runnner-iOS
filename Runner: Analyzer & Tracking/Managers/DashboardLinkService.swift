@@ -1,8 +1,14 @@
 import Foundation
+import RunCore
 
 /// Owns the wire contract and delegates authenticated transport to the shared API client.
 @MainActor struct DashboardLinkService: DashboardLinkServicing {
-  var dashboardURL: URL? { APIClient.baseURL?.appendingPathComponent("dashboard") }
+  var dashboardURL: URL? {
+    guard let url = APIClient.baseURL?.appendingPathComponent("dashboard"),
+      var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return nil }
+    components.queryItems = [URLQueryItem(name: "lang", value: AppLanguage.current.rawValue)]
+    return components.url
+  }
 
   func review(code: DashboardLinkCode, userID: String) async throws -> DashboardBrowser {
     let data = try await APIClient.request(

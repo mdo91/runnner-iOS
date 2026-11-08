@@ -37,53 +37,53 @@ private struct ActivityContent: View {
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
           SectionTitle(
-            title: "Every run adds up",
-            subtitle: "Your running volume and progress over time.")
+            title: "ActivityScreen.Copy.everyRunAddsUp.text".localized,
+            subtitle: "ActivityScreen.Copy.yourRunningVolumeAndProgressOverTime.text".localized)
           activityChart(statistics)
           GoalsSection(statistics: statistics, units: units)
           TrainingCalendar(statistics: statistics, metric: metric, units: units) { drilldown = $0 }
           SectionTitle(
-            title: "Performance",
-            subtitle: "Current periods are totals so far. Previous periods show their full totals.")
+            title: "Common.Copy.performance.text".localized,
+            subtitle: "ActivityScreen.Copy.currentPeriodsAreTotalsSoFarPreviousPeriodsShow.text".localized)
           DashboardGrid {
             Surface {
               VStack(alignment: .leading, spacing: 18) {
                 compactPerformance(
-                  "Current month", interval: statistics.period(.month), statistics: statistics)
+                  "Common.Copy.currentMonth.text".localized, interval: statistics.period(.month), statistics: statistics)
                 Divider()
                 compactPerformance(
-                  "Last month", interval: statistics.period(.month, previous: true),
+                  "Common.Copy.lastMonth.text".localized, interval: statistics.period(.month, previous: true),
                   statistics: statistics)
               }
             }
             Surface {
               VStack(alignment: .leading, spacing: 18) {
                 compactPerformance(
-                  "Current week", interval: statistics.period(.weekOfYear), statistics: statistics)
+                  "Common.Copy.currentWeek.text".localized, interval: statistics.period(.weekOfYear), statistics: statistics)
                 Divider()
                 compactPerformance(
-                  "Last week", interval: statistics.period(.weekOfYear, previous: true),
+                  "Common.Copy.lastWeek.text".localized, interval: statistics.period(.weekOfYear, previous: true),
                   statistics: statistics)
               }
             }
           }
           SectionTitle(
-            title: "Improvements",
+            title: "Common.Copy.improvements.text".localized,
             subtitle:
-              "Compare the same elapsed portion of each period. Shorter months cap both comparison windows."
+              "ActivityScreen.Copy.compareTheSameElapsedPortionOfEachPeriodShorter.text".localized
           )
           DashboardGrid {
-            comparisonCard("Monthly progress", comparison: statistics.comparison(.month))
-            comparisonCard("Weekly progress", comparison: statistics.comparison(.weekOfYear))
+            comparisonCard("Common.Copy.monthlyProgress.text".localized, comparison: statistics.comparison(.month))
+            comparisonCard("Common.Copy.weeklyProgress.text".localized, comparison: statistics.comparison(.weekOfYear))
           }
           Text(
-            "Based on imported, completed runs and their start dates. Weeks follow your calendar settings. Distance follows your unit preference; average pace uses total moving time divided by measured distance. Different routes and effort can affect pace."
+            "ActivityScreen.Copy.basedOnImportedCompletedRunsAndTheirStartDates.text".localized
           )
           .font(.footnote).foregroundStyle(RunnerStyle.muted)
         }.padding(20).frame(maxWidth: 1200).frame(maxWidth: .infinity)
       }
     }
-    .background(RunnerStyle.background).navigationTitle("Activity")
+    .background(RunnerStyle.background).navigationTitle("Common.Copy.activity.text".localized)
     .sheet(isPresented: $dates) {
       CustomDates(
         start: customInterval?.start
@@ -118,39 +118,39 @@ private struct ActivityContent: View {
     return Surface {
       VStack(alignment: .leading, spacing: 18) {
         if typeSize.isAccessibilitySize {
-          Picker("Time period", selection: $range) {
+          Picker("Common.Copy.timePeriod.text".localized, selection: $range) {
             ForEach(ActivityRange.allCases, id: \.self) { Text($0.title).tag($0) }
           }.pickerStyle(.menu)
-          Picker("Chart metric", selection: $metric) {
+          Picker("Common.Copy.chartMetric.text".localized, selection: $metric) {
             ForEach(ActivityMetric.allCases, id: \.self) {
-              Text($0 == .movingTime ? "Time" : $0 == .elevation ? "Elevation" : $0.rawValue).tag(
+              Text($0 == .movingTime ? "Common.Copy.time.text".localized : $0 == .elevation ? "Common.Copy.elevation.text".localized : $0.title).tag(
                 $0
-              ).accessibilityLabel($0.rawValue)
+              ).accessibilityLabel($0.title)
             }
           }.pickerStyle(.menu)
         } else {
-          Picker("Time period", selection: $range) {
+          Picker("Common.Copy.timePeriod.text".localized, selection: $range) {
             ForEach(ActivityRange.allCases, id: \.self) { Text($0.title).tag($0) }
           }.pickerStyle(.segmented)
-          Picker("Chart metric", selection: $metric) {
+          Picker("Common.Copy.chartMetric.text".localized, selection: $metric) {
             ForEach(ActivityMetric.allCases, id: \.self) {
-              Text($0 == .movingTime ? "Time" : $0 == .elevation ? "Elevation" : $0.rawValue).tag(
+              Text($0 == .movingTime ? "Common.Copy.time.text".localized : $0 == .elevation ? "Common.Copy.elevation.text".localized : $0.title).tag(
                 $0
-              ).accessibilityLabel($0.rawValue)
+              ).accessibilityLabel($0.title)
             }
           }.pickerStyle(.segmented)
         }
         HStack {
-          Button("Custom dates") { dates = true }.accessibilityIdentifier("activity.customDates")
+          Button("Common.Copy.customDates.text".localized) { dates = true }.accessibilityIdentifier("activity.customDates")
           if customInterval != nil {
-            Button("Use preset") {
+            Button("Common.Copy.usePreset.text".localized) {
               customInterval = nil
               selectedDate = nil
             }
           }
         }.buttonStyle(RunnerSecondaryButtonStyle())
         VStack(alignment: .leading, spacing: 6) {
-          Text(customInterval == nil ? rangeTitle : "Custom dates").font(.headline).foregroundStyle(
+          Text(customInterval == nil ? rangeTitle : "Common.Copy.customDates.text".localized).font(.headline).foregroundStyle(
             RunnerStyle.muted)
           Text(metric.formatted(total, units: units))
             .accessibilityIdentifier("activity.total")
@@ -168,8 +168,8 @@ private struct ActivityContent: View {
             ForEach(buckets) { bucket in
               if let value = metric.value(bucket.summary, units: units) {
                 BarMark(
-                  x: .value("Date", bucket.interval.start, unit: component),
-                  y: .value(metric.rawValue, value)
+                  x: .value("Common.Copy.date.text".localized, bucket.interval.start, unit: component),
+                  y: .value(metric.title, value)
                 )
                 .foregroundStyle(RunnerStyle.accent).cornerRadius(4)
                 .opacity(selected == nil || selected?.id == bucket.id ? 1 : 0.35)
@@ -180,7 +180,7 @@ private struct ActivityContent: View {
             }
             if let selected {
               RuleMark(
-                x: .value("Selected date", selected.interval.start, unit: component)
+                x: .value("Common.Copy.selectedDate.text".localized, selected.interval.start, unit: component)
               )
               .foregroundStyle(RunnerStyle.muted).lineStyle(StrokeStyle(dash: [4]))
               .accessibilityHidden(true)
@@ -225,29 +225,29 @@ private struct ActivityContent: View {
           )
           .font(.subheadline).monospacedDigit().accessibilityAddTraits(.updatesFrequently)
           .accessibilityIdentifier("activity.selection")
-          Button("View runs") {
+          Button("Common.Copy.viewRuns.text".localized) {
             drilldown = RunDrilldown(
               title: bucketLabel(selected), runIDs: statistics.runIDs(in: selected.interval))
           }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("activity.viewRuns")
         } else if total.runCount > 0 {
           Text(
-            "Select a chart bucket to explore its totals and runs."
+            "ActivityScreen.Copy.selectAChartBucketToExploreItsTotalsAnd.text".localized
           )
           .font(.caption).foregroundStyle(RunnerStyle.muted)
         }
         if total.runCount == 0 {
           Label(
-            "No runs in this period. Imported runs will appear here.", systemImage: "figure.run"
+            "ActivityScreen.Copy.noRunsInThisPeriodImportedRunsWillAppear.text".localized, systemImage: "figure.run"
           )
           .font(.subheadline).foregroundStyle(RunnerStyle.muted)
         }
         if metric.missingCount(total) > 0 {
           Text(
-            "\(metric.missingCount(total)) runs have no \(metric.rawValue.lowercased()) measurement. Totals include available data."
+            "ActivityScreen.Format.runsHaveNoMeasurementTotalsIncludeAvailableData.text".localized(String(describing: metric.missingCount(total)), String(describing: metric.title.lowercased()))
           ).font(.footnote).foregroundStyle(RunnerStyle.muted)
         }
         if total.runCount > 0 {
-          Button("Explore chart data") { bucketList = true }
+          Button("Common.Copy.exploreChartData.text".localized) { bucketList = true }
             .buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier(
             "activity.chartData")
         }
@@ -263,8 +263,8 @@ private struct ActivityContent: View {
           }
           .accessibilityIdentifier(
             "activity.bucket.\(statistics.calendar.component(.day, from: bucket.interval.start))")
-        }.navigationTitle("Chart data").toolbar {
-          ToolbarItem(placement: .confirmationAction) { Button("Done") { bucketList = false } }
+        }.navigationTitle("Common.Copy.chartData.text".localized).toolbar {
+          ToolbarItem(placement: .confirmationAction) { Button("Common.Copy.done.text".localized) { bucketList = false } }
         }
       }
     }
@@ -279,20 +279,20 @@ private struct ActivityContent: View {
         title: title, subtitle: dateRange(interval, throughNow: interval.end == statistics.now))
       MetricGrid {
         MetricTile(
-          title: "Runs", value: "\(summary.runCount)", unit: "completed", symbol: "figure.run")
+          title: "Common.Copy.runs.text".localized, value: "\(summary.runCount)", unit: "completed", symbol: "figure.run")
         MetricTile(
-          title: "Distance", value: distance(summary), unit: units.distanceUnit,
+          title: "Common.Copy.distance.text".localized, value: distance(summary), unit: units.distanceUnit,
           symbol: "point.topleft.down.to.point.bottomright.curvepath")
         MetricTile(
-          title: "Moving time", value: summary.movingTimeSeconds.map(UnitSystem.duration) ?? "—",
+          title: "Common.Copy.movingTime.text".localized, value: summary.movingTimeSeconds.map(UnitSystem.duration) ?? "—",
           unit: "h:mm:ss / m:ss", symbol: "stopwatch")
         MetricTile(
-          title: "Average pace", value: units.pace(summary.averagePaceSecondsPerKm),
-          unit: "min/\(units.distanceUnit)", symbol: "speedometer")
+          title: "Common.Copy.averagePace.text".localized, value: units.pace(summary.averagePaceSecondsPerKm),
+          unit: "ActivityScreen.Format.min.text".localized(String(describing: units.distanceUnit)), symbol: "speedometer")
       }
       if summary.missingDistanceCount > 0 {
         Text(
-          "\(summary.missingDistanceCount) runs have no distance. Totals use available measurements."
+          "ActivityScreen.Format.runsHaveNoDistanceTotalsUseAvailableMeasurements.text".localized(String(describing: summary.missingDistanceCount))
         ).font(.footnote).foregroundStyle(.secondary)
       }
     }
@@ -303,11 +303,11 @@ private struct ActivityContent: View {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(title: title)
         Text(
-          "\(comparisonRange(comparison.currentInterval)) vs \(comparisonRange(comparison.previousInterval))"
+          "ActivityScreen.Format.vs.text".localized(String(describing: comparisonRange(comparison.currentInterval)), String(describing: comparisonRange(comparison.previousInterval)))
         )
         .font(.caption).foregroundStyle(RunnerStyle.muted)
         if comparison.current.runCount == 0 && comparison.previous.runCount == 0 {
-          Text("Complete a run in these periods to start comparing your progress.")
+          Text("ActivityScreen.Copy.completeARunInThesePeriodsToStartComparing.text".localized)
             .foregroundStyle(RunnerStyle.muted)
         } else {
           changeRow(runChange(comparison.runCountChange), symbol: "figure.run")
@@ -315,21 +315,21 @@ private struct ActivityContent: View {
             changeRow(distanceChangeText(distanceChange), symbol: "arrow.left.and.right")
           } else {
             changeRow(
-              "Distance comparison unavailable: some runs have no distance.", symbol: "info.circle")
+              "ActivityScreen.Copy.distanceComparisonUnavailableSomeRunsHaveNoDistance.text".localized, symbol: "info.circle")
           }
           if let pace = comparison.paceImprovementPercent {
             let text =
               abs(pace) < 0.05
-              ? "Average pace unchanged"
-              : "\(abs(pace).formatted(.number.precision(.fractionLength(1))))% \(pace > 0 ? "faster" : "slower") average pace"
+              ? "Common.Copy.averagePaceUnchanged.text".localized
+              : "ActivityScreen.Format.averagePace.text".localized(String(describing: abs(pace).formatted(.number.precision(.fractionLength(1)))), String(describing: pace > 0 ? "Common.Copy.faster.text".localized : "Common.Copy.slower.text".localized))
             changeRow(text, symbol: "speedometer")
           } else {
             changeRow(
-              "Pace comparison needs measured distance and moving time for runs in both periods.",
+              "ActivityScreen.Copy.paceComparisonNeedsMeasuredDistanceAndMovingTimeFor.text".localized,
               symbol: "speedometer")
           }
           if comparison.previous.runCount == 0 {
-            Text("No runs in the previous comparison window yet.")
+            Text("ActivityScreen.Copy.noRunsInThePreviousComparisonWindowYet.text".localized)
               .font(.footnote).foregroundStyle(RunnerStyle.muted)
           }
         }
@@ -344,10 +344,10 @@ private struct ActivityContent: View {
 
   private var rangeTitle: String {
     switch range {
-    case .month: return "Current month"
-    case .threeMonths: return "Last 3 months · including this month"
-    case .sixMonths: return "Last 6 months · including this month"
-    case .year: return "Current year"
+    case .month: return "Common.Copy.currentMonth.text".localized
+    case .threeMonths: return "ActivityScreen.Copy.last3MonthsIncludingThisMonth.text".localized
+    case .sixMonths: return "ActivityScreen.Copy.last6MonthsIncludingThisMonth.text".localized
+    case .year: return "Common.Copy.currentYear.text".localized
     }
   }
 
@@ -362,7 +362,7 @@ private struct ActivityContent: View {
   private func dateRange(_ interval: DateInterval, throughNow: Bool) -> String {
     let end = throughNow ? interval.end : max(interval.start, interval.end.addingTimeInterval(-1))
     return
-      "\(interval.start.formatted(date: .abbreviated, time: .omitted)) – \(end.formatted(date: .abbreviated, time: .omitted))\(throughNow ? " · so far" : "")"
+      "\(interval.start.formatted(date: .abbreviated, time: .omitted)) – \(end.formatted(date: .abbreviated, time: .omitted))\(throughNow ? "Common.Copy.soFar.text".localized : "")"
   }
 
   private func comparisonRange(_ interval: DateInterval) -> String {
@@ -371,13 +371,13 @@ private struct ActivityContent: View {
 
   private func runChange(_ change: Int) -> String {
     change == 0
-      ? "Same number of runs"
-      : "\(abs(change)) \(abs(change) == 1 ? "run" : "runs") \(change > 0 ? "more" : "fewer")"
+      ? "ActivityScreen.Copy.sameNumberOfRuns.text".localized
+      : "\(abs(change)) \(abs(change) == 1 ? "run" : "runs") \(change > 0 ? "Common.Copy.more.text".localized : "Common.Copy.fewer.text".localized)"
   }
 
   private func distanceChangeText(_ change: Double) -> String {
     abs(change) < 5
-      ? "Distance unchanged"
-      : "\(units.distance(abs(change))) \(units.distanceUnit) \(change > 0 ? "more" : "less")"
+      ? "Common.Copy.distanceUnchanged.text".localized
+      : "\(units.distance(abs(change))) \(units.distanceUnit) \(change > 0 ? "Common.Copy.more.text".localized : "Common.Copy.less.text".localized)"
   }
 }

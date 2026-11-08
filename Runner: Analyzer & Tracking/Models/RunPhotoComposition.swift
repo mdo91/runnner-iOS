@@ -9,10 +9,10 @@ enum RunPhotoFormat: String, CaseIterable, Identifiable {
   var id: Self { self }
   var label: String {
     switch self {
-    case .original: return "Original"
-    case .story: return "Story 9:16"
-    case .portrait: return "Portrait 4:5"
-    case .square: return "Square 1:1"
+    case .original: return "Common.Copy.original.text".localized
+    case .story: return "Common.Copy.story916.text".localized
+    case .portrait: return "Common.Copy.portrait45.text".localized
+    case .square: return "Common.Copy.square11.text".localized
     }
   }
   func outputSize(for image: CGSize) -> CGSize {
@@ -42,7 +42,19 @@ enum RunPhotoAlignment: String, CaseIterable, Identifiable {
 enum RunPhotoRouteColor: String, CaseIterable, Identifiable {
   case white, runnerYellow, orange, red, green, blue, purple, pink, black
   var id: Self { self }
-  var label: String { self == .runnerYellow ? "Runner yellow" : rawValue.capitalized }
+  var label: String {
+    switch self {
+    case .white: return "Common.Copy.white.text".localized
+    case .runnerYellow: return "Common.Copy.runnerYellow.text".localized
+    case .orange: return "Common.Copy.orange.text".localized
+    case .red: return "Common.Copy.red.text".localized
+    case .green: return "Common.Copy.green.text".localized
+    case .blue: return "Common.Copy.blue.text".localized
+    case .purple: return "Common.Copy.purple.text".localized
+    case .pink: return "Common.Copy.pink.text".localized
+    case .black: return "Common.Copy.black.text".localized
+    }
+  }
   var rgb: UInt32 {
     switch self {
     case .white: return 0xFFFFFF
@@ -67,19 +79,19 @@ enum RunPhotoExportResult {
   var videoURL: URL? { if case .savedVideo(let url) = self { return url }; return nil }
   var title: String {
     switch self {
-    case .saved: return "Image saved"
-    case .savedVideo: return "Video saved"
-    case .shared: return "Image shared"
-    case .sharedVideo: return "Video shared"
-    case .failed: return "Couldn’t share"
+    case .saved: return "Common.Copy.imageSaved.text".localized
+    case .savedVideo: return "Common.Copy.videoSaved.text".localized
+    case .shared: return "Common.Copy.imageShared.text".localized
+    case .sharedVideo: return "Common.Copy.videoShared.text".localized
+    case .failed: return "Common.Copy.couldnTShare.text".localized
     }
   }
   var message: String {
     switch self {
-    case .saved: return "Your run photo was saved to Photos. You can also share it to another app."
-    case .savedVideo: return "Your run video was saved to Photos. You can also share it to another app."
-    case .shared: return "Your run photo was shared using the selected app or service."
-    case .sharedVideo: return "Your run video was shared using the selected app or service."
+    case .saved: return "RunPhotoComposition.Copy.yourRunPhotoWasSavedToPhotosYouCan.text".localized
+    case .savedVideo: return "RunPhotoComposition.Copy.yourRunVideoWasSavedToPhotosYouCan.text".localized
+    case .shared: return "RunPhotoComposition.Copy.yourRunPhotoWasSharedUsingTheSelectedApp.text".localized
+    case .sharedVideo: return "RunPhotoComposition.Copy.yourRunVideoWasSharedUsingTheSelectedApp.text".localized
     case .failed(let message): return message
     }
   }
@@ -321,6 +333,39 @@ struct RunPhotoComposition {
       return CGRect(x: transform.center.x * canvasSize.width - content.width * transform.scale / 2,
         y: transform.center.y * canvasSize.height - content.height * transform.scale / 2,
         width: content.width * transform.scale, height: content.height * transform.scale).contains(point)
+    }
+  }
+}
+
+extension RunPhotoLayer {
+  var title: String {
+    switch self {
+    case .stats: return "Common.Copy.stats.text".localized
+    case .route: return "Common.Copy.route.text".localized
+    case .icon: return "Common.Copy.icon.text".localized
+    case .photo: return "Common.Copy.crop.text".localized
+    }
+  }
+}
+
+extension RunPhotoAlignment {
+  var title: String {
+    switch self {
+    case .leading: return "Common.Copy.leading.text".localized
+    case .center: return "Common.Copy.center.text".localized
+    case .trailing: return "Common.Copy.trailing.text".localized
+    }
+  }
+}
+
+extension RunPhotoFontStyle {
+  var title: String {
+    switch self {
+    case .sport: return "Common.Copy.sport.text".localized
+    case .clean: return "Common.Copy.clean.text".localized
+    case .rounded: return "Common.Copy.rounded.text".localized
+    case .mono: return "Common.Copy.mono.text".localized
+    case .serif: return "Common.Copy.serif.text".localized
     }
   }
 }

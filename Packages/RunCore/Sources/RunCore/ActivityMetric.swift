@@ -15,7 +15,7 @@ public enum ActivityMetric: String, CaseIterable, Codable, Sendable {
   }
   public func unit(_ units: UnitSystem) -> String {
     switch self {
-    case .runs: return "runs"
+    case .runs: return "Common.Copy.runs.text".localized
     case .distance: return units.distanceUnit
     case .movingTime: return "min"
     case .elevation: return units.elevationUnit
@@ -23,7 +23,7 @@ public enum ActivityMetric: String, CaseIterable, Codable, Sendable {
   }
   public func formatted(_ summary: ActivitySummary, units: UnitSystem) -> String {
     switch self {
-    case .runs: return "\(summary.runCount) runs"
+    case .runs: return "Common.Count.runs.text".localized(summary.runCount)
     case .distance: return "\(units.distance(summary.distanceMeters)) \(units.distanceUnit)"
     case .movingTime: return summary.movingTimeSeconds.map(UnitSystem.duration) ?? "—"
     case .elevation: return "\(units.elevation(summary.elevationGainMeters)) \(units.elevationUnit)"
@@ -42,6 +42,17 @@ extension UnitSystem {
   public var elevationUnit: String { self == .metric ? "m" : "ft" }
   public var metersPerElevationUnit: Double { self == .metric ? 1 : 0.3048 }
   public func elevation(_ meters: Double?) -> String {
-    meters.map { String(format: "%.0f", $0 / metersPerElevationUnit) } ?? "—"
+    meters.map { String(format: "%.0f", locale: Locale.current, $0 / metersPerElevationUnit) } ?? "—"
+  }
+}
+
+extension ActivityMetric {
+  public var title: String {
+    switch self {
+    case .runs: return "Common.Copy.runs.text".localized
+    case .distance: return "Common.Copy.distance.text".localized
+    case .movingTime: return "Common.Copy.movingTime3.text".localized
+    case .elevation: return "Common.Copy.elevationGain.text".localized
+    }
   }
 }

@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "width": 1320,
+  "height": 2868,
+  "localizations": {
+    "en": {
+      "brand": "RUNNER",
+      "sampleNote": "Example runs · iPhone app",
+      "screens": [
+        {
+          "id": "01-overview",
+          "eyebrow": "YOUR RUN, IN FOCUS",
+          "headline": "Understand\nevery run.",
+          "subtitle": "Bring your Apple Health workouts together.",
+          "captures": [
+            "01-overview"
+          ],
+          "artwork": "Welcome"
+        },
+        {
+          "id": "02-charts",
+          "eyebrow": "LOOK CLOSER",
+          "headline": "Find your\nrhythm.",
+          "subtitle": "Explore recorded pace, heart rate and more.",
+          "captures": [
+            "02-charts"
+          ],
+          "artwork": "Insights"
+        },
+        {
+          "id": "03-splits",
+          "eyebrow": "EVERY KILOMETER COUNTS",
+          "headline": "See how\nit unfolded.",
+          "subtitle": "Explore your splits and recorded routes.",
+          "captures": [
+            "03-route",
+            "03-splits"
+          ],
+          "artwork": "Health",
+          "captureLabels": [
+            "YOUR ROUTE",
+            "YOUR SPLITS"
+          ]
+        },
+        {
+          "id": "04-history",
+          "eyebrow": "YOUR RUNNING JOURNAL",
+          "headline": "Keep the\nstory going.",
+          "subtitle": "Browse your runs. Find the details that matter.",
+          "captures": [
+            "04-history"
+          ],
+          "artwork": "Progress"
+        },
+        {
+          "id": "05-activity",
+          "eyebrow": "MAKE IT A ROUTINE",
+          "headline": "Small steps.\nVisible progress.",
+          "subtitle": "Follow your activity and set recurring goals.",
+          "captures": [
+            "05-activity",
+            "05-goals"
+          ],
+          "captureLabels": [
+            "YOUR ACTIVITY",
+            "YOUR GOALS"
+          ],
+          "artwork": "Progress"
+        },
+        {
+          "id": "06-trends",
+          "eyebrow": "MEASURED. THEN EXPLAINED.",
+          "headline": "Notice the\nbigger picture.",
+          "subtitle": "Explore trends, with optional AI explanations.",
+          "captures": [
+            "06-trends",
+            "06-analysis"
+          ],
+          "captureLabels": [
+            "RECORDED TRENDS",
+            "OPTIONAL AI"
+          ],
+          "artwork": "Insights"
+        },
+        {
+          "id": "07-photo",
+          "eyebrow": "YOUR FINISH, YOUR STYLE",
+          "headline": "Make your\nmiles shareable.",
+          "subtitle": "Add your running statistics to a photo.",
+          "captures": [
+            "07-photo"
+          ],
+          "artwork": "Share"
+        },
+        {
+          "id": "08-video",
+          "eyebrow": "KEEP THE MOMENT MOVING",
+          "headline": "Your run.\nIn motion.",
+          "subtitle": "Style your video with stats and an optional route.",
+          "captures": [
+            "08-video"
+          ],
+          "artwork": "Share"
+        }
+      ]
+    },
+    "de": {
+      "brand": "RUNNER",
+      "sampleNote": "Beispielläufe · iPhone-App",
+      "screens": [
+        {
+          "id": "01-overview",
+          "eyebrow": "DEIN LAUF IM FOKUS",
+          "headline": "Verstehe\njeden Lauf.",
+          "subtitle": "Deine Lauftrainings aus Apple Health an einem Ort.",
+          "captures": [
+            "01-overview"
+          ],
+          "artwork": "Welcome"
+        },
+        {
+          "id": "02-charts",
+          "eyebrow": "SCHAU GENAUER HIN",
+          "headline": "Finde deinen\nRhythmus.",
+          "subtitle": "Erkunde Tempo, Herzfrequenz und weitere Messwerte.",
+          "captures": [
+            "02-charts"
+          ],
+          "artwork": "Insights"
+        },
+        {
+          "id": "03-splits",
+          "eyebrow": "JEDER KILOMETER ZÄHLT",
+          "headline": "Dein Lauf.\nSchritt für Schritt.",
+          "subtitle": "Erkunde Zwischenzeiten und aufgezeichnete Routen.",
+          "captures": [
+            "03-route",
+            "03-splits"
+          ],
+          "artwork": "Health",
+          "captureLabels": [
+            "DEINE ROUTE",
+            "DEINE ZWISCHENZEITEN"
+          ]
+        },
+        {
+          "id": "04-history",
+          "eyebrow": "DEIN LAUFTAGEBUCH",
+          "headline": "Deine Geschichte\ngeht weiter.",
+          "subtitle": "Durchsuche deine Läufe und entdecke die Details.",
+          "captures": [
+            "04-history"
+          ],
+          "artwork": "Progress"
+        },
+        {
+          "id": "05-activity",
+          "eyebrow": "MACH ES ZUR ROUTINE",
+          "headline": "Kleine Schritte.\nSichtbarer Erfolg.",
+          "subtitle": "Verfolge deine Aktivität und setze wiederkehrende Ziele.",
+          "captures": [
+            "05-activity",
+            "05-goals"
+          ],
+          "captureLabels": [
+            "DEINE AKTIVITÄT",
+            "DEINE ZIELE"
+          ],
+          "artwork": "Progress"
+        },
+        {
+          "id": "06-trends",
+          "eyebrow": "GEMESSEN. DANN ERKLÄRT.",
+          "headline": "Erkenne das\ngroße Ganze.",
+          "subtitle": "Entdecke Trends – mit optionalen KI-Erklärungen.",
+          "captures": [
+            "06-trends",
+            "06-analysis"
+          ],
+          "captureLabels": [
+            "GEMESSENE TRENDS",
+            "OPTIONALE KI"
+          ],
+          "artwork": "Insights"
+        },
+        {
+          "id": "07-photo",
+          "eyebrow": "DEIN ZIELEINLAUF. DEIN STIL.",
+          "headline": "Deine Kilometer.\nDein Moment.",
+          "subtitle": "Setze deine Laufdaten auf ein Foto.",
+          "captures": [
+            "07-photo"
+          ],
+          "artwork": "Share"
+        },
+        {
+          "id": "08-video",
+          "eyebrow": "HALTE DEN MOMENT IN BEWEGUNG",
+          "headline": "Dein Lauf.\nIn Bewegung.",
+          "subtitle": "Gestalte Videos mit Laufdaten und optionaler Route.",
+          "captures": [
+            "08-video"
+          ],
+          "artwork": "Share"
+        }
+      ]
+    }
+  }
+}

@@ -15,20 +15,20 @@ struct TrendsScreen: View {
     ScrollView {
       VStack(alignment: .leading, spacing: 16) {
         SectionTitle(
-          title: "Built one run at a time",
-          subtitle: "Your progress, grounded in recorded measurements.")
+          title: "TrendsScreen.Copy.builtOneRunAtATime.text".localized,
+          subtitle: "TrendsScreen.Copy.yourProgressGroundedInRecordedMeasurements.text".localized)
         DashboardGrid {
           Surface {
             VStack(alignment: .leading, spacing: 16) {
-              SectionTitle(title: "Recent distance")
+              SectionTitle(title: "Common.Copy.recentDistance.text".localized)
               if runs.isEmpty {
-                Text("Complete a run to begin your trends.").foregroundStyle(RunnerStyle.muted)
+                Text("TrendsScreen.Copy.completeARunToBeginYourTrends.text".localized).foregroundStyle(RunnerStyle.muted)
               } else {
                 Chart(Array(runs.filter { $0.distanceMeters != nil }.prefix(20).reversed())) {
                   run in
                   BarMark(
-                    x: .value("Date", run.start, unit: .day),
-                    y: .value("Distance", (run.distanceMeters ?? 0) / units.metersPerUnit)
+                    x: .value("Common.Copy.date.text".localized, run.start, unit: .day),
+                    y: .value("Common.Copy.distance.text".localized, (run.distanceMeters ?? 0) / units.metersPerUnit)
                   ).foregroundStyle(RunnerStyle.accent)
                 }.chartYAxisLabel(units.distanceUnit).frame(height: 190)
               }
@@ -37,24 +37,24 @@ struct TrendsScreen: View {
           Surface {
             VStack(alignment: .leading, spacing: 14) {
               SectionTitle(
-                title: "Cardiovascular endurance",
-                subtitle: "Comparable runs, recorded VO₂ max, and recovery")
+                title: "Common.Copy.cardiovascularEndurance.text".localized,
+                subtitle: "TrendsScreen.Copy.comparableRunsRecordedVOMaxAndRecovery.text".localized)
               if let baseline = analytics.snapshot.baseline {
                 if let change = baseline.paceChangePercent {
                   Text(
-                    "\(abs(change).formatted(.number.precision(.fractionLength(1))))% \(change<0 ? "faster":"slower") pace"
+                    "TrendsScreen.Format.pace.text".localized(String(describing: abs(change).formatted(.number.precision(.fractionLength(1)))), String(describing: change<0 ? "Common.Copy.faster.text".localized:"Common.Copy.slower.text".localized))
                   ).font(.title2.bold())
                   Text(
-                    "Compared with \(baseline.comparableRunCount) prior runs of similar distance, setting, and heart rate. Weather, terrain, and effort still influence this comparison."
+                    "TrendsScreen.Format.comparedWithPriorRunsOfSimilarDistanceSetting.text".localized(String(describing: baseline.comparableRunCount))
                   ).font(.subheadline).foregroundStyle(RunnerStyle.muted)
                 } else {
-                  Text("Building your baseline").font(.headline)
+                  Text("Common.Copy.buildingYourBaseline.text".localized).font(.headline)
                   Text(
-                    "At least five comparable runs with sufficient heart-rate coverage are needed before showing a pace trend. You have \(baseline.comparableRunCount)."
+                    "TrendsScreen.Format.atLeastFiveComparableRunsWithSufficientHeart.text".localized(String(describing: baseline.comparableRunCount))
                   ).font(.subheadline).foregroundStyle(RunnerStyle.muted)
                 }
               } else {
-                Text("Import your runs to build an endurance baseline.").foregroundStyle(
+                Text("TrendsScreen.Copy.importYourRunsToBuildAnEnduranceBaseline.text".localized).foregroundStyle(
                   RunnerStyle.muted)
               }
             }
@@ -62,23 +62,23 @@ struct TrendsScreen: View {
         }
         DashboardGrid {
           VStack(alignment: .leading, spacing: 12) {
-            Picker("Measurement trend", selection: $kind) {
-              Text("VO₂ max").tag("HKQuantityTypeIdentifierVO2Max")
-              Text("Recovery").tag("HKQuantityTypeIdentifierHeartRateRecoveryOneMinute")
+            Picker("Common.Copy.measurementTrend.text".localized, selection: $kind) {
+              Text("Common.Copy.vOMax.text".localized).tag("HKQuantityTypeIdentifierVO2Max")
+              Text("Common.Copy.recovery.text".localized).tag("HKQuantityTypeIdentifierHeartRateRecoveryOneMinute")
             }.pickerStyle(.segmented).onChange(of: kind) { _, _ in selectedDate = nil }
             measurementCard(
-              kind: kind, title: kind.contains("VO2") ? "Recorded VO₂ max" : "Heart-rate recovery",
-              unit: kind.contains("VO2") ? "mL/kg/min" : "bpm after one minute",
+              kind: kind, title: kind.contains("VO2") ? "Common.Copy.recordedVOMax.text".localized : "Common.Copy.heartRateRecovery.text".localized,
+              unit: kind.contains("VO2") ? "mL/kg/min" : "TrendsScreen.Copy.bpmAfterOneMinute.text".localized,
               symbol: kind.contains("VO2") ? "lungs" : "heart")
-            Button("Runs in distance trend") {
+            Button("TrendsScreen.Copy.runsInDistanceTrend.text".localized) {
               drilldown = RunDrilldown(
-                title: "Recent runs",
+                title: "Common.Copy.recentRuns.text".localized,
                 runIDs: Array(runs.filter { $0.distanceMeters != nil }.prefix(20).map(\.id)))
             }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("trends.runs")
             if !analytics.snapshot.baselineRunIDs.isEmpty {
-              Button("Runs in endurance baseline") {
+              Button("TrendsScreen.Copy.runsInEnduranceBaseline.text".localized) {
                 drilldown = RunDrilldown(
-                  title: "Comparable runs", runIDs: analytics.snapshot.baselineRunIDs)
+                  title: "Common.Copy.comparableRuns.text".localized, runIDs: analytics.snapshot.baselineRunIDs)
               }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("trends.baselineRuns")
             }
           }
@@ -86,10 +86,10 @@ struct TrendsScreen: View {
             snapshot: analytics.snapshot, rows: rows, measurements: measurements, units: units)
         }
         Text(
-          "These are fitness trends, not a medical assessment. Runner does not estimate missing VO₂ max or recovery values."
+          "TrendsScreen.Copy.theseAreFitnessTrendsNotAMedicalAssessmentRunner.text".localized
         ).font(.footnote).foregroundStyle(RunnerStyle.muted)
       }.padding(20).frame(maxWidth: 1200).frame(maxWidth: .infinity)
-    }.background(RunnerStyle.background).navigationTitle("Trends")
+    }.background(RunnerStyle.background).navigationTitle("Common.Copy.trends.text".localized)
       .sheet(item: $drilldown) {
         RunExplorer(selection: $0, rows: rows, measurements: measurements, units: units)
       }
@@ -109,9 +109,9 @@ struct TrendsScreen: View {
           ).foregroundStyle(RunnerStyle.muted)
           if values.count > 1 {
             Chart(values) { value in
-              LineMark(x: .value("Date", value.date), y: .value(title, value.value))
+              LineMark(x: .value("Common.Copy.date.text".localized, value.date), y: .value(title, value.value))
                 .foregroundStyle(RunnerStyle.accent)
-              PointMark(x: .value("Date", value.date), y: .value(title, value.value))
+              PointMark(x: .value("Common.Copy.date.text".localized, value.date), y: .value(title, value.value))
                 .foregroundStyle(RunnerStyle.accent)
             }.chartXSelection(value: $selectedDate).frame(height: 140)
           }
@@ -125,7 +125,7 @@ struct TrendsScreen: View {
               "\(measurement.date.formatted(date: .abbreviated, time: .omitted)): \(measurement.value.formatted(.number.precision(.fractionLength(1)))) \(unit)"
             ).accessibilityIdentifier("trends.selection")
           }
-          DisclosureGroup("Recorded measurements") {
+          DisclosureGroup("Common.Copy.recordedMeasurements.text".localized) {
             ForEach(values) { value in
               Button(
                 "\(value.date.formatted(date: .abbreviated, time: .omitted)) · \(value.value.formatted(.number.precision(.fractionLength(1))))"
@@ -134,7 +134,7 @@ struct TrendsScreen: View {
             }
           }
         } else {
-          Text("No recorded measurement available.").font(.subheadline).foregroundStyle(
+          Text("TrendsScreen.Copy.noRecordedMeasurementAvailable.text".localized).font(.subheadline).foregroundStyle(
             RunnerStyle.muted)
         }
       }

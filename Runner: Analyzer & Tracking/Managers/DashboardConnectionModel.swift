@@ -1,3 +1,4 @@
+import RunCore
 import Combine
 import Foundation
 
@@ -81,7 +82,7 @@ import Foundation
       state = .idle
       if !Task.isCancelled {
         message =
-          "This code could not be reviewed. Check your connection or request a new code in the browser."
+          "DashboardConnectionModel.Copy.thisCodeCouldNotBeReviewedCheckYourConnection.text".localized
       }
     }
   }
@@ -116,12 +117,12 @@ import Foundation
         return
       }
       state = .reviewed(review)
-      message = "Approval could not finish. Check your connection or request a new code."
+      message = "DashboardConnectionModel.Copy.approvalCouldNotFinishCheckYourConnectionOrRequest.text".localized
     }
   }
 
   private func expireReview() {
     state = .idle
-    message = "This code has expired. Request a new code in the browser."
+    message = "DashboardConnectionModel.Copy.thisCodeHasExpiredRequestANewCodeIn.text".localized
   }
 }

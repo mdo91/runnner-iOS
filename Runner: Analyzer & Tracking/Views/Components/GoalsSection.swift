@@ -11,10 +11,10 @@ struct GoalsSection: View {
     Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Goals and consistency",
-          subtitle: "Recurring targets · completed runs in the current calendar period")
+          title: "Common.Copy.goalsAndConsistency.text".localized,
+          subtitle: "GoalsSection.Copy.recurringTargetsCompletedRunsInTheCurrentCalendarPeriod.text".localized)
         if settings.preferences.goals.isEmpty {
-          Text("Set a target to track your running routine.").font(.headline).foregroundStyle(
+          Text("GoalsSection.Copy.setATargetToTrackYourRunningRoutine.text".localized).font(.headline).foregroundStyle(
             .primary)
         }
         ForEach(settings.preferences.goals) { goal in
@@ -24,7 +24,7 @@ struct GoalsSection: View {
             editor = true
           } label: {
             VStack(alignment: .leading, spacing: 8) {
-              Text("\(goal.period.rawValue) \(goal.metric.rawValue.lowercased())").font(.headline)
+              Text(goal.title()).font(.headline)
               Text(
                 "\(format(amount, metric: goal.metric)) / \(format(goal.target, metric: goal.metric))"
               ).monospacedDigit().accessibilityIdentifier("goal.progress.\(goal.id.uuidString)")
@@ -34,20 +34,20 @@ struct GoalsSection: View {
               if goal.metric.missingCount(
                 statistics.summary(in: statistics.period(goal.period.component))) > 0
               {
-                Text("Progress includes available measurements; some runs have missing data.").font(
+                Text("GoalsSection.Copy.progressIncludesAvailableMeasurementsSomeRunsHaveMissingData.text".localized).font(
                   .caption)
               }
             }
           }.buttonStyle(.plain).accessibilityIdentifier("goal.edit.\(goal.id.uuidString)")
         }
-        Button("Add goal") {
+        Button("Common.Copy.addGoal.text".localized) {
           editing = nil
           editor = true
         }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("goal.add")
         let days = statistics.buckets(in: statistics.period(.month), component: .day).filter {
           $0.summary.runCount > 0
         }.count
-        Text("\(days) active days this month").font(.headline).foregroundStyle(.primary)
+        Text("GoalsSection.Count.activeDays.text".localized(days)).font(.headline).foregroundStyle(.primary)
           .accessibilityIdentifier(
             "goals.consistency")
       }
@@ -56,7 +56,7 @@ struct GoalsSection: View {
   private func format(_ value: Double?, metric: ActivityMetric) -> String {
     guard let value else { return "—" }
     switch metric {
-    case .runs: return "\(value.formatted(.number.precision(.fractionLength(0)))) runs"
+    case .runs: return "GoalsSection.Format.runs.text".localized(String(describing: value.formatted(.number.precision(.fractionLength(0)))))
     case .distance: return "\(units.distance(value)) \(units.distanceUnit)"
     case .movingTime: return UnitSystem.duration(value)
     case .elevation: return "\(units.elevation(value)) \(units.elevationUnit)"

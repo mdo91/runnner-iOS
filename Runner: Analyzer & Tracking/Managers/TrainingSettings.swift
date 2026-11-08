@@ -16,6 +16,12 @@ import SwiftUI
       if preferences.zones?.isValid == false { preferences.zones = nil }
     } else {
       preferences = AnalyticsPreferences()
+      #if DEBUG
+        if AppRuntime.scenario == "store" || AppRuntime.scenario == "video-store" {
+          preferences.goals = [TrainingGoal(metric: .distance, period: .week, target: 20000),
+            TrainingGoal(metric: .runs, period: .month, target: 12)]
+        }
+      #endif
     }
   }
   func save(goal: TrainingGoal) {

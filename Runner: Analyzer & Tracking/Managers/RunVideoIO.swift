@@ -1,3 +1,4 @@
+import RunCore
 import AVFoundation
 import CoreTransferable
 import CoreImage
@@ -18,9 +19,9 @@ enum RunVideoError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .unreadable:
-      return "This video couldn’t be loaded. Try another clip. If it’s in iCloud, check your connection."
+      return "RunVideoIO.Copy.thisVideoCouldnTBeLoadedTryAnotherClip.text".localized
     case .exportFailed:
-      return "The video couldn’t be exported. Your edits are still here. Please try again."
+      return "RunVideoIO.Copy.theVideoCouldnTBeExportedYourEditsAre.text".localized
     }
   }
 }

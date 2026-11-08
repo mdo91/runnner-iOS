@@ -1,11 +1,12 @@
 #if DEBUG
 import AVFoundation
+import UIKit
 
 /// A real, tiny moving clip keeps simulator tests independent of the user's library.
 enum RunVideoFixture {
   static func create(size: CGSize = CGSize(width: 320, height: 480),
     transform: CGAffineTransform = .identity, includesAudio: Bool = true,
-    videoStart: Double = 0, gray: UInt8? = nil) async throws -> URL {
+    videoStart: Double = 0, gray: UInt8? = nil, storeArtwork: Bool = false) async throws -> URL {
     let url = try RunVideoIO.temporaryFile(named: "Fixture.mov")
     do {
       let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
@@ -77,6 +78,16 @@ enum RunVideoFixture {
             }
             if let gray { bytes[index] = gray; bytes[index + 1] = gray; bytes[index + 2] = gray }
           }
+        }
+        if storeArtwork,
+          let image = UIImage(named: "ReleaseDemoPhoto")?.cgImage,
+          let context = CGContext(data: bytes, width: Int(size.width), height: Int(size.height),
+            bitsPerComponent: 8, bytesPerRow: stride, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue) {
+          let scale = max(size.width / CGFloat(image.width), size.height / CGFloat(image.height))
+            * (1 + CGFloat(frame) * 0.003)
+          let w = CGFloat(image.width) * scale, h = CGFloat(image.height) * scale
+          context.draw(image, in: CGRect(x: (size.width - w) / 2, y: (size.height - h) / 2, width: w, height: h))
         }
         CVPixelBufferUnlockBaseAddress(buffer, [])
         let time = CMTimeAdd(CMTime(seconds: videoStart, preferredTimescale: 600),

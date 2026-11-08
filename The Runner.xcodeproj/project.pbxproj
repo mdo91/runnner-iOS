@@ -198,12 +198,10 @@
 				544EDE2B2E7EC284000E9126 /* Sources */,
 				544EDE2C2E7EC284000E9126 /* Frameworks */,
 				544EDE2D2E7EC284000E9126 /* Resources */,
-				A21DE69831D743A5934F800D /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				89E476BEB384465DBE1AFF5A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				544EDE312E7EC284000E9126 /* Runner: Analyzer & Tracking */,
@@ -273,6 +271,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				de,
 				Base,
 			);
 			mainGroup = 544EDE262E7EC284000E9126;
@@ -529,11 +528,12 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Runner;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Runner saves your finished run photos and videos to your photo library.";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runner reads your runs, routes, heart rate, and endurance measurements to show your performance. History and GPS uploads require separate consent in Settings.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs access to your health data to save workout information.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -548,7 +548,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -566,11 +566,12 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Runner;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Runner saves your finished run photos and videos to your photo library.";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Runner reads your runs, routes, heart rate, and endurance measurements to show your performance. History and GPS uploads require separate consent in Settings.";
-				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "This app needs access to your health data to save workout information.";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "This app needs location access to track your running routes and provide GPS-based metrics.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -585,7 +586,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -606,7 +607,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -627,7 +628,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_STRICT_CONCURRENCY = targeted;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -673,7 +674,7 @@
                 SDKROOT = iphoneos;
                 SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
                 SWIFT_VERSION = 5.0;
-                TARGETED_DEVICE_FAMILY = "1,2";
+                TARGETED_DEVICE_FAMILY = 1;
                 TEST_TARGET_NAME = "The Runner";
             };
             name = Debug;
@@ -690,7 +691,7 @@
                 SDKROOT = iphoneos;
                 SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
                 SWIFT_VERSION = 5.0;
-                TARGETED_DEVICE_FAMILY = "1,2";
+                TARGETED_DEVICE_FAMILY = 1;
                 TEST_TARGET_NAME = "The Runner";
             };
             name = Release;

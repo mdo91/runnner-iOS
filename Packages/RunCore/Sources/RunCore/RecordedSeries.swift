@@ -4,13 +4,13 @@ public enum RunSeriesMetric: String, CaseIterable, Sendable, Codable {
   case pace, heartRate, elevation, power, stride, groundContact, verticalOscillation
   public var title: String {
     switch self {
-    case .pace: return "Pace"
-    case .heartRate: return "Heart rate"
-    case .elevation: return "Elevation"
-    case .power: return "Power"
-    case .stride: return "Stride length"
-    case .groundContact: return "Ground contact"
-    case .verticalOscillation: return "Vertical oscillation"
+    case .pace: return "Common.Copy.pace.text".localized
+    case .heartRate: return "Common.Copy.heartRate.text".localized
+    case .elevation: return "Common.Copy.elevation.text".localized
+    case .power: return "Common.Copy.power.text".localized
+    case .stride: return "Common.Copy.strideLength.text".localized
+    case .groundContact: return "Common.Copy.groundContact.text".localized
+    case .verticalOscillation: return "Common.Copy.verticalOscillation.text".localized
     }
   }
 }
@@ -112,9 +112,9 @@ public enum RecordedSeries {
   public static func make(_ run: RunData, metric: RunSeriesMetric, limit: Int = 1000) -> RunSeries {
     let timeline = DistanceTimeline(run)
     var values: [(Date, Double, Int)] = []
-    var source = "Recorded Health samples"
+    var source = "Common.Copy.recordedHealthSamples.text".localized
     if metric == .elevation {
-      source = "Recorded GPS altitude · vertical accuracy ≤10 m"
+      source = "RecordedSeries.Copy.recordedGPSAltitudeVerticalAccuracy10M.text".localized
       for (segment, points) in RunCalculator.routeSegments(run).enumerated() {
         var part = segment * 100_000
         var previous: Date?
@@ -158,7 +158,7 @@ public enum RecordedSeries {
       }
       var samples = metric == .heartRate ? run.heartRate : run.dynamics[key] ?? []
       if metric == .pace, samples.isEmpty, let timeline {
-        source = "Pace derived from recorded distance intervals"
+        source = "RecordedSeries.Copy.paceDerivedFromRecordedDistanceIntervals.text".localized
         samples = timeline.intervals.compactMap { interval in
           let active = RunCalculator.activeSeconds(
             from: interval.start, to: interval.end, pauses: run.pauses)
@@ -169,7 +169,7 @@ public enum RecordedSeries {
             value: (interval.toMeters - interval.fromMeters) / active)
         }
       } else if metric == .pace {
-        source = "Pace derived from recorded running speed"
+        source = "RecordedSeries.Copy.paceDerivedFromRecordedRunningSpeed.text".localized
       }
       var segment = 0
       var previous: Date?

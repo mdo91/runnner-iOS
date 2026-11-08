@@ -12,7 +12,7 @@ struct RouteCard: View {
   var units: UnitSystem
   @Binding var selection: Date?
   var selectedInterval: DateInterval? = nil
-  @State private var mode = "Pace"
+  @State private var mode = "Common.Copy.pace.text".localized
   private var segments: [[RoutePoint]] { RunCalculator.routeSegments(run) }
   private var chunks: [ColoredRoute] {
     var result: [ColoredRoute] = []
@@ -24,7 +24,7 @@ struct RouteCard: View {
         let a = segment[start]
         let b = segment[end]
         let value: Double?
-        if mode == "Heart rate" {
+        if mode == "Common.Copy.heartRate.text".localized {
           let closest = run.heartRate.min {
             abs($0.start.timeIntervalSince(a.timestamp))
               < abs($1.start.timeIntervalSince(a.timestamp))
@@ -47,7 +47,7 @@ struct RouteCard: View {
     guard let value else { return .gray }
     let t = (value - range.lowerBound) / max(1, range.upperBound - range.lowerBound)
     return Color(
-      hue: mode == "Pace" ? 0.58 - t * 0.17 : 0.58 - t * 0.55, saturation: 0.75, brightness: 0.95)
+      hue: mode == "Common.Copy.pace.text".localized ? 0.58 - t * 0.17 : 0.58 - t * 0.55, saturation: 0.75, brightness: 0.95)
   }
   var body: some View {
     let chunks = chunks
@@ -56,11 +56,11 @@ struct RouteCard: View {
     Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Your route",
-          subtitle: "\(mode) along the run · GPS sharing is optional in Settings")
-        Picker("Route color", selection: $mode) {
-          Text("Pace").tag("Pace")
-          Text("Heart rate").tag("Heart rate")
+          title: "Common.Copy.yourRoute.text".localized,
+          subtitle: "RouteCard.Format.alongTheRunGPSSharingIsOptionalIn.text".localized(String(describing: mode)))
+        Picker("Common.Copy.routeColor.text".localized, selection: $mode) {
+          Text("Common.Copy.pace.text".localized).tag("Common.Copy.pace.text".localized)
+          Text("Common.Copy.heartRate.text".localized).tag("Common.Copy.heartRate.text".localized)
         }.pickerStyle(.segmented)
         MapReader { proxy in
           Map(initialPosition: .automatic) {
@@ -80,7 +80,7 @@ struct RouteCard: View {
             }
             if let point = segments.first?.first {
               Annotation(
-                "Start",
+                "Common.Copy.start.text".localized,
                 coordinate: CLLocationCoordinate2D(
                   latitude: point.latitude, longitude: point.longitude)
               ) {
@@ -91,7 +91,7 @@ struct RouteCard: View {
             }
             if let point = segments.last?.last {
               Annotation(
-                "Finish",
+                "Common.Copy.finish.text".localized,
                 coordinate: CLLocationCoordinate2D(
                   latitude: point.latitude, longitude: point.longitude)
               ) {
@@ -108,7 +108,7 @@ struct RouteCard: View {
               !run.pauses.contains(where: { selection >= $0.start && selection < $0.end })
             {
               Annotation(
-                "Selected",
+                "Common.Copy.selected.text".localized,
                 coordinate: CLLocationCoordinate2D(
                   latitude: point.latitude, longitude: point.longitude)
               ) {
@@ -130,9 +130,9 @@ struct RouteCard: View {
             }
           }
         }.frame(height: 250).clipShape(RoundedRectangle(cornerRadius: 16)).accessibilityLabel(
-          "Route map colored by \(mode.lowercased()), with start and finish markers")
+          "RouteCard.Format.routeMapColoredByWithStartAndFinish.text".localized(String(describing: mode.lowercased())))
         if values.isEmpty {
-          Text("No synchronized \(mode.lowercased()) measurements.").font(.caption).foregroundStyle(
+          Text("RouteCard.Format.noSynchronizedMeasurements.text".localized(String(describing: mode.lowercased()))).font(.caption).foregroundStyle(
             RunnerStyle.muted)
         } else {
           HStack {
@@ -146,13 +146,13 @@ struct RouteCard: View {
           }.font(.caption.monospacedDigit()).foregroundStyle(RunnerStyle.muted)
         }
         Text(
-          "Gaps mark pauses or unavailable GPS. Route colors describe measurements, not target zones."
+          "RouteCard.Copy.gapsMarkPausesOrUnavailableGPSRouteColorsDescribe.text".localized
         ).font(.caption2).foregroundStyle(RunnerStyle.muted)
       }
     }
   }
   private func label(_ value: Double) -> String {
-    mode == "Pace" ? "\(units.pace(value)) /\(units.distanceUnit)" : "\(Int(value)) bpm"
+    mode == "Common.Copy.pace.text".localized ? "\(units.pace(value)) /\(units.distanceUnit)" : "RouteCard.Format.bpm.text".localized(String(describing: Int(value)))
   }
 }
 struct DensityMap: View {
@@ -167,14 +167,14 @@ struct DensityMap: View {
     Surface {
       VStack(alignment: .leading, spacing: 16) {
         SectionTitle(
-          title: "Places you return to", subtitle: "Route density · one visit per run, per area")
-        Picker("Date range", selection: $days) {
-          Text("1 month").tag(30)
-          Text("3 months").tag(90)
-          Text("1 year").tag(365)
+          title: "RouteCard.Copy.placesYouReturnTo.text".localized, subtitle: "RouteCard.Copy.routeDensityOneVisitPerRunPerArea.text".localized)
+        Picker("Common.Copy.dateRange.text".localized, selection: $days) {
+          Text("Common.Copy.1Month.text".localized).tag(30)
+          Text("Common.Copy.3Months.text".localized).tag(90)
+          Text("Common.Copy.1Year.text".localized).tag(365)
         }.pickerStyle(.segmented)
         if cells.isEmpty {
-          Text("Outdoor runs with GPS will build your map here.").font(.subheadline)
+          Text("RouteCard.Copy.outdoorRunsWithGPSWillBuildYourMapHere.text".localized).font(.subheadline)
             .foregroundStyle(RunnerStyle.muted).padding(.vertical, 30)
         } else {
           Map(initialPosition: .automatic) {
@@ -188,7 +188,7 @@ struct DensityMap: View {
             }
           }.mapStyle(.standard(pointsOfInterest: .excludingAll)).frame(height: 250).clipShape(
             RoundedRectangle(cornerRadius: 16))
-          Text("Lighter blue: fewer runs · Brighter blue: more runs").font(.caption)
+          Text("RouteCard.Copy.lighterBlueFewerRunsBrighterBlueMoreRuns.text".localized).font(.caption)
             .foregroundStyle(RunnerStyle.muted)
         }
       }

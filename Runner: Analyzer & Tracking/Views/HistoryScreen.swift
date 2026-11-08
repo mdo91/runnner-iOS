@@ -21,29 +21,29 @@ struct HistoryScreen: View {
   var body: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 12) {
-        SectionTitle(title: "Run journal", subtitle: "\(selection.count) matching runs")
-        Text("\(selection.count) runs").accessibilityIdentifier("history.count")
-        Picker("History range", selection: $days) {
-          Text("Month").tag(30)
-          Text("Year").tag(365)
-          Text("All").tag(100000)
+        SectionTitle(title: "Common.Copy.runJournal.text".localized, subtitle: "Common.Count.matchingRuns.text".localized(selection.count))
+        Text("Common.Count.runs.text".localized(selection.count)).accessibilityIdentifier("history.count")
+        Picker("Common.Copy.historyRange.text".localized, selection: $days) {
+          Text("Common.Copy.month.text".localized).tag(30)
+          Text("Common.Copy.year.text".localized).tag(365)
+          Text("Common.Copy.all.text".localized).tag(100000)
         }.pickerStyle(.segmented).onChange(of: days) { _, _ in filter.interval = nil }
         Surface {
           VStack(alignment: .leading, spacing: 12) {
-            Picker("Setting", selection: $filter.setting) {
-              ForEach(RunSetting.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            Picker("Common.Copy.setting.text".localized, selection: $filter.setting) {
+              ForEach(RunSetting.allCases, id: \.self) { Text($0.title).tag($0) }
             }.pickerStyle(.segmented)
-            Picker("Source", selection: $filter.source) {
-              Text("All sources").tag(String?.none)
+            Picker("Common.Copy.source.text".localized, selection: $filter.source) {
+              Text("Common.Copy.allSources.text".localized).tag(String?.none)
               ForEach(Array(Set(analytics.snapshot.runs.map(\.source))).sorted(), id: \.self) {
                 Text($0).tag(Optional($0))
               }
             }.accessibilityIdentifier("history.source")
-            Picker("Sort by", selection: $filter.sort) {
-              ForEach(RunSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            Picker("Common.Copy.sortBy.text".localized, selection: $filter.sort) {
+              ForEach(RunSort.allCases, id: \.self) { Text($0.title).tag($0) }
             }.pickerStyle(.segmented)
             HStack {
-              Text("Minimum \(units.distanceUnit)")
+              Text("HistoryScreen.Format.minimum.text".localized(String(describing: units.distanceUnit)))
               TextField(
                 "0",
                 value: Binding(
@@ -53,9 +53,9 @@ struct HistoryScreen: View {
                 "history.minimum")
             }
             HStack {
-              Text("Maximum \(units.distanceUnit)")
+              Text("HistoryScreen.Format.maximum.text".localized(String(describing: units.distanceUnit)))
               TextField(
-                "Any",
+                "Common.Copy.any.text".localized,
                 value: Binding(
                   get: { filter.maximumMeters.map { $0 / units.metersPerUnit } },
                   set: { filter.maximumMeters = $0.map { max(0, $0) * units.metersPerUnit } }),
@@ -64,8 +64,8 @@ struct HistoryScreen: View {
                 "history.maximum")
             }
             HStack {
-              Button("Custom dates") { dates = true }.accessibilityIdentifier("history.customDates")
-              Button("Reset filters") {
+              Button("Common.Copy.customDates.text".localized) { dates = true }.accessibilityIdentifier("history.customDates")
+              Button("Common.Copy.resetFilters.text".localized) {
                 filter = HistoryFilter()
                 days = 30
               }.accessibilityIdentifier("history.reset")
@@ -78,7 +78,7 @@ struct HistoryScreen: View {
           }
         }
         if selection.isEmpty {
-          Text("No runs match these filters.").foregroundStyle(RunnerStyle.muted)
+          Text("HistoryScreen.Copy.noRunsMatchTheseFilters.text".localized).foregroundStyle(RunnerStyle.muted)
         }
         ForEach(selection) { run in
           if let row = rows.first(where: { $0.id == run.id }) {
@@ -92,12 +92,12 @@ struct HistoryScreen: View {
           }
         }
         DensityMap(runs: selection)
-        if health.isSyncing || analytics.loading { ProgressView("Importing history…") }
+        if health.isSyncing || analytics.loading { ProgressView("Common.Copy.importingHistory.text".localized) }
         if analytics.unreadableCount > 0 {
-          Text("\(analytics.unreadableCount) stored runs could not be read.")
+          Text("HistoryScreen.Format.storedRunsCouldNotBeRead.text".localized(String(describing: analytics.unreadableCount)))
         }
       }.padding(20).frame(maxWidth: 1200).frame(maxWidth: .infinity)
-    }.background(RunnerStyle.background).navigationTitle("History").refreshable {
+    }.background(RunnerStyle.background).navigationTitle("Common.Copy.history.text".localized).refreshable {
       await health.sync()
     }
     .sheet(isPresented: $dates) {

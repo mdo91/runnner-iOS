@@ -1,3 +1,4 @@
+import RunCore
 import CoreTransferable
 import ImageIO
 import Photos
@@ -9,10 +10,10 @@ enum RunPhotoError: LocalizedError, Equatable {
   case unreadable, renderFailed, permissionDenied, sharingFailed
   var errorDescription: String? {
     switch self {
-    case .unreadable: return "This photo couldn’t be loaded. Try again, or choose another image. If it’s in iCloud, check your connection."
-    case .renderFailed: return "The image couldn’t be exported. Your edits are still here. Please try again."
-    case .permissionDenied: return "Runner needs add-only Photos access to save here. You can use Share instead. Changing access in Settings may restart Runner and discard this edit, so share a copy first."
-    case .sharingFailed: return "This app couldn’t finish sharing. Try again or choose another destination."
+    case .unreadable: return "RunPhotoIO.Copy.thisPhotoCouldnTBeLoadedTryAgainOr.text".localized
+    case .renderFailed: return "RunPhotoIO.Copy.theImageCouldnTBeExportedYourEditsAre.text".localized
+    case .permissionDenied: return "RunPhotoIO.Copy.runnerNeedsAddOnlyPhotosAccessToSaveHere.text".localized
+    case .sharingFailed: return "RunPhotoIO.Copy.thisAppCouldnTFinishSharingTryAgainOr.text".localized
     }
   }
 }

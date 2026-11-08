@@ -16,7 +16,7 @@ struct RunExplorer: View {
   var body: some View {
     NavigationStack {
       List {
-        Text("\(selection.runIDs.count) runs").accessibilityIdentifier("explorer.count")
+        Text("Common.Count.runs.text".localized(selection.runIDs.count)).accessibilityIdentifier("explorer.count")
         ForEach(selection.runIDs, id: \.self) { id in
           if let run = analytics.snapshot.runs.first(where: { $0.id == id }),
             let row = rows.first(where: { $0.id == id })
@@ -31,10 +31,10 @@ struct RunExplorer: View {
             .accessibilityIdentifier("explorer.run.\(id.uuidString)")
           }
         }
-        if selection.runIDs.isEmpty { Text("No completed runs in this selection.") }
+        if selection.runIDs.isEmpty { Text("RunExplorer.Copy.noCompletedRunsInThisSelection.text".localized) }
       }.navigationTitle(selection.title).toolbar {
         ToolbarItem(placement: .confirmationAction) {
-          Button("Done") { dismiss() }.accessibilityIdentifier("explorer.done")
+          Button("Common.Copy.done.text".localized) { dismiss() }.accessibilityIdentifier("explorer.done")
         }
       }
     }

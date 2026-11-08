@@ -57,7 +57,7 @@ struct APIClient {
     }
     let report = try decoder.decode(AnalysisReport.self, from: data)
     guard report.schemaVersion == 1, report.id == input.id, report.status == "complete",
-      report.metrics == input.metrics
+      report.metrics == input.metrics, report.effectiveLanguage == input.language
     else { throw APIError.invalidResponse }
     if live {
       guard let expiry = report.expiresAt, expiry > Date(),
@@ -76,15 +76,15 @@ struct APIClient {
     case notReady, quota, pending, authentication, unavailable, invalidResponse
     var errorDescription: String? {
       switch self {
-      case .notReady: return "Sign in and enable AI analysis in Settings."
+      case .notReady: return "AnalysisManager.Copy.signInAndEnableAIAnalysisInSettings.text".localized
       case .quota:
-        return "Today's analysis limit has been reached. Your measured stats remain available."
-      case .pending: return "This run is already being analyzed. Try again shortly."
-      case .authentication: return "Please sign in again to use AI analysis."
+        return "AnalysisManager.Copy.todaySAnalysisLimitHasBeenReachedYourMeasured.text".localized
+      case .pending: return "AnalysisManager.Copy.thisRunIsAlreadyBeingAnalyzedTryAgainShortly.text".localized
+      case .authentication: return "AnalysisManager.Copy.pleaseSignInAgainToUseAIAnalysis.text".localized
       case .unavailable:
-        return "Analysis is temporarily unavailable. Your measured stats remain available."
+        return "AnalysisManager.Copy.analysisIsTemporarilyUnavailableYourMeasuredStatsRemainAvailable.text".localized
       case .invalidResponse:
-        return "The analysis could not be verified. Your measured stats remain available."
+        return "AnalysisManager.Copy.theAnalysisCouldNotBeVerifiedYourMeasuredStats.text".localized
       }
     }
   }
@@ -100,12 +100,14 @@ struct APIClient {
     guard account.signedIn, account.consent, account.adultConfirmed, let run = row.run,
       !working.contains(row.id)
     else { return }
+    // A language change never silently spends quota or replaces a saved report.
+    if automatic, let saved = row.report, saved.effectiveLanguage != AppLanguage.current { return }
     let request = AnalysisRequest(
       run: run, history: history,
       vo2: measurements.filter { $0.kind == "HKQuantityTypeIdentifierVO2Max" }.map(\.measurement),
       recovery: measurements.filter {
         $0.kind == "HKQuantityTypeIdentifierHeartRateRecoveryOneMinute"
-      }.map(\.measurement))
+      }.map(\.measurement), language: .current)
     do {
       let hash = SHA256.hash(data: try APIClient.encode(request)).map { String(format: "%02x", $0) }
         .joined()
@@ -132,7 +134,7 @@ struct APIClient {
     } catch {
       messages[row.id] =
         (error as? APIClient.APIError)?.errorDescription
-        ?? "You appear to be offline. Your measured stats remain available."
+        ?? "AnalysisManager.Copy.youAppearToBeOfflineYourMeasuredStatsRemain.text".localized
     }
   }
 }

@@ -13,19 +13,19 @@ struct CustomDates: View {
   var body: some View {
     NavigationStack {
       Form {
-        DatePicker("From", selection: $start, in: ...AppRuntime.now, displayedComponents: .date)
+        DatePicker("Common.Copy.from.text".localized, selection: $start, in: ...AppRuntime.now, displayedComponents: .date)
           .accessibilityIdentifier("activity.from")
-        DatePicker("Through", selection: $end, in: ...AppRuntime.now, displayedComponents: .date)
+        DatePicker("Common.Copy.through.text".localized, selection: $end, in: ...AppRuntime.now, displayedComponents: .date)
           .accessibilityIdentifier("activity.through")
         if interval == nil {
-          Text("End date must be on or after the start date.").foregroundStyle(.red)
+          Text("CustomDates.Copy.endDateMustBeOnOrAfterTheStart.text".localized).foregroundStyle(.red)
         }
-        Text("Daily totals through 31 days, weekly through 180 days, monthly for longer ranges.")
+        Text("CustomDates.Copy.dailyTotalsThrough31DaysWeeklyThrough180Days.text".localized)
           .font(.footnote)
-      }.scrollContentBackground(.hidden).background(RunnerStyle.background).navigationTitle("Custom dates").toolbar {
-        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+      }.scrollContentBackground(.hidden).background(RunnerStyle.background).navigationTitle("Common.Copy.customDates.text".localized).toolbar {
+        ToolbarItem(placement: .cancellationAction) { Button("Common.Copy.cancel.text".localized) { dismiss() } }
         ToolbarItem(placement: .confirmationAction) {
-          Button("Apply") {
+          Button("Common.Copy.apply.text".localized) {
             guard let interval else { return }
             apply(interval)
             dismiss()

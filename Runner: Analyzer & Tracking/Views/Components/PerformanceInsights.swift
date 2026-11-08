@@ -21,18 +21,18 @@ struct PerformanceInsights: View {
       Surface {
         VStack(alignment: .leading, spacing: 14) {
           SectionTitle(
-            title: "Intensity and observed training load",
+            title: "PerformanceInsights.Copy.intensityAndObservedTrainingLoad.text".localized,
             subtitle:
-              "Minutes in Zones 1–5 × weights 1–5. This is recorded effort, not a fitness or fatigue model."
+              "PerformanceInsights.Copy.minutesInZones15Weights15This.text".localized
           )
           if settings.preferences.zones == nil {
-            Text("Configure a known maximum heart rate in Settings to see zones and training load.")
+            Text("PerformanceInsights.Copy.configureAKnownMaximumHeartRateInSettingsTo.text".localized)
               .accessibilityIdentifier("load.configure").foregroundStyle(RunnerStyle.muted)
           } else if let load {
             distribution(load)
-            Picker("Load grouping", selection: $weekly) {
-              Text("Daily").tag(false)
-              Text("Weekly").tag(true)
+            Picker("Common.Copy.loadGrouping.text".localized, selection: $weekly) {
+              Text("Common.Copy.daily.text".localized).tag(false)
+              Text("Common.Copy.weekly.text".localized).tag(true)
             }.pickerStyle(.segmented)
             let calendar = AppRuntime.calendar
             let interval = DateInterval(
@@ -45,10 +45,10 @@ struct PerformanceInsights: View {
             Chart(periods) { period in
               let bucket = load.bucket(in: period.interval, runs: completed)
               BarMark(
-                x: .value("Date", period.interval.start),
-                y: .value("Observed effort", bucket.observedEffort)
+                x: .value("Common.Copy.date.text".localized, period.interval.start),
+                y: .value("Common.Copy.observedEffort.text".localized, bucket.observedEffort)
               ).foregroundStyle(bucket.incompleteCount > 0 ? .gray : RunnerStyle.accent)
-            }.chartYAxisLabel("Observed effort").frame(height: 160)
+            }.chartYAxisLabel("Common.Copy.observedEffort.text".localized).frame(height: 160)
             ForEach([7, 28], id: \.self) { days in
               let start = calendar.date(
                 byAdding: .day, value: -(days - 1), to: calendar.startOfDay(for: AppRuntime.now))!
@@ -56,16 +56,16 @@ struct PerformanceInsights: View {
               let value = load.completeTotal(in: window, runs: completed)
               Text(
                 value.map {
-                  "Trailing \(days) days: \($0.formatted(.number.precision(.fractionLength(1)))) effort"
+                  "PerformanceInsights.Format.trailingDaysEffort.text".localized(String(describing: days), String(describing: $0.formatted(.number.precision(.fractionLength(1)))))
                 }
-                  ?? "Trailing \(days) days unavailable: a contributing run has less than 80% heart-rate coverage."
+                  ?? "PerformanceInsights.Format.trailingDaysUnavailableAContributingRunHasLess.text".localized(String(describing: days))
               ).accessibilityIdentifier("load.total.\(days)")
             }
             Text(
-              "Gray bars contain incomplete recordings and show observed effort only. Below-Zone-1 time is separate and carries no load weight."
+              "PerformanceInsights.Copy.grayBarsContainIncompleteRecordingsAndShowObservedEffort.text".localized
             ).font(.caption).foregroundStyle(RunnerStyle.muted)
           } else {
-            ProgressView("Calculating recorded effort…")
+            ProgressView("Common.Copy.calculatingRecordedEffort.text".localized)
           }
         }
       }
@@ -91,20 +91,20 @@ struct PerformanceInsights: View {
     return Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Estimated best efforts",
+          title: "Common.Copy.estimatedBestEfforts.text".localized,
           subtitle:
-            "Fastest elapsed efforts from validated distance intervals. Internal pauses count; long unexplained gaps are rejected."
+            "PerformanceInsights.Copy.fastestElapsedEffortsFromValidatedDistanceIntervalsInternalPauses.text".localized
         )
-        Picker("Effort distance", selection: $distance) {
-          ForEach(EffortDistance.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+        Picker("Common.Copy.effortDistance.text".localized, selection: $distance) {
+          ForEach(EffortDistance.allCases, id: \.self) { Text($0.title).tag($0) }
         }.accessibilityIdentifier("bests.distance")
         if ranked.isEmpty {
-          Text("No eligible recorded effort for this distance.").foregroundStyle(RunnerStyle.muted)
+          Text("PerformanceInsights.Copy.noEligibleRecordedEffortForThisDistance.text".localized).foregroundStyle(RunnerStyle.muted)
         }
         ForEach(Array(ranked.prefix(3).enumerated()), id: \.element.id) { index, effort in
           HStack {
             Button {
-              drilldown = RunDrilldown(title: "\(distance.rawValue) effort", runIDs: [effort.runID])
+              drilldown = RunDrilldown(title: "PerformanceInsights.Format.effort.text".localized(String(describing: distance.title)), runIDs: [effort.runID])
             } label: {
               VStack(alignment: .leading, spacing: 4) {
                 Text("#\(index + 1) · \(UnitSystem.duration(effort.seconds))").font(.headline)
@@ -112,12 +112,12 @@ struct PerformanceInsights: View {
               }
             }.buttonStyle(.plain).accessibilityIdentifier("bests.rank.\(index + 1)")
             Spacer()
-            Button("Exclude") { settings.exclude(effort) }.accessibilityLabel(
-              "Exclude inaccurate \(distance.rawValue) effort from \(effort.start.formatted(date: .abbreviated, time: .omitted))"
+            Button("Common.Copy.exclude.text".localized) { settings.exclude(effort) }.accessibilityLabel(
+              "PerformanceInsights.Format.excludeInaccurateEffortFrom.text".localized(String(describing: distance.title), String(describing: effort.start.formatted(date: .abbreviated, time: .omitted)))
             ).accessibilityIdentifier("bests.exclude.\(index + 1)")
           }
         }
-        Picker("Best year", selection: $effortYear) {
+        Picker("Common.Copy.bestYear.text".localized, selection: $effortYear) {
           ForEach(
             Array(
               Set(snapshot.efforts.map { AppRuntime.calendar.component(.year, from: $0.start) })
@@ -128,32 +128,32 @@ struct PerformanceInsights: View {
           }
         }.accessibilityIdentifier("bests.year")
         Text(
-          annual.first.map { "\(String(effortYear)) best: \(UnitSystem.duration($0.seconds))" }
-            ?? "No eligible effort for the selected year."
+          annual.first.map { "PerformanceInsights.Format.best.text".localized(String(describing: String(effortYear)), String(describing: UnitSystem.duration($0.seconds))) }
+            ?? "PerformanceInsights.Copy.noEligibleEffortForTheSelectedYear.text".localized
         ).accessibilityIdentifier("bests.annual")
         if ranked.count > 1 {
           Chart(ranked.sorted { $0.start < $1.start }) { effort in
             LineMark(
-              x: .value("Date", effort.start), y: .value("Elapsed minutes", effort.seconds / 60)
+              x: .value("Common.Copy.date.text".localized, effort.start), y: .value("Common.Copy.elapsedMinutes.text".localized, effort.seconds / 60)
             ).foregroundStyle(RunnerStyle.accent)
             PointMark(
-              x: .value("Date", effort.start), y: .value("Elapsed minutes", effort.seconds / 60)
+              x: .value("Common.Copy.date.text".localized, effort.start), y: .value("Common.Copy.elapsedMinutes.text".localized, effort.seconds / 60)
             ).foregroundStyle(RunnerStyle.accent)
-          }.chartYAxisLabel("Elapsed minutes").frame(height: 150)
+          }.chartYAxisLabel("Common.Copy.elapsedMinutes.text".localized).frame(height: 150)
         }
-        DisclosureGroup("Effort history") {
+        DisclosureGroup("Common.Copy.effortHistory.text".localized) {
           ForEach(ranked.sorted { $0.start > $1.start }) { effort in
             Button(
               "\(effort.start.formatted(date: .abbreviated, time: .omitted)) · \(UnitSystem.duration(effort.seconds))"
-            ) { drilldown = RunDrilldown(title: "Estimated effort", runIDs: [effort.runID]) }
+            ) { drilldown = RunDrilldown(title: "Common.Copy.estimatedEffort.text".localized, runIDs: [effort.runID]) }
           }
         }
         if !settings.preferences.excludedEfforts.isEmpty {
-          Button("Restore excluded efforts") { settings.restoreEfforts() }.accessibilityIdentifier(
+          Button("Common.Copy.restoreExcludedEfforts.text".localized) { settings.restoreEfforts() }.accessibilityIdentifier(
             "bests.restore")
         }
         Text(
-          "Workout distance and interpolation limit precision. Estimated efforts are not certified race results; excluding an effort does not delete its workout."
+          "PerformanceInsights.Copy.workoutDistanceAndInterpolationLimitPrecisionEstimatedEffortsAre.text".localized
         ).font(.caption).foregroundStyle(RunnerStyle.muted)
       }
     }
@@ -162,11 +162,11 @@ struct PerformanceInsights: View {
     let distributions = completed.compactMap { load.distributions[$0.id] }
     let totals = (0...5).map { index in distributions.reduce(0) { $0 + $1.seconds[index] } }
     return VStack(alignment: .leading, spacing: 10) {
-      Text("Recorded intensity · all imported runs").font(.headline)
+      Text("PerformanceInsights.Copy.recordedIntensityAllImportedRuns.text".localized).font(.headline)
       if totals.reduce(0, +) > 0 {
         ForEach(0...5, id: \.self) { index in
           HStack {
-            Text(index == 0 ? "Below Zone 1" : "Zone \(index)")
+            Text(index == 0 ? "Common.Copy.belowZone1.text".localized : "PerformanceInsights.Format.zone.text".localized(String(describing: index)))
             Spacer()
             Text(UnitSystem.duration(totals[index])).monospacedDigit()
           }.accessibilityIdentifier("zones.total.\(index)")
@@ -174,11 +174,11 @@ struct PerformanceInsights: View {
         let above = distributions.reduce(0) { $0 + $1.aboveMaximumSeconds }
         if above > 0 {
           Text(
-            "\(UnitSystem.duration(above)) above your configured maximum; check sensor accuracy and zone settings."
+            "PerformanceInsights.Format.aboveYourConfiguredMaximumCheckSensorAccuracyAnd.text".localized(String(describing: UnitSystem.duration(above)))
           ).foregroundStyle(.orange).accessibilityIdentifier("zones.aboveMaximum")
         }
       } else {
-        Text("No recorded heart-rate coverage.").accessibilityIdentifier("zones.unavailable")
+        Text("PerformanceInsights.Copy.noRecordedHeartRateCoverage.text".localized).accessibilityIdentifier("zones.unavailable")
       }
     }
   }

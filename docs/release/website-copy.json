@@ -1,0 +1,422 @@
+{
+  "en": {
+    "navigation": "Main navigation",
+    "legalNavigation": "Legal and support",
+    "home": "The app",
+    "privacyTitle": "Privacy policy",
+    "legalTitle": "Legal & terms",
+    "eyebrow": "RUNNER · FOR IPHONE",
+    "headline": "Every run has a story. Understand yours.",
+    "intro": "Bring your Apple Health runs into focus. Explore the numbers, notice your progress, and turn the finish into something worth sharing.",
+    "appLink": "View on the App Store",
+    "availability": "Version 1.0 is being prepared for release. Free on iPhone.",
+    "welcomeAlt": "Illustrated runner in yellow moving along a sketched track",
+    "ribbon": [
+      "Apple Health imports",
+      "Measured insights",
+      "Photo & video overlays",
+      "English & German"
+    ],
+    "stories": [
+      {
+        "title": "The run ends. The insight starts.",
+        "body": "Your recorded pace, heart rate, splits, and routes belong together. Runner helps you explore them without turning missing measurements into made-up numbers.",
+        "points": [
+          "Import Apple Watch and other running workouts stored in Apple Health.",
+          "Inspect recorded samples and compare similar routes.",
+          "Use measured statistics without an account."
+        ],
+        "image": "insights",
+        "alt": "Cartoon runner inspecting simple charts and route lines"
+      },
+      {
+        "title": "A routine you can see.",
+        "body": "One run is a moment. A history is a pattern. Bring your weeks, goals, and measured trends into the same view.",
+        "points": [
+          "Review activity totals, your training calendar, and recurring goals.",
+          "Explore comparable runs, recorded VO₂ max, and recovery measurements.",
+          "Choose optional AI explanations after sign-in and separate consent."
+        ],
+        "image": "progress",
+        "alt": "Runner climbing steps beside a rising progress line"
+      },
+      {
+        "title": "Make the finish yours.",
+        "body": "Put your distance, pace, time, and optional route onto a photo or video from your iPhone. Adjust the look, export, and choose where it goes.",
+        "points": [
+          "Create portrait, square, Story, or original-size compositions.",
+          "Style and position your stats, route, and app icon.",
+          "Edit on your device; Runner does not upload your media to its services."
+        ],
+        "image": "share",
+        "alt": "Cartoon runner beside photo and video frames"
+      }
+    ],
+    "screenshots": "A closer look",
+    "screenshotAlt": "Runner app screenshot with illustrative running data",
+    "sampleNote": "Screenshots use synthetic sample runs and generated media. Results and available measurements depend on your recordings.",
+    "privacyEyebrow": "PRIVATE BY CHOICE",
+    "privacyHeadline": "Your data. Your decisions.",
+    "privacyIntro": "Health access is your choice. AI analysis, cloud history, and precise GPS sync each have separate controls. You can keep your measured running experience on your iPhone.",
+    "disclaimer": "Requires iOS 26 or later and running workouts in Apple Health. GPS routes and individual metrics depend on the source recording. AI is optional, for adults 18+, subject to availability and daily limits, and is fitness coaching rather than medical advice.",
+    "privacy": {
+      "eyebrow": "LAST UPDATED · 8 NOVEMBER 2026",
+      "title": "Privacy policy",
+      "description": "How Runner processes Health data, optional AI analysis, cloud history, and website visits.",
+      "sections": [
+        {
+          "heading": "Who is responsible",
+          "paragraphs": [
+            "Runner: Analyzer &amp; Tracking is provided by Damas Technologies LLC<br>Mengelbergstr. 2<br>50676 Köln<br>Germany. For privacy requests and support, contact <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>."
+          ]
+        },
+        {
+          "heading": "What stays on your iPhone",
+          "paragraphs": [
+            "Runner reads running workouts and the measurements you allow through Apple Health: dates, distance, duration, heart rate, energy, routes, running dynamics, and available VO₂ max or recovery measurements. Local processing does not upload these records to Runner. Apple controls Health permissions, and does not tell Runner which read permissions you denied.",
+            "The local database is protected by iOS file protection and excluded from device backups. Locally saved reports remain until you clear the app’s data or remove the app. Clearing Runner data does not delete workouts in Apple Health.",
+            "Photos and videos you select are edited on the device. Runner does not upload them to its backend or AI provider. Exports omit source location metadata, but any route or statistics you visibly place in an image or video will be visible to its recipients. A service you choose in the share sheet processes the shared file under its own policy."
+          ]
+        },
+        {
+          "heading": "Optional accounts and AI analysis",
+          "paragraphs": [
+            "Measured statistics do not require an account. Optional cloud features use Sign in with Apple and Firebase Authentication. Runner does not request your Apple name or email scopes; Apple and Firebase process the identity credentials and account information they provide for authentication. Runner uses a Firebase user identifier to associate cloud records with your account.",
+            "AI analysis requires sign-in, confirmation that you are 18 or older, and an explicit separate consent. It sends numerical run summaries, splits, data-quality flags, and a compact baseline to the Runner service and Google Gemini. It does not send precise routes, raw HealthKit samples, names, email addresses, or your Firebase user identifier to Gemini.",
+            "After consent, the latest run and newly imported runs may be analyzed automatically. Older runs and regeneration in another language are requested explicitly. AI is fitness coaching, not diagnosis or treatment. You can turn it off in Settings. Existing saved reports are not automatically erased by turning AI off."
+          ]
+        },
+        {
+          "heading": "Optional history, routes, and dashboard",
+          "paragraphs": [
+            "Cloud history and precise GPS routes are separate choices and start off. With history sync enabled, Runner stores measured run history, splits, chart summaries, dated endurance measurements, and saved reports in your account. Routes are included only if you also enable GPS sync; they are never sent to Gemini.",
+            "A browser dashboard requires a code that you approve in the iPhone app. Its session is read-only, lasts at most 12 hours, and ends after 30 minutes of inactivity. Link codes expire after 10 minutes. Short-lived browser and network security records prevent abuse.",
+            "Turning history sync off stops new uploads and removes uploaded routes, while numerical history remains until you delete it. Turning GPS sync off removes uploaded coordinates across the account. If your iPhone is offline, it finishes that request when it reconnects."
+          ]
+        },
+        {
+          "heading": "Technical data and service providers",
+          "paragraphs": [
+            "Firebase initializes when the app starts, including before optional cloud consent. Firebase Authentication collects technical SDK/version diagnostics for service analytics. Authentication and App Attest process credentials, attestation information, and security signals. These are not advertising tracking.",
+            "Runner uses Google Firebase Authentication, App Check, Cloud Run, and Firestore. Our Cloud Run service and Firestore database are in europe-west1; this does not mean all provider processing stays in the EU. Firebase Authentication operates in US data centers. Google Gemini processes the numerical inputs described above. Cloud infrastructure records request metadata, including IP addresses, user agents, URLs, status, and timing, for operation and security. We do not put workout payloads or authentication tokens in application logs.",
+            "This website is hosted by GitHub Pages. It has no advertising, analytics scripts, third-party fonts, contact forms, or marketing cookies. GitHub records visitor IP addresses for security. See <a href=\"https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement\">GitHub’s privacy statement</a>.",
+            "We do not sell Health data, use it for advertising, or share it with data brokers. Provider processing follows their applicable terms and safeguards. See <a href=\"https://firebase.google.com/support/privacy\">Firebase privacy information</a> and <a href=\"https://ai.google.dev/gemini-api/terms\">Gemini terms</a>."
+          ]
+        },
+        {
+          "heading": "Retention and deletion",
+          "paragraphs": [
+            "Runner’s completed-analysis cache expires after 24 hours. Quota records expire after two days. Firestore’s physical TTL deletion is asynchronous, so expiry is not a promise of immediate physical erasure. Synced history has no automatic expiry and stays until you delete it. The dashboard uses short-lived session, link, and rate-limit records. Minimal deletion markers prevent delayed requests from restoring deleted account or history data.",
+            "Our standard Cloud Run log bucket currently retains request logs for 30 days. Firebase reports retaining authentication security IP logs for weeks and removing other deleted authentication information from live and backup systems within 180 days. These provider/security periods are separate from the app’s history and cache controls.",
+            "The Gemini service is used with a billed project. Google’s paid-service terms state that prompts and outputs are not used to improve its products. This does not mean zero retention: Google’s <a href=\"https://ai.google.dev/gemini-api/docs/usage-policies\">abuse-monitoring policy</a> describes retention of prompts, context, and output for 55 days and authorized review of flagged material. Provider obligations, security investigations, and backups can have separate retention rules."
+          ]
+        },
+        {
+          "heading": "Your controls and rights",
+          "paragraphs": [
+            "In Settings → Your data, you can clear local data, delete uploaded history, or delete your cloud account. Account deletion requires Apple confirmation and removes synced history/routes, Runner analysis cache, dashboard access, and the Firebase account. It does not delete Apple Health workouts. You can also revoke Health permissions in Apple’s Health or Settings app.",
+            "Where applicable, you may request access, correction, deletion, restriction, portability, or object to processing based on legitimate interests. You can withdraw consent for future processing without affecting the lawfulness of prior processing. Contact <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>; please do not email raw Health records unless we specifically arrange a secure way to receive them.",
+            "For EU users, optional Health/fitness uploads and precise-route processing rely on consent, including explicit consent where special-category data is involved (GDPR Articles 6(1)(a) and 9(2)(a)). Requested account services rely on performance of the service; proportionate security and technical operation rely on legitimate interests (Articles 6(1)(b) and 6(1)(f)). International provider transfers use applicable adequacy decisions or contractual safeguards. You may complain to your competent data-protection authority, including the Landesbeauftragte für Datenschutz und Informationsfreiheit Nordrhein-Westfalen."
+          ]
+        },
+        {
+          "heading": "Children and changes",
+          "paragraphs": [
+            "Runner is not directed to children. AI is restricted to adults who confirm they are 18 or older. We may update this policy when the app or providers change; the date above identifies this version. Material changes to optional data use require an appropriate new choice in the app."
+          ]
+        }
+      ]
+    },
+    "support": {
+      "eyebrow": "HERE FOR THE LONG RUN",
+      "title": "Support",
+      "description": "Get help with Apple Health imports, optional AI, cloud history, and media sharing.",
+      "sections": [
+        {
+          "heading": "Contact",
+          "paragraphs": [
+            "Email <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>. Tell us your iOS version, Runner version, and what happened. Please avoid sending personal Health records, precise routes, passwords, or sign-in codes."
+          ]
+        },
+        {
+          "heading": "My runs are missing",
+          "paragraphs": [
+            "Check Runner’s read access in Apple Health and allow time for Apple Watch data to sync. Runner imports completed running workouts; it does not manufacture missing measurements. Pull down to refresh. Apple does not reveal denied read permissions to the app."
+          ]
+        },
+        {
+          "heading": "AI or cloud history is unavailable",
+          "paragraphs": [
+            "Measured statistics work without an account. AI requires Sign in with Apple, adult confirmation, a separate consent, an internet connection, and available quota (up to three completed-run analyses per day). Cloud history and precise GPS require their own choices. You can keep using local measurements when cloud services are unavailable."
+          ]
+        },
+        {
+          "heading": "Photos and videos",
+          "paragraphs": [
+            "Choose media from your device, position your overlays, and use Save or Share. Saving requires permission to add to Photos. If media is stored in iCloud, allow it to download. A shared route can reveal where you run; hide it if you do not want to share that location."
+          ]
+        },
+        {
+          "heading": "Delete data or withdraw consent",
+          "paragraphs": [
+            "Open Settings → Your data to clear local records, delete uploaded history, or delete your cloud account. Disable AI, history sync, or GPS separately in Settings. Offline GPS-removal requests finish when you reconnect. <a href=\"../privacy/\">Read the privacy policy</a> for retention and provider details."
+          ]
+        },
+        {
+          "heading": "Availability",
+          "paragraphs": [
+            "Runner 1.0 is being prepared for the App Store. It is designed for iPhone with iOS 26 or later, in English and German. The app language follows your iPhone’s app-language setting. No Runner Watch companion is included in this release; Apple Watch workouts recorded in Apple Health can still be imported."
+          ]
+        }
+      ]
+    },
+    "legal": {
+      "eyebrow": "PROVIDER INFORMATION",
+      "title": "Legal & terms",
+      "description": "Runner provider information and Apple standard terms of use.",
+      "sections": [
+        {
+          "heading": "Provider",
+          "paragraphs": [
+            "Damas Technologies LLC<br>Mengelbergstr. 2<br>50676 Köln<br>Germany",
+            "Email: <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>"
+          ]
+        },
+        {
+          "heading": "Terms of use",
+          "paragraphs": [
+            "The app is licensed under the <a href=\"https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\">Apple Standard EULA</a>. Apple’s standard terms apply; this website does not replace that agreement."
+          ]
+        },
+        {
+          "heading": "Fitness information",
+          "paragraphs": [
+            "Runner presents recorded measurements and optional fitness explanations. It does not diagnose conditions, prescribe treatment, certify race results, or estimate missing medical measurements. Data quality and device recordings affect what can be shown."
+          ]
+        },
+        {
+          "heading": "Artwork and example data",
+          "paragraphs": [
+            "Website and App Store illustrations and the sample running photograph were created for Runner using image generation. Screenshots show synthetic demonstration runs. No testimonial, performance promise, or real customer Health record is implied."
+          ]
+        },
+        {
+          "heading": "Privacy",
+          "paragraphs": [
+            "See the <a href=\"../privacy/\">privacy policy</a> for app and website processing. For assistance, visit <a href=\"../support/\">Support</a>."
+          ]
+        }
+      ]
+    }
+  },
+  "de": {
+    "navigation": "Hauptnavigation",
+    "legalNavigation": "Rechtliches und Support",
+    "home": "Die App",
+    "privacyTitle": "Datenschutzerklärung",
+    "legalTitle": "Impressum & Nutzungsbedingungen",
+    "eyebrow": "RUNNER · FÜR IPHONE",
+    "headline": "Jeder Lauf erzählt etwas. Verstehe deinen.",
+    "intro": "Entdecke deine Läufe aus Apple Health neu. Verstehe deine Werte, erkenne Fortschritte und mache aus deinem Zieleinlauf einen Moment zum Teilen.",
+    "appLink": "Im App Store ansehen",
+    "availability": "Version 1.0 wird für die Veröffentlichung vorbereitet. Kostenlos für iPhone.",
+    "welcomeAlt": "Illustrierter Läufer in Gelb auf einer gezeichneten Laufbahn",
+    "ribbon": [
+      "Apple-Health-Import",
+      "Gemessene Einblicke",
+      "Foto- und Video-Overlays",
+      "Deutsch & Englisch"
+    ],
+    "stories": [
+      {
+        "title": "Der Lauf endet. Der Einblick beginnt.",
+        "body": "Tempo, Herzfrequenz, Zwischenzeiten und Routen gehören zusammen. Runner hilft dir, sie zu erkunden – und macht aus fehlenden Messwerten keine erfundenen Zahlen.",
+        "points": [
+          "Importiere Apple-Watch- und andere Lauftrainings aus Apple Health.",
+          "Erkunde Messwerte und vergleiche ähnliche Routen.",
+          "Nutze gemessene Statistiken ohne Konto."
+        ],
+        "image": "insights",
+        "alt": "Cartoon-Läufer betrachtet einfache Diagramme und Routenlinien"
+      },
+      {
+        "title": "Eine Routine, die sichtbar wird.",
+        "body": "Ein Lauf ist ein Moment. Dein Verlauf zeigt ein Muster. Bringe Wochen, Ziele und gemessene Trends in eine Ansicht.",
+        "points": [
+          "Verfolge Aktivitätssummen, Trainingskalender und wiederkehrende Ziele.",
+          "Erkunde vergleichbare Läufe, aufgezeichnete VO₂max und Erholungswerte.",
+          "Wähle optionale KI-Erklärungen nach Anmeldung und separater Einwilligung."
+        ],
+        "image": "progress",
+        "alt": "Läufer steigt neben einer Fortschrittslinie Stufen hinauf"
+      },
+      {
+        "title": "Dein Zieleinlauf. Dein Stil.",
+        "body": "Setze Distanz, Tempo, Zeit und auf Wunsch deine Route auf ein Foto oder Video vom iPhone. Gestalte es, exportiere es und entscheide, wohin es geht.",
+        "points": [
+          "Erstelle Hochformat-, Quadrat-, Story- oder Original-Kompositionen.",
+          "Gestalte und positioniere Laufdaten, Route und App-Symbol.",
+          "Bearbeite auf deinem Gerät; Runner lädt deine Medien nicht zu seinen Diensten hoch."
+        ],
+        "image": "share",
+        "alt": "Cartoon-Läufer neben Foto- und Videorahmen"
+      }
+    ],
+    "screenshots": "Ein genauerer Blick",
+    "screenshotAlt": "Runner-App mit beispielhaften Laufdaten",
+    "sampleNote": "Screenshots verwenden synthetische Beispielläufe und generierte Medien. Ergebnisse und verfügbare Messwerte hängen von deinen Aufzeichnungen ab.",
+    "privacyEyebrow": "DU ENTSCHEIDEST",
+    "privacyHeadline": "Deine Daten. Deine Entscheidungen.",
+    "privacyIntro": "Du entscheidest über den Health-Zugriff. KI-Analyse, Cloud-Verlauf und genaue GPS-Synchronisierung haben jeweils eigene Schalter. Deine gemessenen Laufdaten kannst du auf deinem iPhone behalten.",
+    "disclaimer": "Erfordert iOS 26 oder neuer und Lauftrainings in Apple Health. GPS-Routen und einzelne Messwerte hängen von der Aufzeichnung ab. KI ist optional, für Erwachsene ab 18 Jahren, abhängig von Verfügbarkeit und Tageslimits. Sie bietet Fitnesscoaching, keine medizinische Beratung.",
+    "privacy": {
+      "eyebrow": "STAND · 8. NOVEMBER 2026",
+      "title": "Datenschutzerklärung",
+      "description": "So verarbeitet Runner Health-Daten, optionale KI-Analysen, Cloud-Verlauf und Website-Aufrufe.",
+      "sections": [
+        {
+          "heading": "Verantwortlicher",
+          "paragraphs": [
+            "Runner: Analyzer &amp; Tracking wird bereitgestellt von Damas Technologies LLC<br>Mengelbergstr. 2<br>50676 Köln<br>Deutschland. Bei Datenschutzfragen und für Support erreichst du uns unter <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>."
+          ]
+        },
+        {
+          "heading": "Was auf deinem iPhone bleibt",
+          "paragraphs": [
+            "Runner liest Lauftrainings und die von dir erlaubten Messwerte aus Apple Health: Datum, Distanz, Dauer, Herzfrequenz, Energie, Routen, Laufdynamik sowie vorhandene VO₂max- oder Erholungsmessungen. Die lokale Verarbeitung lädt diese Daten nicht zu Runner hoch. Apple verwaltet die Health-Berechtigungen und teilt Runner nicht mit, welche Leserechte du verweigert hast.",
+            "Die lokale Datenbank nutzt den iOS-Dateischutz und ist von Gerätebackups ausgeschlossen. Lokal gespeicherte Berichte bleiben, bis du die App-Daten löschst oder die App entfernst. Das Löschen von Runner-Daten löscht keine Trainings in Apple Health.",
+            "Ausgewählte Fotos und Videos werden auf dem Gerät bearbeitet. Runner lädt sie nicht zum Backend oder KI-Anbieter hoch. Exporte enthalten keine Standortmetadaten des Quellmediums. Sichtbar eingefügte Routen oder Laufdaten sind jedoch für Empfänger erkennbar. Ein von dir im Teilen-Menü gewählter Dienst verarbeitet die Datei nach seinen eigenen Regeln."
+          ]
+        },
+        {
+          "heading": "Optionale Konten und KI-Analyse",
+          "paragraphs": [
+            "Für gemessene Statistiken brauchst du kein Konto. Optionale Cloud-Funktionen verwenden „Mit Apple anmelden“ und Firebase Authentication. Runner fordert keine Apple-Berechtigungen für Name oder E-Mail an; Apple und Firebase verarbeiten die für die Anmeldung bereitgestellten Identitätsnachweise und Kontoinformationen. Runner ordnet Cloud-Daten über eine Firebase-Nutzerkennung deinem Konto zu.",
+            "KI-Analyse erfordert eine Anmeldung, die Bestätigung, dass du mindestens 18 Jahre alt bist, und eine ausdrückliche separate Einwilligung. Numerische Laufzusammenfassungen, Zwischenzeiten, Hinweise zur Datenqualität und eine kompakte historische Vergleichsbasis werden an den Runner-Dienst und Google Gemini gesendet. Genaue Routen, rohe HealthKit-Messwerte, Namen, E-Mail-Adressen und deine Firebase-Nutzerkennung werden nicht an Gemini gesendet.",
+            "Nach der Einwilligung können der letzte und neu importierte Läufe automatisch analysiert werden. Ältere Läufe und die Neuerstellung in einer anderen Sprache werden ausdrücklich angefordert. KI bietet Fitnesscoaching, keine Diagnose oder Behandlung. Du kannst sie in den Einstellungen ausschalten. Bereits gespeicherte Berichte werden dadurch nicht automatisch gelöscht."
+          ]
+        },
+        {
+          "heading": "Optionaler Verlauf, Routen und Dashboard",
+          "paragraphs": [
+            "Cloud-Verlauf und genaue GPS-Routen sind separate Optionen und anfangs ausgeschaltet. Bei aktivierter Verlaufssynchronisierung speichert Runner gemessene Laufdaten, Zwischenzeiten, Diagrammzusammenfassungen, datierte Ausdauermessungen und gespeicherte Berichte in deinem Konto. Routen werden nur bei zusätzlicher GPS-Einwilligung gespeichert und nie an Gemini gesendet.",
+            "Für das Browser-Dashboard gibst du einen Code in der iPhone-App frei. Die Sitzung hat nur Lesezugriff, dauert höchstens 12 Stunden und endet nach 30 Minuten ohne Aktivität. Verbindungscodes laufen nach 10 Minuten ab. Kurzlebige Browser- und Netzwerk-Sicherheitsdaten verhindern Missbrauch.",
+            "Das Ausschalten der Verlaufssynchronisierung stoppt neue Uploads und entfernt hochgeladene Routen. Numerische Verlaufsdaten bleiben, bis du sie löschst. Das Ausschalten der GPS-Synchronisierung entfernt hochgeladene Koordinaten im gesamten Konto. Ist dein iPhone offline, wird die Anfrage beim erneuten Verbinden abgeschlossen."
+          ]
+        },
+        {
+          "heading": "Technische Daten und Dienstleister",
+          "paragraphs": [
+            "Firebase wird beim Start der App initialisiert, auch vor einer optionalen Cloud-Einwilligung. Firebase Authentication erhebt technische SDK- und Versionsdiagnosen für Dienstanalysen. Anmeldung und App Attest verarbeiten Identitätsnachweise, Attestierungsdaten und Sicherheitssignale. Dies dient nicht dem Werbetracking.",
+            "Runner verwendet Google Firebase Authentication, App Check, Cloud Run und Firestore. Unser Cloud-Run-Dienst und die Firestore-Datenbank liegen in europe-west1. Das bedeutet nicht, dass sämtliche Verarbeitung durch Anbieter in der EU bleibt. Firebase Authentication arbeitet in US-Rechenzentren. Google Gemini verarbeitet die oben beschriebenen numerischen Eingaben. Die Cloud-Infrastruktur protokolliert für Betrieb und Sicherheit Anfrage-Metadaten wie IP-Adressen, Browserkennung, URL, Status und Laufzeit. Trainingsinhalte und Anmeldetoken werden nicht in Anwendungsprotokolle geschrieben.",
+            "Diese Website wird von GitHub Pages gehostet. Sie enthält keine Werbung, Analyse-Skripte, externen Schriftarten, Kontaktformulare oder Marketing-Cookies. GitHub speichert Besucher-IP-Adressen zu Sicherheitszwecken. Siehe <a href=\"https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement\">GitHubs Datenschutzhinweise</a>.",
+            "Wir verkaufen keine Health-Daten und nutzen sie weder für Werbung noch zur Weitergabe an Datenhändler. Anbieter verarbeiten Daten nach ihren geltenden Bedingungen und Schutzmaßnahmen. Siehe <a href=\"https://firebase.google.com/support/privacy\">Firebase-Datenschutzhinweise</a> und <a href=\"https://ai.google.dev/gemini-api/terms\">Gemini-Bedingungen</a>."
+          ]
+        },
+        {
+          "heading": "Speicherung und Löschung",
+          "paragraphs": [
+            "Runners Zwischenspeicher für abgeschlossene Analysen läuft nach 24 Stunden ab, Kontingentdaten nach zwei Tagen. Die physische TTL-Löschung in Firestore erfolgt asynchron; Ablauf bedeutet keine sofortige physische Löschung. Synchronisierter Verlauf läuft nicht automatisch ab und bleibt bis zur Löschung. Das Dashboard nutzt kurzlebige Sitzungs-, Verbindungs- und Ratenbegrenzungsdaten. Minimale Löschmarkierungen verhindern, dass verspätete Anfragen gelöschte Konto- oder Verlaufsdaten wiederherstellen.",
+            "Unser Standard-Cloud-Run-Protokollspeicher bewahrt Anfrageprotokolle derzeit 30 Tage auf. Firebase nennt für Sicherheits-IP-Protokolle der Anmeldung mehrere Wochen und für die Entfernung sonstiger gelöschter Anmeldeinformationen aus Live- und Backupsystemen bis zu 180 Tage. Diese Anbieter- und Sicherheitsfristen sind von Runners Verlaufs- und Cache-Einstellungen getrennt.",
+            "Der Gemini-Dienst wird mit einem kostenpflichtig abgerechneten Projekt verwendet. Laut Googles Bedingungen für bezahlte Dienste werden Eingaben und Ausgaben nicht zur Verbesserung seiner Produkte verwendet. Das bedeutet keine Nullspeicherung: Googles <a href=\"https://ai.google.dev/gemini-api/docs/usage-policies\">Missbrauchsüberwachung</a> beschreibt 55 Tage Aufbewahrung von Eingaben, Kontext und Ausgaben sowie autorisierte Prüfung auffälliger Inhalte. Anbieterpflichten, Sicherheitsuntersuchungen und Backups können eigene Aufbewahrungsregeln haben."
+          ]
+        },
+        {
+          "heading": "Deine Rechte und Einstellungen",
+          "paragraphs": [
+            "Unter Einstellungen → Deine Daten kannst du lokale Daten, hochgeladenen Verlauf oder dein Cloud-Konto löschen. Die Kontolöschung erfordert eine Apple-Bestätigung und entfernt synchronisierte Läufe/Routen, Runners Analyse-Cache, Dashboard-Zugriff und das Firebase-Konto. Apple-Health-Trainings bleiben erhalten. Health-Berechtigungen kannst du außerdem in Apples Health- oder Einstellungen-App widerrufen.",
+            "Soweit anwendbar, kannst du Auskunft, Berichtigung, Löschung, Einschränkung und Datenübertragbarkeit verlangen oder einer Verarbeitung auf Grundlage berechtigter Interessen widersprechen. Eine Einwilligung kannst du für die Zukunft widerrufen; die Rechtmäßigkeit vorheriger Verarbeitung bleibt unberührt. Kontaktiere <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>. Bitte sende keine rohen Health-Daten per E-Mail, sofern wir nicht ausdrücklich einen sicheren Übertragungsweg vereinbaren.",
+            "Für Nutzer in der EU beruhen optionale Health-/Fitness-Uploads und genaue Routenverarbeitung auf Einwilligung, einschließlich ausdrücklicher Einwilligung bei besonderen Datenkategorien (Art. 6 Abs. 1 lit. a und Art. 9 Abs. 2 lit. a DSGVO). Angeforderte Kontodienste beruhen auf Leistungserbringung; verhältnismäßige Sicherheit und technischer Betrieb auf berechtigten Interessen (Art. 6 Abs. 1 lit. b und f). Internationale Anbieterübermittlungen verwenden einschlägige Angemessenheitsbeschlüsse oder vertragliche Schutzmaßnahmen. Du kannst dich bei deiner zuständigen Datenschutzaufsichtsbehörde beschweren, unter anderem bei der Landesbeauftragten für Datenschutz und Informationsfreiheit Nordrhein-Westfalen."
+          ]
+        },
+        {
+          "heading": "Kinder und Änderungen",
+          "paragraphs": [
+            "Runner richtet sich nicht an Kinder. KI ist auf Erwachsene beschränkt, die bestätigen, mindestens 18 Jahre alt zu sein. Wir können diese Erklärung bei Änderungen der App oder der Anbieter aktualisieren. Das Datum oben kennzeichnet die Version. Wesentliche Änderungen optionaler Datennutzung erfordern eine angemessene neue Wahlmöglichkeit in der App."
+          ]
+        }
+      ]
+    },
+    "support": {
+      "eyebrow": "FÜR DEINEN LANGEN WEG",
+      "title": "Support",
+      "description": "Hilfe zu Apple-Health-Importen, optionaler KI, Cloud-Verlauf und Medienexport.",
+      "sections": [
+        {
+          "heading": "Kontakt",
+          "paragraphs": [
+            "Schreibe an <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>. Nenne deine iOS-Version, Runner-Version und beschreibe das Problem. Bitte sende keine persönlichen Health-Daten, genauen Routen, Passwörter oder Anmeldecodes."
+          ]
+        },
+        {
+          "heading": "Meine Läufe fehlen",
+          "paragraphs": [
+            "Prüfe Runners Leserechte in Apple Health und gib deiner Apple Watch Zeit zur Synchronisierung. Runner importiert abgeschlossene Lauftrainings und erfindet keine fehlenden Messwerte. Ziehe zum Aktualisieren nach unten. Apple zeigt der App verweigerte Leserechte nicht an."
+          ]
+        },
+        {
+          "heading": "KI oder Cloud-Verlauf ist nicht verfügbar",
+          "paragraphs": [
+            "Gemessene Statistiken funktionieren ohne Konto. KI erfordert „Mit Apple anmelden“, Altersbestätigung, separate Einwilligung, Internet und verfügbares Kontingent (bis zu drei abgeschlossene Laufanalysen pro Tag). Cloud-Verlauf und genaue GPS-Routen haben eigene Einwilligungen. Lokale Messwerte bleiben bei nicht verfügbaren Cloud-Diensten nutzbar."
+          ]
+        },
+        {
+          "heading": "Fotos und Videos",
+          "paragraphs": [
+            "Wähle Medien auf deinem Gerät, positioniere Ebenen und nutze Speichern oder Teilen. Speichern erfordert die Berechtigung, Fotos hinzuzufügen. Liegen Medien in iCloud, warte den Download ab. Eine geteilte Route kann zeigen, wo du läufst; blende sie aus, wenn du den Standort nicht teilen möchtest."
+          ]
+        },
+        {
+          "heading": "Daten löschen oder Einwilligung widerrufen",
+          "paragraphs": [
+            "Öffne Einstellungen → Deine Daten, um lokale Daten, hochgeladenen Verlauf oder dein Cloud-Konto zu löschen. Deaktiviere KI, Verlauf oder GPS separat in den Einstellungen. Offline angeforderte GPS-Löschungen werden bei erneuter Verbindung abgeschlossen. Die <a href=\"../privacy/\">Datenschutzerklärung</a> erläutert Aufbewahrung und Anbieter."
+          ]
+        },
+        {
+          "heading": "Verfügbarkeit",
+          "paragraphs": [
+            "Runner 1.0 wird für den App Store vorbereitet. Die App ist für iPhone mit iOS 26 oder neuer auf Deutsch und Englisch ausgelegt. Sie folgt der App-Sprache deines iPhones. Diese Version enthält keine Runner-Watch-App; in Apple Health aufgezeichnete Apple-Watch-Läufe können weiterhin importiert werden."
+          ]
+        }
+      ]
+    },
+    "legal": {
+      "eyebrow": "ANBIETERINFORMATIONEN",
+      "title": "Impressum & Nutzungsbedingungen",
+      "description": "Anbieterinformationen zu Runner und Apples Standard-Nutzungsbedingungen.",
+      "sections": [
+        {
+          "heading": "Anbieter",
+          "paragraphs": [
+            "Damas Technologies LLC<br>Mengelbergstr. 2<br>50676 Köln<br>Deutschland",
+            "E-Mail: <a href=\"mailto:mahmutaoata@gmail.com\">mahmutaoata@gmail.com</a>"
+          ]
+        },
+        {
+          "heading": "Nutzungsbedingungen",
+          "paragraphs": [
+            "Für die App gilt die <a href=\"https://www.apple.com/legal/internet-services/itunes/dev/stdeula/\">Apple Standard EULA</a>. Apples Standardbedingungen sind maßgeblich; diese Website ersetzt diese Vereinbarung nicht."
+          ]
+        },
+        {
+          "heading": "Fitnessinformationen",
+          "paragraphs": [
+            "Runner zeigt aufgezeichnete Messwerte und optionale Fitnesstexte. Die App diagnostiziert keine Krankheiten, verordnet keine Behandlung, zertifiziert keine Wettkampfergebnisse und schätzt keine fehlenden medizinischen Messwerte. Datenqualität und Geräteaufzeichnungen bestimmen, was angezeigt werden kann."
+          ]
+        },
+        {
+          "heading": "Artwork und Beispieldaten",
+          "paragraphs": [
+            "Illustrationen und das beispielhafte Lauffoto auf Website und im App Store wurden mithilfe von Bildgenerierung für Runner erstellt. Screenshots zeigen synthetische Beispielläufe. Sie stellen keine Erfahrungsberichte, Leistungsversprechen oder echten Health-Daten von Kunden dar."
+          ]
+        },
+        {
+          "heading": "Datenschutz",
+          "paragraphs": [
+            "Die <a href=\"../privacy/\">Datenschutzerklärung</a> beschreibt die Verarbeitung in App und Website. Hilfe findest du im <a href=\"../support/\">Support</a>."
+          ]
+        }
+      ]
+    }
+  }
+}

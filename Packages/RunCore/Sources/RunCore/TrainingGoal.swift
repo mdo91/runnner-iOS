@@ -20,6 +20,16 @@ public struct TrainingGoal: Codable, Identifiable, Sendable, Equatable {
     case .elevation: return summary.elevationGainMeters
     }
   }
+  public func title(language: AppLanguage = .current) -> String {
+    let metricKey: String
+    switch metric {
+    case .runs: metricKey = "runs"
+    case .distance: metricKey = "distance"
+    case .movingTime: metricKey = "movingTime"
+    case .elevation: metricKey = "elevation"
+    }
+    return "TrainingGoal.Title.\(period.rawValue.lowercased()).\(metricKey).text".localized(language: language)
+  }
 }
 public enum GoalPeriod: String, Codable, CaseIterable, Sendable {
   case week = "Weekly"
@@ -27,5 +37,15 @@ public enum GoalPeriod: String, Codable, CaseIterable, Sendable {
   case year = "Annual"
   public var component: Calendar.Component {
     self == .week ? .weekOfYear : self == .month ? .month : .year
+  }
+}
+
+extension GoalPeriod {
+  public var title: String {
+    switch self {
+    case .week: return "Common.Copy.weekly.text".localized
+    case .month: return "Common.Copy.monthly.text".localized
+    case .year: return "Common.Copy.annual.text".localized
+    }
   }
 }
