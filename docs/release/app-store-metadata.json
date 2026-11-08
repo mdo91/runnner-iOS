@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0",
+  "bundleId": "com.run.mdo.analyze.track",
+  "appStoreId": "6818808161",
+  "preparedAt": "2026-11-08",
+  "primaryLocale": "en-US",
+  "shared": {
+    "primaryCategory": "Health & Fitness",
+    "secondaryCategory": "Sports",
+    "price": "Free",
+    "releaseMode": "Automatic after App Review approval",
+    "distribution": "Public App Store",
+    "availability": "174 current territories; China mainland excluded because no ICP registration was provided. Future territories require a separate eligibility check.",
+    "supportedDeviceFamily": "iPhone",
+    "macAvailability": false,
+    "visionProAvailability": false,
+    "bundledWatchApp": false,
+    "copyright": "2026 Mahmut Aoata",
+    "standardEULAURL": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+    "reviewContact": {
+      "firstName": "Mahmut",
+      "lastName": "Aoata",
+      "email": "mahmutaoata@gmail.com"
+    },
+    "reviewNotesLocale": "en-US",
+    "reviewContactPhoneEnteredSeparately": true
+  },
+  "localizations": {
+    "en-US": {
+      "name": "Runner: Analyzer & Tracking",
+      "subtitle": "Run insights & photo overlays",
+      "promotionalText": "Bring your runs into focus. Explore Apple Health workouts, follow progress, and add your running stats to photos and videos.",
+      "description": "Understand your runs, follow your progress, and share the effort behind every finish.\n\nRunner brings your running workouts from Apple Health into a clear iPhone journal. Explore the measurements you have, compare your training over time, and turn a run into a photo or video with your own statistics.\n\nEXPLORE EVERY RUN\nSee distance, moving time, pace, heart rate, splits, elevation, and routes when they are available. Interactive charts help you examine a run in detail. Missing measurements stay marked as unavailable.\n\nBUILD A CONSISTENT ROUTINE\nBrowse and filter your history, see your training calendar, set recurring goals, and compare periods. Follow trends across comparable runs and view recorded endurance measurements from Apple Health.\n\nMAKE IT YOURS\nAdd measured distance, pace, and time to photos or videos from your library. Move and resize your statistics, add an optional route, choose fonts and colors, and export in original, story, portrait, or square formats. Editing happens on your iPhone. Runner does not upload your selected media to its servers or AI provider.\n\nOPTIONAL AI AND CLOUD FEATURES\nGet AI explanations of numerical running summaries in English or German. AI requires Sign in with Apple, confirmation that you are 18 or older, internet access, and separate sharing consent. Availability and request limits apply. AI explanations are fitness information, not medical advice.\n\nCloud history is optional, with a separate choice for GPS route sync. Approve a browser from your iPhone to view synced history in the web dashboard. You can change your choices or delete cloud data in Settings.\n\nNo account is needed for local statistics or media editing. Runner uses running workouts already saved in Apple Health; it does not record new runs in this iPhone release. Features depend on the measurements recorded and the Health access you allow. Requires iOS 26 or later.\n\nSupport: https://mdo91.github.io/runnner-iOS/en/support/\nPrivacy policy: https://mdo91.github.io/runnner-iOS/en/privacy/\nTerms of Use (Apple Standard EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+      "keywords": "running,pace,heart rate,splits,workout,journal,training,goals,route,photo,video,health",
+      "supportURL": "https://mdo91.github.io/runnner-iOS/en/support/",
+      "marketingURL": "https://mdo91.github.io/runnner-iOS/en/",
+      "privacyPolicyURL": "https://mdo91.github.io/runnner-iOS/en/privacy/",
+      "privacyChoicesURL": "https://mdo91.github.io/runnner-iOS/en/privacy/",
+      "reviewNotes": "Runner 1.0 is an iPhone-only app for analyzing running workouts already recorded in Apple Health. It does not record workouts and does not bundle a Watch app. Test on an iPhone with running workouts in Health. Available charts and routes depend on recorded measurements and granted Health access. The screenshots use synthetic runs and a generated fictional runner image; no private Health records are shown.\n\nOn first launch, onboarding can be skipped. Connect Apple Health from onboarding or Latest. Local statistics, history, goals, trends, and photo/video editing do not require an account. To open the media editor, use the photo/video action in a run summary; choose media from Photos, adjust overlays, and save or open the iOS share sheet. Media editing is on-device.\n\nOptional cloud features use Sign in with Apple; there is no separate username/password login or supplied demo password. In Settings, sign in with an Apple account. AI additionally requires adult confirmation (18+) and explicit AI-sharing consent. Numerical summaries go to Runner's backend and Google Gemini; precise routes, raw HealthKit samples, names, email, and Firebase UID are excluded from AI inputs. AI requests are limited; errors leave measured statistics available.\n\nHistory sync and GPS route sync are separate opt-ins. The read-only web dashboard uses a browser code approved in the app. Settings also provides cloud-history deletion and account deletion, with Apple reauthentication for account deletion. No purchases or subscriptions are implemented.\n\nEnglish and German follow the app's system language. Support: mahmutaoata@gmail.com. The production backend uses Firebase App Attest, so authentication and cloud flows should be tested on a signed physical device.",
+      "validatedLengths": {
+        "name": 27,
+        "subtitle": 29,
+        "promotionalText": 124,
+        "description": 2124,
+        "reviewNotes": 1756,
+        "keywordsUTF8Bytes": 86
+      }
+    },
+    "de-DE": {
+      "name": "Runner: Laufanalyse & Teilen",
+      "subtitle": "Läufe verstehen und teilen",
+      "promotionalText": "Verstehe deine Läufe. Entdecke Trainings aus Apple Health, verfolge deine Fortschritte und ergänze Fotos und Videos um deine Laufstatistiken.",
+      "description": "Verstehe deine Läufe, behalte deine Fortschritte im Blick und teile die Leistung hinter jedem Zieleinlauf.\n\nRunner macht aus deinen Lauftrainings in Apple Health ein übersichtliches Lauftagebuch auf dem iPhone. Entdecke deine Messwerte, vergleiche dein Training über längere Zeiträume und gestalte Fotos oder Videos mit deinen eigenen Laufstatistiken.\n\nJEDEN LAUF GENAUER BETRACHTEN\nSieh Distanz, Bewegungszeit, Tempo, Herzfrequenz, Zwischenzeiten, Höhenmeter und Strecken, soweit diese Daten vorliegen. Interaktive Diagramme helfen dir, einen Lauf genauer zu erkunden. Fehlende Messwerte bleiben als nicht verfügbar gekennzeichnet.\n\nREGELMÄSSIG DRANBLEIBEN\nDurchsuche und filtere deinen Verlauf, nutze den Trainingskalender, setze wiederkehrende Ziele und vergleiche Zeiträume. Verfolge Trends ähnlicher Läufe und sieh aufgezeichnete Ausdauerwerte aus Apple Health.\n\nDEIN LAUF, DEIN BILD\nErgänze Fotos oder Videos aus deiner Mediathek um gemessene Distanz, Tempo und Zeit. Verschiebe und skaliere die Statistiken, füge auf Wunsch deine Strecke hinzu und wähle Schriften und Farben. Exportiere im Originalformat, als Story, im Hochformat oder quadratisch. Die Bearbeitung erfolgt auf deinem iPhone. Runner lädt deine ausgewählten Medien weder auf seine Server noch zum KI-Anbieter hoch.\n\nOPTIONALE KI- UND CLOUD-FUNKTIONEN\nErhalte KI-Erklärungen zu deinen numerischen Laufzusammenfassungen auf Deutsch oder Englisch. Dafür sind „Mit Apple anmelden“, die Bestätigung eines Alters ab 18 Jahren, eine Internetverbindung und eine separate Zustimmung zur Datenweitergabe erforderlich. Verfügbarkeit und Anfragelimits gelten. KI-Erklärungen dienen der Fitnessinformation, nicht der medizinischen Beratung.\n\nDie Cloud-Synchronisierung deines Verlaufs ist freiwillig. Für GPS-Strecken entscheidest du separat. Gib einen Browser auf deinem iPhone frei, um synchronisierte Läufe im Web-Dashboard anzusehen. In den Einstellungen kannst du deine Auswahl ändern oder Cloud-Daten löschen.\n\nFür lokale Statistiken und die Medienbearbeitung brauchst du kein Konto. Runner verwendet Lauftrainings, die bereits in Apple Health gespeichert sind; diese iPhone-Version zeichnet keine neuen Läufe auf. Der Funktionsumfang hängt von den aufgezeichneten Messwerten und deinen Health-Freigaben ab. Erfordert iOS 26 oder neuer.\n\nSupport: https://mdo91.github.io/runnner-iOS/de/support/\nDatenschutzerklärung: https://mdo91.github.io/runnner-iOS/de/privacy/\nNutzungsbedingungen (Apple Standard-EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+      "keywords": "laufen,joggen,tempo,puls,splits,training,ziele,strecke,foto,video,gesundheit,lauftagebuch",
+      "supportURL": "https://mdo91.github.io/runnner-iOS/de/support/",
+      "marketingURL": "https://mdo91.github.io/runnner-iOS/de/",
+      "privacyPolicyURL": "https://mdo91.github.io/runnner-iOS/de/privacy/",
+      "privacyChoicesURL": "https://mdo91.github.io/runnner-iOS/de/privacy/",
+      "reviewNotes": "Runner 1.0 ist eine reine iPhone-App zur Analyse von Lauftrainings, die bereits in Apple Health aufgezeichnet wurden. Sie zeichnet keine Trainings auf und enthält keine Watch-App. Bitte auf einem iPhone mit Lauftrainings in Health testen. Diagramme und Strecken hängen von den aufgezeichneten Messwerten und erteilten Health-Freigaben ab. Die Screenshots verwenden synthetische Läufe und ein generiertes Bild einer fiktiven laufenden Person, keine privaten Health-Daten.\n\nDas Onboarding lässt sich überspringen. Apple Health kann dort oder unter „Letzter Lauf“ verbunden werden. Lokale Statistiken, Verlauf, Ziele, Trends sowie Foto- und Videobearbeitung benötigen kein Konto. Der Medieneditor öffnet sich über die Foto-/Video-Aktion in der Laufübersicht. Nach Auswahl aus Fotos lassen sich Einblendungen anpassen und das Ergebnis speichern oder über das iOS-Teilen-Menü weitergeben. Die Bearbeitung erfolgt lokal.\n\nOptionale Cloud-Funktionen verwenden „Mit Apple anmelden“. Es gibt keine separate Anmeldung mit Benutzername/Passwort und kein bereitgestelltes Demo-Passwort. Die Anmeldung erfolgt in den Einstellungen mit einem Apple-Konto. KI erfordert zusätzlich die Bestätigung eines Alters ab 18 Jahren und eine ausdrückliche Einwilligung zur Datenweitergabe. Numerische Zusammenfassungen werden an das Runner-Backend und Google Gemini gesendet. Präzise Strecken, rohe HealthKit-Daten, Namen, E-Mail-Adressen und die Firebase-UID sind von KI-Anfragen ausgeschlossen. Für KI gelten Anfragelimits; bei Fehlern bleiben gemessene Statistiken verfügbar.\n\nVerlauf und GPS-Strecken werden jeweils separat zur Synchronisierung freigegeben. Das schreibgeschützte Web-Dashboard wird über einen Browsercode in der App autorisiert. Die Einstellungen bieten auch das Löschen des Cloud-Verlaufs und des Kontos; die Kontolöschung erfordert eine erneute Apple-Bestätigung. Es gibt keine Käufe oder Abonnements.\n\nDeutsch und Englisch folgen der System-App-Sprache. Support: mahmutaoata@gmail.com. Das produktive Backend verwendet Firebase App Attest; Anmeldung und Cloud-Funktionen sollten auf einem signierten echten Gerät geprüft werden.",
+      "validatedLengths": {
+        "name": 28,
+        "subtitle": 26,
+        "promotionalText": 141,
+        "description": 2538,
+        "reviewNotes": 2126,
+        "keywordsUTF8Bytes": 89
+      }
+    }
+  },
+  "fieldLimits": {
+    "nameCharacters": 30,
+    "subtitleCharacters": 30,
+    "promotionalTextCharacters": 170,
+    "descriptionCharacters": 4000,
+    "keywordsUTF8Bytes": 100
+  },
+  "sources": [
+    "https://developer.apple.com/help/app-store-connect/reference/app-information/app-information",
+    "https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information"
+  ],
+  "submissionNotes": [
+    "Descriptions are plain text. Review notes are private and shared across localizations in App Store Connect; use the en-US variant for submission.",
+    "Resolve the required private review phone outside this file. Do not commit the number.",
+    "Verify these public URLs after GitHub Pages deployment before saving them in App Store Connect.",
+    "Store descriptions must remain aligned with the final tested release build and approved screenshots.",
+    "Verify deployed German AI responses and dashboard localization before uploading the bilingual release claims."
+  ]
+}

@@ -16,30 +16,30 @@ struct RouteComparisons: View {
     Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Repeated route",
-          subtitle: "Reliable outdoor routes, matched in the same direction")
+          title: "Common.Copy.repeatedRoute.text".localized,
+          subtitle: "RouteComparisons.Copy.reliableOutdoorRoutesMatchedInTheSameDirection.text".localized)
         if related.isEmpty {
-          Text("No reliable matching route yet.").foregroundStyle(RunnerStyle.muted)
+          Text("RouteComparisons.Copy.noReliableMatchingRouteYet.text".localized).foregroundStyle(RunnerStyle.muted)
         } else {
-          Text("\(related.count + 1) completions").font(.headline).accessibilityIdentifier(
+          Text("RouteComparisons.Format.completions.text".localized(String(describing: related.count + 1))).font(.headline).accessibilityIdentifier(
             "route.completions")
           Chart(matching) { workout in
             if let pace = analytics.snapshot.metrics[workout.id]?.averagePaceSecondsPerKm {
               LineMark(
-                x: .value("Date", workout.start),
-                y: .value("Pace", pace * units.metersPerUnit / 1000 / 60)
+                x: .value("Common.Copy.date.text".localized, workout.start),
+                y: .value("Common.Copy.pace.text".localized, pace * units.metersPerUnit / 1000 / 60)
               ).foregroundStyle(RunnerStyle.accent)
               PointMark(
-                x: .value("Date", workout.start),
-                y: .value("Pace", pace * units.metersPerUnit / 1000 / 60)
+                x: .value("Common.Copy.date.text".localized, workout.start),
+                y: .value("Common.Copy.pace.text".localized, pace * units.metersPerUnit / 1000 / 60)
               ).foregroundStyle(RunnerStyle.accent)
             }
-          }.chartYAxisLabel("min/\(units.distanceUnit)").frame(height: 150)
-          Button("Compare route runs") {
-            drilldown = RunDrilldown(title: "Repeated route", runIDs: matching.map(\.id))
+          }.chartYAxisLabel("RouteComparisons.Format.min.text".localized(String(describing: units.distanceUnit))).frame(height: 150)
+          Button("Common.Copy.compareRouteRuns.text".localized) {
+            drilldown = RunDrilldown(title: "Common.Copy.repeatedRoute.text".localized, runIDs: matching.map(\.id))
           }.buttonStyle(RunnerSecondaryButtonStyle()).accessibilityIdentifier("route.runs")
           Text(
-            "Endpoints within 100 m, distances within 10%, and at least 90% of corresponding route points within 60 m. Weather, stops, and effort affect pace."
+            "RouteComparisons.Copy.endpointsWithin100MDistancesWithin10AndAt.text".localized
           ).font(.caption).foregroundStyle(RunnerStyle.muted)
         }
       }

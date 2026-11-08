@@ -76,3 +76,17 @@ public enum BestEfforts {
     }.sorted { $0.seconds == $1.seconds ? $0.start < $1.start : $0.seconds < $1.seconds }
   }
 }
+
+extension EffortDistance {
+  public var title: String {
+    switch self {
+    case .m400: return "Common.Copy.400M.text".localized
+    case .km1: return "Common.Copy.1Km.text".localized
+    case .mile: return "Common.Copy.1Mile.text".localized
+    case .km5: return "Common.Copy.5Km.text".localized
+    case .km10: return "Common.Copy.10Km.text".localized
+    case .half: return "Common.Copy.halfMarathon.text".localized
+    case .marathon: return "Common.Copy.marathon.text".localized
+    }
+  }
+}

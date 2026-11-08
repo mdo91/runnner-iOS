@@ -1,3 +1,4 @@
+import RunCore
 import FirebaseAppCheck
 import FirebaseCore
 import SwiftData
@@ -8,7 +9,6 @@ import SwiftUI
   @StateObject private var account: AccountManager
   @StateObject private var training = TrainingSettings()
   @StateObject private var analysis = AnalysisManager()
-  @StateObject private var live = PhoneWorkoutManager()
   @StateObject private var historySync = HistorySyncManager()
   private let container: ModelContainer
   init() {
@@ -60,8 +60,8 @@ import SwiftUI
   }
   var body: some Scene {
     WindowGroup {
-      ContentView().environmentObject(health).environmentObject(account).environmentObject(analysis)
-        .environmentObject(live).environmentObject(historySync).environmentObject(training)
+      ReleaseRootView().environmentObject(health).environmentObject(account).environmentObject(analysis)
+        .environmentObject(historySync).environmentObject(training)
         .defaultAppStorage(AppRuntime.defaults)
         .environment(\.calendar, AppRuntime.calendar)
         .environment(\.timeZone, AppRuntime.calendar.timeZone)
@@ -73,7 +73,6 @@ import SwiftUI
             if PreviewFixtures.enabled { return }
           #endif
           health.configure(container.mainContext)
-          live.configure(health.healthStore)
           await health.sync()
         }
     }.modelContainer(container)

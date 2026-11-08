@@ -80,6 +80,7 @@ public struct HistoricalBaseline: Codable, Sendable {
 public struct AnalysisRequest: Encodable, Sendable {
   public let schemaVersion = 1
   public let consentVersion = "2026-10-03"
+  public var language: AppLanguage
   public var id: UUID
   public var metrics: MeasuredMetrics
   public var baseline: HistoricalBaseline
@@ -91,8 +92,9 @@ public struct AnalysisRequest: Encodable, Sendable {
   }
   public init(
     run: RunData, history: [RunData], vo2: [DatedMeasurement] = [],
-    recovery: [DatedMeasurement] = []
+    recovery: [DatedMeasurement] = [], language: AppLanguage = .english
   ) {
+    self.language = language
     id = run.id
     metrics = RunCalculator.metrics(run)
     splits = RunCalculator.splits(run)
@@ -104,6 +106,8 @@ public struct AnalysisRequest: Encodable, Sendable {
   }
 }
 public struct AnalysisReport: Codable, Sendable {
+  public var language: AppLanguage? = nil
+  public var effectiveLanguage: AppLanguage { language ?? .english }
   public var schemaVersion: Int
   public var id: UUID
   public var status: String
@@ -170,13 +174,13 @@ public struct CoachingTargets: Codable, Sendable {
   }
   public func cue(heartRate: Double?, pace: Double?) -> String? {
     if let heartRate, let upperHeartRate, heartRate > upperHeartRate {
-      return "Above your heart-rate target. Ease your effort."
+      return "Intelligence.Copy.aboveYourHeartRateTargetEaseYourEffort.text".localized
     }
     if let heartRate, let lowerHeartRate, heartRate < lowerHeartRate {
-      return "Below your heart-rate target."
+      return "Intelligence.Copy.belowYourHeartRateTarget.text".localized
     }
     if let pace, let target = targetPaceSecondsPerKm, abs(pace - target) > 20 {
-      return pace < target ? "Faster than your target pace." : "Slower than your target pace."
+      return pace < target ? "Intelligence.Copy.fasterThanYourTargetPace.text".localized : "Intelligence.Copy.slowerThanYourTargetPace.text".localized
     }
     return nil
   }

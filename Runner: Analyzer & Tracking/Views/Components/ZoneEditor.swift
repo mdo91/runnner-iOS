@@ -14,42 +14,42 @@ struct ZoneEditor: View {
   }
   var body: some View {
     Form {
-      Section("Known maximum heart rate") {
-        TextField("Maximum bpm", value: $maximum, format: .number).keyboardType(.decimalPad)
+      Section("ZoneEditor.Copy.knownMaximumHeartRate.text".localized) {
+        TextField("Common.Copy.maximumBpm.text".localized, value: $maximum, format: .number).keyboardType(.decimalPad)
           .accessibilityIdentifier("zones.maximum").focused($editing)
-        Button("Generate boundaries") { boundaries = HeartRateZones(maximum: maximum).boundaries }
+        Button("Common.Copy.generateBoundaries.text".localized) { boundaries = HeartRateZones(maximum: maximum).boundaries }
           .accessibilityIdentifier("zones.generate")
-        Text("Use a known maximum. Runner does not infer it from your age or a single workout.")
+        Text("ZoneEditor.Copy.useAKnownMaximumRunnerDoesNotInferIt.text".localized)
           .font(.footnote)
       }
-      Section("Lower boundaries · bpm") {
+      Section("ZoneEditor.Copy.lowerBoundariesBpm.text".localized) {
         ForEach(0..<5, id: \.self) { index in
           HStack {
-            Text("Zone \(index + 1)")
-            TextField("bpm", value: $boundaries[index], format: .number).keyboardType(.decimalPad)
+            Text("ZoneEditor.Format.zone.text".localized(String(describing: index + 1)))
+            TextField("Common.Copy.bpm.text".localized, value: $boundaries[index], format: .number).keyboardType(.decimalPad)
               .accessibilityIdentifier("zones.boundary.\(index)").focused($editing)
           }
         }
         if !zones.isValid {
           Text(
-            "Use a maximum from 80–240 bpm and five increasing boundaries below it, at least 1 bpm apart."
+            "ZoneEditor.Copy.useAMaximumFrom80240BpmAndFive.text".localized
           ).foregroundStyle(.red).accessibilityIdentifier("zones.error")
         }
       }
       Section {
-        Button("Save zones") {
+        Button("Common.Copy.saveZones.text".localized) {
           settings.save(zones: zones)
           dismiss()
         }.disabled(!zones.isValid).accessibilityIdentifier("zones.save")
-        Button("Remove zone settings", role: .destructive) {
+        Button("Common.Copy.removeZoneSettings.text".localized, role: .destructive) {
           settings.save(zones: nil)
           dismiss()
         }
       }
-    }.scrollContentBackground(.hidden).background(RunnerStyle.background).navigationTitle("Heart-rate zones").scrollDismissesKeyboard(.interactively).toolbar {
+    }.scrollContentBackground(.hidden).background(RunnerStyle.background).navigationTitle("Common.Copy.heartRateZones.text".localized).scrollDismissesKeyboard(.interactively).toolbar {
       ToolbarItemGroup(placement: .keyboard) {
         Spacer()
-        Button("Done") { editing = false }.accessibilityIdentifier("zones.keyboardDone")
+        Button("Common.Copy.done.text".localized) { editing = false }.accessibilityIdentifier("zones.keyboardDone")
       }
     }.onAppear {
       if let zones = settings.preferences.zones {

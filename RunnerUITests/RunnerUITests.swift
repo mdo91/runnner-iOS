@@ -29,18 +29,23 @@ import XCTest
     return directory.appendingPathComponent("\(String(filename)).\(testID).\(suffix)")
   }
   @discardableResult private func launch(
-    _ scenario: String = "populated", appearance: String = "light", largeText: Bool = false
+    _ scenario: String = "populated", appearance: String = "light", largeText: Bool = false,
+    language: String = "en"
   ) -> XCUIApplication {
     app = XCUIApplication()
     app.launchArguments = [
-      "--ui-scenario", scenario, "-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+      "--ui-scenario", scenario, "-AppleLanguages", "(\(language))", "-AppleLocale", language == "de" ? "de_DE" : "en_US",
     ]
     app.launchEnvironment = [
       "RUNNER_TEST_ID": testID, "RUNNER_APPEARANCE": appearance,
       "RUNNER_LARGE_TEXT": largeText ? "1" : "0", "TZ": "America/Los_Angeles",
     ]
     app.launch()
-    XCTAssertTrue(app.buttons["Activity"].firstMatch.waitForExistence(timeout: 15))
+    if scenario == "onboarding" {
+      XCTAssertTrue(app.staticTexts["onboarding.title"].waitForExistence(timeout: 15))
+      return app
+    }
+    XCTAssertTrue(app.buttons[language == "de" ? "Aktivität" : "Activity"].firstMatch.waitForExistence(timeout: 15))
     let ready = XCTNSPredicateExpectation(
       predicate: NSPredicate(format: "exists == true AND value == %@", "Fixtures ready"),
       object: app.buttons["navigation.settings"])
@@ -48,6 +53,109 @@ import XCTest
       XCTWaiter.wait(for: [ready], timeout: 30), .completed,
       "Fixture analytics did not finish loading")
     return app
+  }
+
+  func testOnboardingEnglishCompletionAndReplay() {
+    launch("onboarding")
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Understand every run.")
+    app.buttons["onboarding.next"].tap()
+    app.buttons["onboarding.back"].tap()
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Understand every run.")
+    for _ in 0..<5 { app.buttons["onboarding.next"].tap() }
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Your data. Your choice.")
+    app.buttons["onboarding.notNow"].tap()
+    XCTAssertTrue(app.buttons["Activity"].firstMatch.waitForExistence(timeout: 15))
+    XCTAssertFalse(app.buttons["Live"].exists)
+    app.terminate(); app.launch()
+    XCTAssertTrue(app.buttons["Activity"].firstMatch.waitForExistence(timeout: 15))
+    XCTAssertFalse(app.buttons["onboarding.next"].exists)
+    app.buttons["navigation.settings"].tap()
+    reveal(app.buttons["settings.onboarding"])
+    app.buttons["settings.onboarding"].tap()
+    XCTAssertTrue(app.buttons["onboarding.skip"].waitForExistence(timeout: 5))
+    app.buttons["onboarding.skip"].tap()
+    XCTAssertTrue(app.buttons["settings.done"].waitForExistence(timeout: 5))
+  }
+
+  func testOnboardingGermanAndLargeText() throws {
+    launch("onboarding", largeText: true, language: "de")
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Verstehe jeden Lauf.")
+    for _ in 0..<5 { app.buttons["onboarding.next"].tap() }
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Deine Daten. Deine Wahl.")
+    try app.performAccessibilityAudit(for: [.textClipped, .sufficientElementDescription])
+    app.buttons["onboarding.notNow"].tap()
+    XCTAssertTrue(app.buttons["Aktivität"].firstMatch.waitForExistence(timeout: 15))
+    XCTAssertFalse(app.buttons["Live"].exists)
+    app.buttons["Verlauf"].firstMatch.tap()
+    XCTAssertTrue(app.staticTexts["Lauftagebuch"].waitForExistence(timeout: 5))
+  }
+
+  func testOnboardingHealthActionDoesNotEnableCloudConsent() {
+    launch("onboarding")
+    for _ in 0..<5 { app.buttons["onboarding.next"].tap() }
+    app.buttons["onboarding.connectHealth"].tap()
+    XCTAssertTrue(app.buttons["navigation.settings"].waitForExistence(timeout: 15))
+    app.buttons["navigation.settings"].tap()
+    reveal(app.switches["settings.aiConsent"])
+    XCTAssertEqual(app.switches["settings.aiConsent"].value as? String, "0")
+  }
+
+  func testOnboardingUnsupportedLanguageFallsBackToEnglish() {
+    launch("onboarding", language: "fr")
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Understand every run.")
+    XCTAssertEqual(app.buttons["onboarding.next"].label, "Continue")
+    app.buttons["onboarding.skip"].tap()
+    XCTAssertTrue(app.buttons["Latest"].firstMatch.waitForExistence(timeout: 15))
+  }
+  // Opt-in captures use the real interface and synthetic records; never run in cloud CI.
+  func testCaptureEnglishStoreScreens() throws {
+    try XCTSkipUnless(ProcessInfo.processInfo.environment["RUNNER_CAPTURE_STORE"] == "1")
+    try captureStore(language: "en")
+  }
+  func testCaptureGermanStoreScreens() throws {
+    try XCTSkipUnless(ProcessInfo.processInfo.environment["RUNNER_CAPTURE_STORE"] == "1")
+    try captureStore(language: "de")
+  }
+  private func captureStore(language: String) throws {
+    let de = language == "de"
+    launch("store", appearance: "dark", language: language)
+    func capture(_ key: String) throws {
+      let screenshot = XCUIScreen.main.screenshot()
+      let attachment = XCTAttachment(screenshot: screenshot)
+      attachment.name = "\(language)-\(key)"; attachment.lifetime = .keepAlways; add(attachment)
+      let root = URL(fileURLWithPath: ProcessInfo.processInfo.environment["RUNNER_EVIDENCE_DIR"] ?? "/tmp/runner-store-captures")
+      try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+      try screenshot.pngRepresentation.write(to: root.appendingPathComponent("\(language)-\(key).png"))
+    }
+    try capture("01-overview")
+    reveal(app.buttons["run.metric"])
+    try capture("03-route")
+    reveal(app.buttons["run.split.1"])
+    try capture("02-charts")
+    reveal(app.buttons["run.split.5"])
+    try capture("03-splits")
+    reveal(app.staticTexts["run.analysisEndurance"])
+    try capture("06-analysis")
+    tab(de ? "Verlauf" : "History")
+    try capture("04-history")
+    tab(de ? "Aktivität" : "Activity")
+    try capture("05-activity")
+    reveal(app.buttons["goal.add"])
+    try capture("05-goals")
+    tab("Trends")
+    try capture("06-trends")
+    tab(de ? "Aktuell" : "Latest")
+    reveal(app.buttons["run.createPhoto"], towardTop: true)
+    openRunPhoto()
+    app.buttons["photo.choose"].tap()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 10))
+    try capture("07-photo")
+    app.terminate()
+    launch("video-store", appearance: "dark", language: language)
+    openRunPhoto()
+    app.buttons["photo.choose"].tap()
+    XCTAssertTrue(app.buttons["video.play"].waitForExistence(timeout: 20))
+    try capture("08-video")
   }
   private func tab(_ name: String) {
     let button = app.buttons[name].firstMatch
@@ -70,6 +178,19 @@ import XCTest
       "A system notification obscures the accessibility audit")
   }
   private func reveal(_ element: XCUIElement, towardTop: Bool = false, limit: Int = 12) {
+    // During a navigation push, XCTest can still expose the outgoing scroll view
+    // with a negative x origin. Wait for the destination before measuring its bounds.
+    let settled = NSPredicate { _, _ in
+      let window = self.app.windows.firstMatch.frame
+      let scroll = self.app.scrollViews.firstMatch
+      guard scroll.exists else { return !window.isEmpty }
+      let frame = scroll.frame
+      return !frame.isEmpty && frame.minX >= window.minX - 1
+        && frame.maxX <= window.maxX + 1
+    }
+    XCTAssertEqual(
+      XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: settled, object: app)],
+        timeout: 10), .completed, "Navigation did not settle before scrolling")
     for _ in 0..<limit {
       let window = app.windows.firstMatch
       let bar = app.tabBars.firstMatch
@@ -113,7 +234,7 @@ import XCTest
     let button = app.buttons["run.createPhoto"]
     reveal(button)
     button.tap()
-    XCTAssertTrue(app.navigationBars["Run Photo"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.buttons["photo.choose"].waitForExistence(timeout: 5))
   }
   private var photoArtwork: XCUIElement {
     app.descendants(matching: .any)["photo.artwork"].firstMatch
@@ -129,7 +250,7 @@ import XCTest
         XCTFail("Photo controls have no visible window bounds")
         return
       }
-      let top = max(frame.minY, app.navigationBars["Run Photo"].frame.maxY) + 8
+      let top = max(frame.minY, app.navigationBars.firstMatch.frame.maxY) + 8
       let bottom = min(frame.maxY, app.buttons["photo.save"].frame.minY) - 12
       if element.exists && element.frame.minY >= top && element.frame.maxY <= bottom
         && element.isHittable
@@ -197,8 +318,7 @@ import XCTest
     XCTAssertGreaterThanOrEqual(photo.frame.height, 44)
     assertDarkTabBar()
     captureDashboard("latest")
-    for (name, label) in [("Activity", "Every run adds up"), ("Trends", "Built one run at a time"),
-      ("Live", "Open Runner on Watch")]
+    for (name, label) in [("Activity", "Every run adds up"), ("Trends", "Built one run at a time")]
     {
       tab(name)
       XCTAssertTrue(app.descendants(matching: .any)[label].firstMatch.waitForExistence(timeout: 5))
@@ -240,7 +360,7 @@ import XCTest
         bounds = bar.frame
       } else {
         // iPad exposes its top tabs as buttons rather than a TabBar element.
-        let tabs = ["Latest", "History", "Activity", "Trends", "Live"].map {
+        let tabs = ["Latest", "History", "Activity", "Trends"].map {
           self.app.buttons[$0].firstMatch
         }
         guard tabs.allSatisfy({ $0.exists }) else { return false }
@@ -373,6 +493,127 @@ import XCTest
     app.alerts.buttons["OK"].tap()
     XCTAssertTrue(app.buttons["run.createPhoto"].waitForExistence(timeout: 5))
   }
+  func testRunVideoPlaybackCropSaveAndShare() {
+    launch("video-populated")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    XCTAssertTrue(photoArtwork.label.contains("Run video"))
+    XCTAssertEqual(app.buttons["photo.save"].label, "Save Video")
+    let play = app.buttons["video.play"]
+    revealPhotoControl(play, towardTop: true)
+    play.tap()
+    XCTAssertEqual(play.label, "Pause video")
+    let position = app.sliders["video.position"]
+    position.adjust(toNormalizedSliderPosition: 0.5)
+    XCTAssertEqual(play.label, "Play video")
+    let route = app.switches["photo.routeToggle"]
+    revealPhotoControl(route)
+    route.switches.firstMatch.exists ? route.switches.firstMatch.tap() : route.tap()
+    photoFormat("Story 9:16")
+    photoLayer("Crop")
+    let zoom = app.sliders["photo.size"]
+    revealPhotoControl(zoom)
+    zoom.adjust(toNormalizedSliderPosition: 0.2)
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Video saved"].waitForExistence(timeout: 30))
+    XCTAssertFalse(app.buttons["photo.save"].exists)
+    app.alerts.buttons["Share Video"].tap()
+    let complete = app.buttons["photo.fixtureShare.complete"]
+    XCTAssertTrue(complete.waitForExistence(timeout: 5))
+    complete.tap()
+    XCTAssertTrue(app.alerts["Video shared"].waitForExistence(timeout: 5))
+  }
+
+  func testRunVideoLoadingSaveDenialAndShareRecovery() {
+    launch("video-load-failure")
+    openRunPhoto()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 10))
+    app.alerts.buttons["Retry"].tap()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    app.terminate()
+    launch("video-save-denied")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    let up = app.buttons["photo.arrow.up"]
+    revealPhotoControl(up)
+    up.tap()
+    let before = app.buttons["photo.statsOverlay"].value as? String
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 30))
+    app.alerts.buttons["Share Instead"].tap()
+    let cancel = app.buttons["photo.fixtureShare.cancel"]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 30))
+    cancel.tap()
+    XCTAssertTrue(app.buttons["photo.share"].waitForExistence(timeout: 5))
+    XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, before)
+    XCTAssertFalse(app.alerts["Video shared"].exists)
+    app.buttons["photo.share"].tap()
+    let fail = app.buttons["photo.fixtureShare.fail"]
+    XCTAssertTrue(fail.waitForExistence(timeout: 30))
+    fail.tap()
+    XCTAssertTrue(app.alerts["Couldn’t finish"].waitForExistence(timeout: 5))
+    app.alerts.buttons["Retry"].tap()
+    let complete = app.buttons["photo.fixtureShare.complete"]
+    XCTAssertTrue(complete.waitForExistence(timeout: 30))
+    complete.tap()
+    XCTAssertTrue(app.alerts["Video shared"].waitForExistence(timeout: 5))
+  }
+
+  func testRunVideoSaveCancellationDuringAuthorizationPreservesEdits() {
+    launch("video-save-authorizing")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    let before = app.buttons["photo.statsOverlay"].value as? String
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.staticTexts["Waiting for Photos…"].waitForExistence(timeout: 30))
+    let cancel = app.buttons["Cancel Export"]
+    XCTAssertTrue(cancel.waitForExistence(timeout: 10))
+    cancel.tap()
+    let ready = NSPredicate(format: "enabled == true")
+    expectation(for: ready, evaluatedWith: app.buttons["photo.save"])
+    waitForExpectations(timeout: 15)
+    XCTAssertFalse(app.alerts["Video saved"].exists)
+    XCTAssertEqual(app.buttons["photo.statsOverlay"].value as? String, before)
+    XCTAssertTrue(app.buttons["video.play"].exists)
+  }
+
+  func testRunVideoSaveHidesCancellationWhilePhotosIsCommitting() {
+    launch("video-save-committing")
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.staticTexts["Saving video…"].waitForExistence(timeout: 30))
+    XCTAssertFalse(app.buttons["Cancel Export"].exists)
+    XCTAssertFalse(app.buttons["photo.close"].isEnabled)
+    XCTAssertTrue(app.alerts["Video saved"].waitForExistence(timeout: 15))
+  }
+
+  func testRunVideoReplacementPreservesOverlayStyling() {
+    launch("video-replacement")
+    tab("History")
+    let older = app.buttons["history.run.00000000-0000-0000-0000-000000000002"]
+    reveal(older)
+    older.tap()
+    openRunPhoto()
+    XCTAssertTrue(photoArtwork.waitForExistence(timeout: 15))
+    XCTAssertTrue(photoArtwork.label.contains("25m 30s"))
+    // Use one canvas ratio for both media types so bounds clamping is not required.
+    photoFormat("Story 9:16")
+    let font = app.buttons["photo.font.mono"]
+    revealPhotoControl(font)
+    font.tap()
+    let stats = app.buttons["photo.statsOverlay"]
+    let before = stats.value as? String
+    app.buttons["photo.choose"].tap()
+    XCTAssertEqual(app.buttons["photo.save"].label, "Save Photo")
+    XCTAssertEqual(stats.value as? String, before)
+    XCTAssertFalse(app.buttons["video.play"].exists)
+    revealPhotoControl(font)
+    XCTAssertEqual(font.value as? String, "Selected")
+    app.buttons["photo.save"].tap()
+    XCTAssertTrue(app.alerts["Image saved"].waitForExistence(timeout: 10))
+  }
+
   func testRunPhotoUsesHistoricalSessionAndMissingGPS() {
     launch()
     tab("History")
@@ -469,7 +710,7 @@ import XCTest
   private func auditPhotoControls() throws {
     let artwork = photoArtwork.frame
     let scroll = app.scrollViews["photo.controls"].frame.intersection(app.windows.firstMatch.frame)
-    let top = max(scroll.minY, app.navigationBars["Run Photo"].frame.maxY)
+    let top = max(scroll.minY, app.navigationBars.firstMatch.frame.maxY)
     let visible = CGRect(
       x: scroll.minX, y: top, width: scroll.width,
       height: max(0, app.buttons["photo.save"].frame.minY - 12 - top))
@@ -537,6 +778,8 @@ import XCTest
     revealPhotoControl(toggle)
     toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
     XCTAssertFalse(icon.exists)
+    // Hiding the icon reveals Stats controls, which can move this switch offscreen.
+    revealPhotoControl(toggle)
     toggle.switches.firstMatch.exists ? toggle.switches.firstMatch.tap() : toggle.tap()
     XCTAssertEqual(icon.value as? String, retained)
     app.buttons["photo.choose"].tap()
@@ -603,7 +846,7 @@ import XCTest
   }
   func testNavigationAndActivityCheckpointRegression() {
     launch()
-    for name in ["History", "Activity", "Trends", "Live", "Latest"] { tab(name) }
+    for name in ["History", "Activity", "Trends", "Latest"] { tab(name) }
     for _ in 0..<3 {
       tab("Activity")
       XCTAssertEqual(app.staticTexts["activity.total"].label, "3 runs")
@@ -752,10 +995,10 @@ import XCTest
     reveal(app.buttons["activity.bucket.8"])
     app.buttons["activity.bucket.8"].tap()
     XCTAssertTrue(app.staticTexts["activity.selection"].waitForExistence(timeout: 5))
-    XCTAssertTrue(app.staticTexts["activity.selection"].label.contains("1 runs"))
+    XCTAssertTrue(app.staticTexts["activity.selection"].label.contains("1 run"))
     app.buttons["activity.viewRuns"].tap()
     XCTAssertTrue(app.staticTexts["explorer.count"].waitForExistence(timeout: 5))
-    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 runs")
+    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 run")
     app.buttons["explorer.done"].tap()
     reveal(app.buttons["activity.customDates"])
     app.buttons["activity.customDates"].tap()
@@ -771,7 +1014,7 @@ import XCTest
     waitForLabel(app.buttons["calendar.day.8"], containing: "October 8")
     app.buttons["calendar.day.8"].tap()
     XCTAssertTrue(app.staticTexts["explorer.count"].waitForExistence(timeout: 5))
-    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 runs")
+    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 run")
     app.buttons["explorer.done"].tap()
     XCTAssertTrue(app.buttons["explorer.done"].waitForNonExistence(timeout: 10))
     reveal(app.buttons["calendar.previous"])
@@ -783,7 +1026,7 @@ import XCTest
     tab("History")
     reveal(app.buttons["Indoor"])
     app.buttons["Indoor"].tap()
-    XCTAssertEqual(app.staticTexts["history.count"].label, "1 runs")
+    XCTAssertEqual(app.staticTexts["history.count"].label, "1 run")
     app.buttons["Outdoor"].tap()
     XCTAssertEqual(app.staticTexts["history.count"].label, "5 runs")
     app.buttons["history.reset"].tap()
@@ -898,7 +1141,7 @@ import XCTest
     app.buttons["bests.restore"].tap()
     XCTAssertEqual(app.buttons["bests.rank.1"].label, original)
     app.buttons["bests.rank.1"].tap()
-    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 runs")
+    XCTAssertEqual(app.staticTexts["explorer.count"].label, "1 run")
     app.buttons["explorer.done"].tap()
     tab("Latest")
     reveal(app.buttons["route.runs"])
@@ -909,7 +1152,7 @@ import XCTest
   }
   func testAppOwnedScreenAccessibility() throws {
     launch("empty")
-    for name in ["Latest", "History", "Trends", "Live"] {
+    for name in ["Latest", "History", "Trends"] {
       tab(name)
       waitForUnobscuredScreen()
       try app.performAccessibilityAudit(for: [
@@ -946,7 +1189,9 @@ import XCTest
       "Vertical oscillation",
     ] {
       app.buttons["run.metric"].tap()
-      app.collectionViews.buttons[metric].firstMatch.tap()
+      let option = app.buttons.matching(identifier: metric).firstMatch
+      XCTAssertTrue(option.waitForExistence(timeout: 5), "Missing metric option: \(metric)")
+      option.tap()
       XCTAssertFalse(app.staticTexts["run.unavailable"].exists)
       app.buttons["Distance"].tap()
       reveal(app.buttons["run.samples"])

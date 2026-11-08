@@ -77,7 +77,7 @@ private struct HistoryBatch: Encodable {
       guard self.uid == uid else { return }
       AppRuntime.defaults.removeObject(forKey:key("pendingPrivacy",uid))
       persist(prefs,uid:uid)
-      message = prefs.enabled ? (prefs.gpsEnabled ? "History and routes sync is enabled." : "History sync is enabled. Uploaded GPS coordinates have been removed.") : "History sync is off. Uploaded GPS coordinates have been removed; numerical history remains until you delete it."
+      message = prefs.enabled ? (prefs.gpsEnabled ? "HistorySyncManager.Copy.historyAndRoutesSyncIsEnabled.text".localized : "HistorySyncManager.Copy.historySyncIsEnabledUploadedGPSCoordinatesHaveBeen.text".localized) : "HistorySyncManager.Copy.historySyncIsOffUploadedGPSCoordinatesHaveBeen.text".localized
     } catch {
       guard self.uid == uid else { return }
       // Never silently retry an unconfirmed opt-in. Withdrawals are retried on the next sync.
@@ -86,7 +86,7 @@ private struct HistoryBatch: Encodable {
         AppRuntime.defaults.set(previousEnabled,forKey:key("enabled",uid))
         AppRuntime.defaults.set(previousGPS,forKey:key("gps",uid))
       }
-      message = withdrawal ? "Sharing is paused on this phone. Connect to the internet to finish the privacy change and remove uploaded GPS coordinates." : "Consent could not be saved. Please retry when connected."
+      message = withdrawal ? "HistorySyncManager.Copy.sharingIsPausedOnThisPhoneConnectToThe.text".localized : "HistorySyncManager.Copy.consentCouldNotBeSavedPleaseRetryWhenConnected.text".localized
     }
   }
   func sync(context: ModelContext, account: AccountManager) async {
@@ -120,7 +120,7 @@ private struct HistoryBatch: Encodable {
       // A separate opt-in on this phone is still required before uploading its GPS data.
       let gps = gpsEnabled && server.gpsEnabled
       persist(HistoryPreferences(enabled:server.enabled,gpsEnabled:gps,privacyRevision:server.privacyRevision,consentVersion:server.consentVersion,updatedAt:server.updatedAt),uid:uid)
-      guard server.enabled else { message = "History sync is paused. Saved dashboard history remains available."; return }
+      guard server.enabled else { message = "HistorySyncManager.Copy.historySyncIsPausedSavedDashboardHistoryRemainsAvailable.text".localized; return }
       let checkpoints = try context.fetch(FetchDescriptor<CloudSyncCheckpoint>())
       var hashes = Dictionary(uniqueKeysWithValues:checkpoints.map { ($0.key,$0.payloadDigest) })
       let tombstones = try context.fetch(FetchDescriptor<DeletedHealthRecord>())
@@ -150,7 +150,7 @@ private struct HistoryBatch: Encodable {
           guard allowed(uid:uid,account:account,gps:gps) else { return }
           try checkpoint(key:checkpointKey,hash:hash,context:context,hashes:&hashes)
         }
-        count += 1; message = "Synced \(count) of \(rows.count) runs."
+        count += 1; message = "HistorySyncManager.Format.syncedOfRuns.text".localized(String(describing: count), String(describing: rows.count))
       }
       let values = try context.fetch(FetchDescriptor<HealthMeasurement>())
       var batch = HistoryBatch(privacyRevision:server.privacyRevision), saved: [(String,String)] = []
@@ -175,9 +175,9 @@ private struct HistoryBatch: Encodable {
         guard allowed(uid:uid,account:account,gps:gps) else { return }
         for (key,hash) in saved { try checkpoint(key:key,hash:hash,context:context,hashes:&hashes) }
       }
-      message = "\(rows.count) runs synced. Last checked \(Date().formatted(date:.omitted,time:.shortened))."
+      message = "HistorySyncManager.Format.runsSyncedLastChecked.text".localized(String(describing: rows.count), String(describing: Date().formatted(date:.omitted,time:.shortened)))
     } catch {
-      if self.uid == uid { message = "History sync paused. Saved runs remain available. Reconnect and tap Sync now to retry. If consent changed on another device, this phone will follow it on retry." }
+      if self.uid == uid { message = "HistorySyncManager.Copy.historySyncPausedSavedRunsRemainAvailableReconnectAnd.text".localized }
     }
   }
   private func allowed(uid: String, account: AccountManager, gps: Bool) -> Bool {
@@ -209,7 +209,7 @@ private struct HistoryBatch: Encodable {
     do {
       _ = try await APIClient.request(path:"v1/history",method:"DELETE",expectedUID:uid)
       for row in try context.fetch(FetchDescriptor<CloudSyncCheckpoint>()) where row.key.hasPrefix("cloudHistory.\(uid).") { context.delete(row) }
-      try context.save();message = "Your uploaded history and routes have been deleted. Local Health workouts remain."
-    } catch { message = "Cloud history could not be deleted. Please reconnect and retry." }
+      try context.save();message = "HistorySyncManager.Copy.yourUploadedHistoryAndRoutesHaveBeenDeletedLocal.text".localized
+    } catch { message = "HistorySyncManager.Copy.cloudHistoryCouldNotBeDeletedPleaseReconnectAnd.text".localized }
   }
 }

@@ -1,6 +1,7 @@
 import RunCore
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
   @Environment(\.modelContext) private var context
@@ -8,7 +9,6 @@ struct ContentView: View {
   @EnvironmentObject private var health: HealthKitManager
   @EnvironmentObject private var account: AccountManager
   @EnvironmentObject private var analysis: AnalysisManager
-  @EnvironmentObject private var live: PhoneWorkoutManager
   @EnvironmentObject private var historySync: HistorySyncManager
   @Query private var deletions: [DeletedHealthRecord]
   @Query(sort: \RecordedRun.start, order: .reverse) private var rows: [RecordedRun]
@@ -16,9 +16,10 @@ struct ContentView: View {
   @AppStorage("units") private var unitRaw = "metric"
   @StateObject private var analytics = AnalyticsStore()
   @State private var settings = false
+  @State private var selectedTab = 0
   private var units: UnitSystem { UnitSystem(rawValue: unitRaw) ?? .metric }
   var body: some View {
-    TabView {
+    TabView(selection: $selectedTab) {
       NavigationStack {
         Group {
           if let run = analytics.snapshot.runs.first,
@@ -33,50 +34,45 @@ struct ContentView: View {
                 EmptyState(
                   symbol: "figure.run",
                   title: health.isSyncing
-                    ? "Finding your latest run" : "Your next chapter starts here",
+                    ? "ContentView.Copy.findingYourLatestRun.text".localized : "ContentView.Copy.yourNextChapterStartsHere.text".localized,
                   detail: health.didRequestAccess
-                    ? "No running workouts are available. Record a run on Apple Watch, or check Runner’s read access in Health. Health may need time to sync."
-                    : "Connect Apple Health to see your latest run, explore your routes, and follow your progress."
+                    ? "ContentView.Copy.noRunningWorkoutsAreAvailableRecordARunOn.text".localized
+                    : "ContentView.Copy.connectAppleHealthToSeeYourLatestRunExplore.text".localized
                 )
-                Button("Connect Apple Health") { Task { await health.requestAccess() } }
+                Button("Common.Copy.connectAppleHealth.text".localized) { Task { await health.requestAccess() } }
                   .buttonStyle(RunnerPrimaryButtonStyle()).controlSize(.large)
                 if health.isSyncing { ProgressView() }
               }
             }.refreshable { await health.sync() }
           }
-        }.modifier(RunnerTabBarStyle()).navigationTitle("Latest Run").toolbar {
+        }.modifier(RunnerTabBarStyle()).navigationTitle("Common.Copy.latestRun.text".localized).toolbar {
           ToolbarItem(placement: .topBarTrailing) {
             Button {
               settings = true
             } label: {
               Image(systemName: "slider.horizontal.3")
-            }.accessibilityLabel("Settings").accessibilityIdentifier("navigation.settings")
+            }.accessibilityLabel("Common.Copy.settings.text".localized).accessibilityIdentifier("navigation.settings")
               .accessibilityValue(
                 AppRuntime.isFixture ? (analytics.loading ? "Loading fixtures" : "Fixtures ready") : "")
           }
         }
-      }.tabItem { Label("Latest", systemImage: "figure.run") }
+      }.tabItem { tabLabel("Common.Copy.latest.text", symbol: "figure.run", index: 0) }.tag(0)
       NavigationStack {
         HistoryScreen(rows: rows, measurements: measurements, units: units)
           .modifier(RunnerTabBarStyle())
       }
-        .tabItem { Label("History", systemImage: "clock") }
+        .tabItem { tabLabel("Common.Copy.history.text", symbol: "clock", index: 1) }.tag(1)
       NavigationStack {
         ActivityScreen(rows: rows, measurements: measurements, units: units)
           .modifier(RunnerTabBarStyle())
       }
-        .tabItem { Label("Activity", systemImage: "chart.bar.xaxis") }
+        .tabItem { tabLabel("Common.Copy.activity.text", symbol: "chart.bar.xaxis", index: 2) }.tag(2)
       NavigationStack {
         TrendsScreen(rows: rows, measurements: measurements, units: units)
           .modifier(RunnerTabBarStyle())
       }.tabItem
-      { Label("Trends", systemImage: "chart.xyaxis.line") }
-      NavigationStack {
-        LiveScreen(history: analytics.snapshot.runs, units: units)
-          .modifier(RunnerTabBarStyle())
-      }.tabItem {
-        Label("Live", systemImage: "waveform.path.ecg")
-      }
+      { tabLabel("Common.Copy.trends.text", symbol: "chart.xyaxis.line", index: 3) }.tag(3)
+
     }.tint(RunnerStyle.accent).background(RunnerStyle.background).scrollEdgeEffectStyle(
       .hard, for: .bottom
     )
@@ -84,7 +80,6 @@ struct ContentView: View {
     .task(id: rows.map(\.payload)) { await analytics.refresh(payloads: rows.map(\.payload)) }
     .sheet(isPresented: $settings) { SettingsScreen().presentationDragIndicator(.visible) }
     .onChange(of: scenePhase) { _, phase in if phase == .active { Task { await health.sync() } } }
-    .task { live.onWorkoutSaved = { Task { await health.sync() } } }
     .onChange(of: automaticKey, initial: true) { _, _ in
       Task {
         if !health.isSyncing, analytics.isCurrent(payloads: rows.map(\.payload)),
@@ -103,8 +98,16 @@ struct ContentView: View {
     .onChange(of: scenePhase) { _, phase in
       if phase == .active { Task { await historySync.sync(context: context, account: account) } }
     }
-    .onChange(of: live.snapshot?.timestamp) { _, _ in
-      Task { await live.analyzeIfDue(account: account, history: analytics.snapshot.runs) }
+
+  }
+  private func tabLabel(_ key: String, symbol: String, index: Int) -> some View {
+    Label {
+      Text(key.localized)
+    } icon: {
+      // SwiftUI can recreate tab images while scrolling; keep their contrast at the source.
+      Image(uiImage: (UIImage(systemName: symbol) ?? UIImage()).withTintColor(
+        UIColor(selectedTab == index ? RunnerStyle.accent : RunnerStyle.muted),
+        renderingMode: .alwaysOriginal))
     }
   }
   private var historyKey: String {

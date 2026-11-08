@@ -64,7 +64,23 @@
               "HKQuantityTypeIdentifierRunningGroundContactTime": samples(0.24, amplitude: 0.01),
               "HKQuantityTypeIdentifierRunningVerticalOscillation": samples(0.08, amplitude: 0.005),
             ])
-        context.insert(try RecordedRun(run))
+        let row = try RecordedRun(run)
+        if AppRuntime.scenario == "store" && index == 0 {
+          let de = AppLanguage.current == .german
+          let metrics = try JSONSerialization.jsonObject(with: JSONEncoder().encode(RunCalculator.metrics(run)))
+          let report: [String: Any] = ["schemaVersion": 1, "language": AppLanguage.current.rawValue,
+            "id": run.id.uuidString, "status": "complete", "metrics": metrics,
+            "explanation": [
+              "summary": de ? "Ein gleichmäßiger 5-km-Lauf mit aufgezeichneten Herzfrequenzdaten." : "A steady 5 km run with recorded heart-rate data.",
+              "insights": [["title": de ? "Dein Tempo im Blick" : "Your pace in focus",
+                "detail": de ? "Du hast die 5 km in 25 Minuten absolviert. Vergleiche ähnliche Läufe, um Veränderungen zu erkennen." : "You covered 5 km in 25 minutes. Compare similar runs to notice changes.",
+                "evidence": ["distanceMeters", "movingSeconds"]]],
+              "nextRun": de ? "Wähle ein angenehmes Tempo und berücksichtige, wie du dich fühlst." : "Choose a comfortable pace and consider how you feel."],
+            "endurance": ["status": "available", "detail": de ? "Bedingungen und Belastung beeinflussen den Vergleich." : "Conditions and effort affect comparisons."],
+            "missingData": [String](), "generatedAt": run.end.timeIntervalSinceReferenceDate]
+          row.reportData = try JSONSerialization.data(withJSONObject: report)
+        }
+        context.insert(row)
       }
       for (day, value) in [(1, 45.8), (30, 44.9), (90, 44.0)] {
         context.insert(

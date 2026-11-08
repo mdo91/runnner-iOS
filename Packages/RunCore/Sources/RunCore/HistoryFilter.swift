@@ -46,3 +46,23 @@ public struct HistoryFilter: Sendable {
     }
   }
 }
+
+extension RunSetting {
+  public var title: String {
+    switch self {
+    case .all: return "Common.Copy.all.text".localized
+    case .outdoor: return "Common.Copy.outdoor.text".localized
+    case .indoor: return "Common.Copy.indoor.text".localized
+    }
+  }
+}
+
+extension RunSort {
+  public var title: String {
+    switch self {
+    case .date: return "Common.Copy.date.text".localized
+    case .distance: return "Common.Copy.distance.text".localized
+    case .pace: return "Common.Copy.pace.text".localized
+    }
+  }
+}

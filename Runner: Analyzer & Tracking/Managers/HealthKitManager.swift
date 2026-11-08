@@ -35,9 +35,9 @@ import SwiftData
     startObserving()
   }
   func requestAccess() async {
-    guard !AppRuntime.isFixture else { status = "Health access is simulated for UI tests."; return }
+    guard !AppRuntime.isFixture else { status = "HealthKitManager.Copy.healthAccessIsSimulatedForUITests.text".localized; return }
     guard HKHealthStore.isHealthDataAvailable() else {
-      status = "Health data is unavailable on this device."
+      status = "HealthKitManager.Copy.healthDataIsUnavailableOnThisDevice.text".localized
       return
     }
     do {
@@ -46,7 +46,7 @@ import SwiftData
       AppRuntime.defaults.set(true, forKey: "healthRequested")
       // Completion means the sheet finished. Apple intentionally does not disclose read authorization.
       await sync()
-    } catch { status = "Health access could not be requested. You can try again in Settings." }
+    } catch { status = "HealthKitManager.Copy.healthAccessCouldNotBeRequestedYouCanTry.text".localized }
   }
   private func startObserving() {
     guard observers.isEmpty, HKHealthStore.isHealthDataAvailable() else { return }
@@ -119,7 +119,7 @@ import SwiftData
       }
       try await syncRoutes(context)
       try await syncMeasurements(context)
-    } catch { status = "Sync paused. Your saved runs remain available. Pull to refresh to retry." }
+    } catch { status = "HealthKitManager.Copy.syncPausedYourSavedRunsRemainAvailablePullTo.text".localized }
   }
   private func workouts(limit: Int) async throws -> [HKWorkout] {
     try await samples(

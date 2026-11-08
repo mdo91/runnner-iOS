@@ -5,10 +5,10 @@ public enum ActivityRange: String, CaseIterable, Sendable {
 
   public var title: String {
     switch self {
-    case .month: return "Month"
-    case .threeMonths: return "3 Months"
-    case .sixMonths: return "6 Months"
-    case .year: return "Year"
+    case .month: return "Common.Copy.month.text".localized
+    case .threeMonths: return "Common.Copy.3Months2.text".localized
+    case .sixMonths: return "Common.Copy.6Months.text".localized
+    case .year: return "Common.Copy.year.text".localized
     }
   }
 

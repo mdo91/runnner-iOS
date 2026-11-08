@@ -25,15 +25,15 @@ struct TrainingCalendar: View {
     Surface {
       VStack(alignment: .leading, spacing: 14) {
         SectionTitle(
-          title: "Training calendar",
+          title: "Common.Copy.trainingCalendar.text".localized,
           subtitle:
-            "Intensity shows \(metric.rawValue.lowercased()). Select a day to review its runs.")
+            "TrainingCalendar.Format.intensityShowsSelectADayToReviewIts.text".localized(String(describing: metric.title.lowercased())))
         HStack {
           Button {
             move(-1)
           } label: {
             Image(systemName: "chevron.left").frame(width: 44, height: 44)
-          }.accessibilityLabel("Previous month").accessibilityIdentifier("calendar.previous")
+          }.accessibilityLabel("Common.Copy.previousMonth.text".localized).accessibilityIdentifier("calendar.previous")
           Spacer()
           Text(interval.start.formatted(dateStyle.month(.wide).year())).font(.headline)
             .accessibilityIdentifier("calendar.month")
@@ -42,7 +42,7 @@ struct TrainingCalendar: View {
             move(1)
           } label: {
             Image(systemName: "chevron.right").frame(width: 44, height: 44)
-          }.accessibilityLabel("Next month").accessibilityIdentifier("calendar.next")
+          }.accessibilityLabel("Common.Copy.nextMonth.text".localized).accessibilityIdentifier("calendar.next")
             .disabled(interval.end > statistics.now)
         }
         LazyVGrid(
@@ -78,7 +78,7 @@ struct TrainingCalendar: View {
                   in: RoundedRectangle(cornerRadius: 8))
             }.buttonStyle(.plain).disabled(date > statistics.now)
               .accessibilityLabel(
-                "\(date.formatted(dateStyle.weekday(.wide).month(.wide).day().year())), \(summary.runCount) runs, \(metric.formatted(summary, units: units))"
+                "TrainingCalendar.Format.runs.text".localized(String(describing: date.formatted(dateStyle.weekday(.wide).month(.wide).day().year())), String(describing: summary.runCount), String(describing: metric.formatted(summary, units: units)))
               )
               .accessibilityIdentifier("calendar.day.\(day)")
               .id("day.\(day)")

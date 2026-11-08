@@ -28,7 +28,7 @@ UI tests also save a direct screenshot and accessibility tree at teardown in the
 
 ## Isolation
 
-### Run photo editor
+### Run photo and video editor
 
 `RunPhotoTests` covers moving-time/unit formatting, segmented GPS projection and longitude wrapping, overlay bounds, crop coverage, image decoding/orientation, export dimensions and colors, metadata, and temporary share-file cleanup. JPEG attachments retain rendered artwork for visual inspection.
 
@@ -40,7 +40,11 @@ The editor’s contrast audit covers visible controls, including revealed font p
 
 The full-screen editor explicitly inherits the presenting screen's dynamic text size. The large-text scenario asserts a single column of font previews at accessibility sizes before rotating and auditing the visible controls.
 
-For native-device acceptance, select a local and an iCloud photo, cancel and retry selection, verify add-only permission denial and success, and open/dismiss the native share sheet on iPhone and iPad. Confirm the saved JPEG matches the preview. Native permissions and iCloud download behavior are separate from deterministic fixture coverage.
+`RunVideoTests` exports actual generated moving clips in all four formats and checks duration, audio presence/timing, motion between frames, overlay pixels against the transparent preview artwork, and rotated/cropped frames against the image renderer. A neutral-gray clip checks background RGB drift within three levels and opaque colored artwork within six levels. A delayed-first-frame clip checks poster loading, black-plus-overlay leading frames, and unchanged audio timing/duration. Silent clips, even output dimensions, unreadable media, cancellation, and temporary-file ownership are covered. Save tests verify cancellation before/during authorization prevents a Photos transaction, while an accepted transaction still reports success.
+
+The five `testRunVideo…` UI scenarios exercise playback/scrubbing, crop/save/share receipts, load retry, denied saving, sharing cancellation/failure/retry, replacing video with a photo while retaining styling, cancellation during Photos authorization, and hiding Cancel Export while Photos commits. Debug fixtures generate real clips and use real MP4 exports while substituting Photos writes and share destinations; the authorization/commit scenarios delay those phases to make the controls observable.
+
+For native-device acceptance, select local and iCloud photos and videos, cancel and retry selection, verify add-only permission denial and success, and open/dismiss the native share sheet on iPhone and iPad. Confirm the saved JPEG or MP4 matches the preview; for video, check portrait/landscape orientation, audio, scrubbing, and the overlay throughout a longer clip. Native permissions and iCloud download behavior are separate from deterministic fixture coverage.
 
 For manual native Photos checks in a disposable simulator, launch a Debug fixture scenario with `RUNNER_NATIVE_PHOTOS=1`. This uses the real picker, Photos writer, and share sheet while retaining isolated workout data and disabled cloud/Health services. Seed only that simulator’s library with `simctl addmedia`; the normal fixture suite never enables this override.
 

@@ -1,3 +1,4 @@
+import RunCore
 import SwiftUI
 
 /// Artwork only. Selection handles, gestures, and editor controls never enter an export.
@@ -5,13 +6,14 @@ struct RunPhotoCompositionView: View {
   let composition: RunPhotoComposition
   let stats: RunPhotoStats
   let route: RunPhotoRoute
+  var includesBackground = true
 
   var body: some View {
     let canvas = composition.canvasSize
     let photo = composition.crop.imageFrame(image: composition.imageSize, canvas: canvas)
     ZStack(alignment: .topLeading) {
-      Color.black
-      if let image = composition.image {
+      if includesBackground { Color.black }
+      if includesBackground, let image = composition.image {
         Image(uiImage: image).resizable()
           .frame(width: photo.width, height: photo.height)
           .position(x: photo.midX, y: photo.midY)
@@ -50,7 +52,7 @@ struct RunPhotoCompositionView: View {
     .environment(\.dynamicTypeSize, .large)
     .environment(\.colorScheme, .dark)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel("Run photo, Distance \(stats.distance), pace \(stats.pace), Time \(stats.time), The Runner")
+    .accessibilityLabel("RunPhotoCompositionView.Format.runDistancePaceTimeTheRunner.text".localized(String(describing: composition.isVideo ? "video" : "photo"), String(describing: stats.distance), String(describing: stats.pace), String(describing: stats.time)))
     .accessibilityIdentifier("photo.artwork")
   }
 }
@@ -61,9 +63,9 @@ private struct RunPhotoStatsView: View {
   let alignment: RunPhotoAlignment
   var body: some View {
     VStack(alignment: alignment.horizontal, spacing: 10) {
-      metric("Distance", value: stats.distance)
-      metric("pace", value: stats.pace)
-      metric("Time", value: stats.time)
+      metric("Common.Copy.distance.text".localized, value: stats.distance)
+      metric("Common.Copy.pace.text".localized, value: stats.pace)
+      metric("Common.Copy.time.text".localized, value: stats.time)
       RunPhotoWordmark()
         .frame(width: layout.size.width, height: 40, alignment: alignment.frame)
         .padding(.top, 8)

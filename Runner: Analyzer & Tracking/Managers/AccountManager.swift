@@ -1,3 +1,4 @@
+import RunCore
 import AuthenticationServices
 import CryptoKit
 import FirebaseAppCheck
@@ -30,7 +31,7 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
     self.deleting = deleting
     var bytes = [UInt8](repeating: 0, count: 32)
     guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
-      message = "Could not prepare secure sign-in."
+      message = "AccountManager.Copy.couldNotPrepareSecureSignIn.text".localized
       return
     }
     let nonce = bytes.map { String(format: "%02x", $0) }.joined()
@@ -40,7 +41,7 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
   }
   func finish(_ result: Result<ASAuthorization, Error>) async {
     guard Self.configured else {
-      message = "Account services are not configured yet."
+      message = "AccountManager.Copy.accountServicesAreNotConfiguredYet.text".localized
       return
     }
     isWorking = true
@@ -68,7 +69,7 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
         signedIn = false
         userID = nil
         message =
-          "Your cloud account, synced history, routes, and analysis data have been deleted. Health data remains on this device."
+          "AccountManager.Copy.yourCloudAccountSyncedHistoryRoutesAndAnalysisData.text".localized
       } else {
         _ = try await Auth.auth().signIn(with: credential)
         message = nil
@@ -76,8 +77,8 @@ final class AttestationFactory: NSObject, AppCheckProviderFactory {
     } catch {
       message =
         deleting
-        ? "Account deletion could not finish. Sign in again to retry."
-        : "Sign in was not completed. You can keep using your measured stats."
+        ? "AccountManager.Copy.accountDeletionCouldNotFinishSignInAgainTo.text".localized
+        : "AccountManager.Copy.signInWasNotCompletedYouCanKeepUsing.text".localized
     }
   }
   func setConsent(_ value: Bool) {
