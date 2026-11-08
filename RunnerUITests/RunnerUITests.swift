@@ -716,6 +716,12 @@ import XCTest
     revealPhotoControl(reset, towardTop: true)
     reset.tap()
     photoLayer("Stats")
+    let iconTarget = app.buttons["photo.iconOverlay"]
+    XCTAssertGreaterThanOrEqual(iconTarget.frame.width, 44)
+    XCTAssertGreaterThanOrEqual(iconTarget.frame.height, 44)
+    iconTarget.tap()
+    XCTAssertTrue(app.buttons["photo.layer"].label.contains("Icon"))
+    photoLayer("Stats")
     XCTAssertTrue(app.buttons["photo.save"].isHittable)
     XCTAssertTrue(app.buttons["photo.close"].isHittable)
     XCTAssertTrue(photoArtwork.exists)
