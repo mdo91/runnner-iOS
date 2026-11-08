@@ -1,0 +1,35 @@
+{
+  "created": "2026-11-08",
+  "generation": "built-in image_gen; no CLI fallback",
+  "header": {
+    "file": "header.png",
+    "width": 3840,
+    "height": 1646,
+    "locales": [
+      "en-US",
+      "de-DE"
+    ]
+  },
+  "search": [
+    {
+      "file": "search-en.png",
+      "width": 1920,
+      "height": 1280,
+      "locale": "en-US"
+    },
+    {
+      "file": "search-de.png",
+      "width": 1920,
+      "height": 1280,
+      "locale": "de-DE"
+    }
+  ],
+  "sha256": {
+    "header-source.png": "864194491049ba59e553f95c9a243b27406d8b8c39a568af32e161ae789adaa2",
+    "header.png": "44cb124caa64126e7955dbafde87259c1d30af91f11b2969efe62d212f2f8a09",
+    "search-en.png": "4357adb2e9513f32fdc3f35c4531661096c7a85f8ee1a01a9fb5d89097689176",
+    "search-de.png": "0eef8976f3518fdbc5399f1bc1b91e77ba002de0033e688d1dbb4dbd0f2a5081",
+    "sources/en-01-overview.png": "e3cb4c6e67eddd2ec7ed7d0c81f25c204ec9f0d970dd826f898142b22309d21f",
+    "sources/de-01-overview.png": "1b82c9ff820146872c62f237a8a40e2a7eace3c37285ac68c8f4eef13f02865d"
+  }
+}
