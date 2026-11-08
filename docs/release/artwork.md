@@ -54,3 +54,12 @@ The generated scenes were visually reviewed for the requested theme, coordinated
 ### Photograph prompt
 
 Use case: photorealistic-natural. Asset type: privacy-safe synthetic editorial sports photograph for a running app's photo-editor screenshot and public website. Create a fictional adult runner in their early thirties, fit everyday amateur athlete, mid-stride running on a quiet empty park path beside a simple athletics track at dawn. Natural candid sports photography, believable anatomy and foot placement, documentary realism, subtle movement in clothes, clear subject, soft warm early sunlight, calm muted green trees in background. The runner wears an unbranded electric-yellow sleeveless running top and plain black shorts with neutral shoes. Landscape 3:2 composition, ideally 1536x1024. Keep the entire runner comfortably inside the central third so a portrait or square crop still works. Leave the top-left quadrant mostly uncluttered sky/soft foliage so a real app can place running-stat text there later. No text or numbers in the image itself. No logos, race bibs, signs, distinctive buildings or identifying landmarks. No other people. No phone mockup, no interface, no added stats, no watermarks. This must be a newly generated fictional person and scene, not a photograph of a known person. Opaque photographic background.
+
+## App Store layouts
+
+`scripts/render-store-screenshots.swift` renders eight genuine app captures per language with localized headlines, reusable illustrations, scribbles, and track patterns. Capture input filenames and copy are defined in `screenshot-copy.json`. All exports are opaque RGB PNGs.
+
+- Large Dynamic Island slot: `screenshots/{en,de}`, 1320 × 2868.
+- Required medium Dynamic Island slot: `screenshots-medium/{en,de}`, 1206 × 2622, generated with `--display medium`.
+
+App Store Connect accepted both sets on November 8, 2026. Each locale has eight screenshots in each slot and no video previews. Layouts use a shared design coordinate system with uniform scaling; the actual app captures are not stretched or fabricated.

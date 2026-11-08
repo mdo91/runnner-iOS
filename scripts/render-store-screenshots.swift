@@ -2,6 +2,7 @@
 // Render only real app captures. Missing inputs are errors; no placeholder UI is generated.
 // Compile: xcrun swiftc -O scripts/render-store-screenshots.swift -o /tmp/runner-store-render
 // Run: /tmp/runner-store-render --input /absolute/captures --output docs/release/screenshots
+// Medium iPhone slot: add --display medium --output docs/release/screenshots-medium
 import AppKit
 import Foundation
 import ImageIO
@@ -211,7 +212,7 @@ func render(_ screen: Screen, locale: String, copy: Localization, input: URL, wi
   print("Rendered \(locale)/\(screen.id).png · \(width)×\(height), opaque")
 }
 do {
-  guard let inputPath=option("--input") else {try fail("Usage: render-store-screenshots --input CAPTURE_FOLDER [--output OUTPUT_FOLDER] [--root REPO_ROOT] [--language en|de] [--only 01-overview] [--validate-only]")}
+  guard let inputPath=option("--input") else {try fail("Usage: render-store-screenshots --input CAPTURE_FOLDER [--output OUTPUT_FOLDER] [--display large|medium] [--root REPO_ROOT] [--language en|de] [--only 01-overview] [--validate-only]")}
   let input=URL(fileURLWithPath:inputPath,isDirectory:true)
   let copy=try JSONDecoder().decode(Copy.self,from:Data(contentsOf:copyURL))
   guard copy.schemaVersion == 1, copy.width == 1320, copy.height == 2868 else {try fail("Unsupported output specification")}

@@ -11,7 +11,7 @@
     "price": "Free",
     "releaseMode": "Automatic after App Review approval",
     "distribution": "Public App Store",
-    "availability": "All eligible territories; exclude territories with unmet local registration requirements.",
+    "availability": "174 current territories; China mainland excluded because no ICP registration was provided. Future territories require a separate eligibility check.",
     "supportedDeviceFamily": "iPhone",
     "macAvailability": false,
     "visionProAvailability": false,

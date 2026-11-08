@@ -99,6 +99,14 @@ import XCTest
     reveal(app.switches["settings.aiConsent"])
     XCTAssertEqual(app.switches["settings.aiConsent"].value as? String, "0")
   }
+
+  func testOnboardingUnsupportedLanguageFallsBackToEnglish() {
+    launch("onboarding", language: "fr")
+    XCTAssertEqual(app.staticTexts["onboarding.title"].label, "Understand every run.")
+    XCTAssertEqual(app.buttons["onboarding.next"].label, "Continue")
+    app.buttons["onboarding.skip"].tap()
+    XCTAssertTrue(app.buttons["Latest"].firstMatch.waitForExistence(timeout: 15))
+  }
   // Opt-in captures use the real interface and synthetic records; never run in cloud CI.
   func testCaptureEnglishStoreScreens() throws {
     try XCTSkipUnless(ProcessInfo.processInfo.environment["RUNNER_CAPTURE_STORE"] == "1")
